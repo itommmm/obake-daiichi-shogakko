@@ -1205,7 +1205,7 @@ function remoteGo(){initAudio();
   else if(state==='opening')endOpening();
   else if(state==='ending'){if(G.end.t<END_T-1)G.end.t=END_T-1;}}
 function remoteData(d){if(!d||typeof d!=='object')return;
-  if(d.t==='m'){const y=+d.y||0,p=+d.p||0;GYRO.tx=clamp(GYRO.tx+y*(W/2)/24,0,W);GYRO.ty=clamp(GYRO.ty-p*(H/2)/16,0,H);}
+  if(d.t==='m'){const y=+d.y||0,p=+d.p||0;GYRO.tx=clamp(GYRO.tx+y*(W/2)/24,W*.04,W*.96);GYRO.ty=clamp(GYRO.ty-p*(H/2)/16,H*.1,H*.9);}
   else if(d.t==='f'){REMOTE.fire=!!d.d;if(REMOTE.fire){if(state==='play'){if((G.fireCd||0)<=0)fire();}else if(state!=='intro'&&state!=='clear')remoteGo();}updDown();}
   else if(d.t==='s'){if(state==='play')useAnySkill();else if(state!=='intro'&&state!=='clear')remoteGo();}
   else if(d.t==='c')gyroCenter();
@@ -1214,7 +1214,7 @@ function remoteData(d){if(!d||typeof d!=='object')return;
 function remoteTick(dt){const c=REMOTE.conn;if(!c)return;const now=performance.now();
   if(now-(REMOTE.tk||now)>800)REMOTE.rx=now;REMOTE.tk=now; // 読み込みなどで画面が止まった直後は、届いていない扱いにしない
   if(!c.open||now-REMOTE.rx>6000){try{c.close();}catch(_){}remoteOff();return;}REMOTE.stT-=dt;if(REMOTE.stT>0)return;REMOTE.stT=.25;
-  try{c.send({t:'st',s:state,a:G.ammo|0,m:state==='play'?maxAmmo():0,sp:Math.min(100,G.sp|0),sk:state==='play'&&(G.sp>=100||G.bellCd<=0||G.lightCd<=0),h:G.hearts|0,r:G.reload>0,md:modeKey});}catch(_){}}
+  try{c.send({t:'st',s:state,a:G.ammo|0,m:state==='play'?maxAmmo():0,sp:Math.min(100,G.sp|0),sk:state==='play'&&(G.sp>=100||G.bellCd<=0||G.lightCd<=0),h:G.hearts|0,r:G.reload>0,md:modeKey,x:+(ptr.x/Math.max(1,W)).toFixed(3),y:+(ptr.y/Math.max(1,H)).toFixed(3)});}catch(_){}}
 
 /* ===== サイズ ===== */
 function resize(){
@@ -1571,7 +1571,8 @@ function drawHUD(){
   else{txt(`${G.ammo}/${maxAmmo()}`,ax+aw-14*u,ay+ah/2-8*u,26*u,G.ammo<6?'#ff8fd0':'#fff',FD,'right');txt('みずでっぽう',ax+aw-14*u,ay+ah/2+17*u,12*u,'#cfe9ff',FB,'right');}
 }
 function drawReticle(){
-  const x=ptr.x,y=ptr.y,r=26*U;let over=false;for(const e of G.enemies)if(!e.dead&&Math.hypot(e.sx-x,e.sy-y)<e.sr)over=true;
+  const x=ptr.x,y=ptr.y,r=26*U*(GYRO.remote?1.6:1);
+  if(GYRO.remote){ctx.save();ctx.strokeStyle='rgba(0,0,0,.65)';ctx.lineWidth=9*U;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.stroke();ctx.beginPath();ctx.arc(x,y,r*.45,0,7);ctx.stroke();ctx.restore();}let over=false;for(const e of G.enemies)if(!e.dead&&Math.hypot(e.sx-x,e.sy-y)<e.sr)over=true;
   const c=over?'#ff5fb8':'#5fe3ff';ctx.save();ctx.shadowColor=c;ctx.shadowBlur=12*U;ctx.strokeStyle=c;ctx.lineWidth=3*U;
   ctx.beginPath();ctx.arc(x,y,r*(over?.85:1),0,7);ctx.stroke();ctx.beginPath();ctx.arc(x,y,r*.45,0,7);ctx.stroke();
   for(let i=0;i<4;i++){const a=i*Math.PI/2+G.t*.6;ctx.beginPath();ctx.moveTo(x+Math.cos(a)*r*.7,y+Math.sin(a)*r*.7);ctx.lineTo(x+Math.cos(a)*r*1.35,y+Math.sin(a)*r*1.35);ctx.stroke();}
@@ -1703,6 +1704,7 @@ const fontsReady=document.fonts&&document.fonts.ready?Promise.race([document.fon
 fontsReady.then(()=>{makeTextures();buildGun();buildKid();buildRoom(G.place);$('start').disabled=false;$('start').textContent='スタート！';});
 let last=performance.now();
 function loop(t){const dt=Math.min(.05,(t-last)/1000);last=t;
+  if(innerWidth!==W||innerHeight!==H)resize();
   try{gyroAim(dt);remoteTick(dt);update(dt);if(TEX.bump){sync3D(dt);update3D(dt);render3D();}renderOverlay();}catch(err){console.error(err);}
   if(Q.auto&&TEX.bump&&!document.hidden){Q.grace-=dt;if(Q.grace<=0){Q.frames++;Q.t+=dt;if(Q.t>=2.5){const fps=Q.frames/Q.t;Q.frames=0;Q.t=0;if(fps<45&&Q.level<2){Q.level++;applyQuality();toast(`画質を「${QL[Q.level].name}」にしました`);}}}}
   requestAnimationFrame(loop);}

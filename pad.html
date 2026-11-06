@@ -21,6 +21,8 @@ body{background:radial-gradient(ellipse at 50% 30%,#2a1458,#0d0a1f 70%)}
 .stat b{color:var(--cyan)}
 .ammo{width:min(30vw,200px);height:14px;border-radius:7px;background:#1c1040;border:2px solid #4b3487;overflow:hidden}
 .ammo i{display:block;height:100%;width:0;background:linear-gradient(90deg,#5fe3ff,#9fefff);transition:width .2s}
+.mini{position:relative;width:64px;height:36px;border:2px solid #4b3487;border-radius:6px;background:#1c1040;flex:none}
+.mini i{position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);left:50%;top:50%}
 .hearts{font:900 16px/1 var(--body);color:var(--pink);min-width:3em;text-align:center}
 .tb{width:48px;height:44px;border-radius:12px;border:2px solid var(--violet);background:#1c1040;color:#fff;font:900 18px/1 var(--body)}
 .pads{display:grid;grid-template-columns:2fr 3fr;gap:10px;min-height:0}
@@ -57,6 +59,7 @@ body{background:radial-gradient(ellipse at 50% 30%,#2a1458,#0d0a1f 70%)}
     <div class="modes" id="modes" hidden>
       <button data-m="easy">かんたん</button><button data-m="normal">ふつう</button><button data-m="hard">むずかしい</button>
     </div>
+    <div class="mini" id="mini" aria-label="しょうじゅんの いち"><i id="dot"></i></div>
     <div class="hearts" id="hearts"></div>
     <div class="ammo" aria-label="みずの のこり"><i id="ammo"></i></div>
   </div>
@@ -86,13 +89,13 @@ const PEER_PREFIX='obake1sg-';
 const qs=new URLSearchParams(location.search);
 if(qs.get('c'))$('code').value=qs.get('c').replace(/\D/g,'').slice(0,4);
 function peerOpts(){const q=qs.get('ps');if(!q)return {};const [h,pt]=q.split(':');return {host:h,port:+pt||9000,path:'/',secure:false};}
-let lastRx=0,peer=null,conn=null,code='',motionOK=false,wake=null,acc={y:0,p:0},lastSend=0,want=false;
+let lastRx=0,peer=null,conn=null,code='',motionOK=false,gotMotion=false,wake=null,acc={y:0,p:0},lastSend=0,want=false;
 const msg=t=>{$('msg').textContent=t;};
 const stat=t=>{$('stat').innerHTML=t;};
 function send(o){if(conn&&conn.open){try{conn.send(o);}catch(_){}}}
 
 /* 傾き：回転の速さ（度/秒）を積み上げてMacへ送る。横持ちの向きに合わせて左右・上下を入れかえる */
-function onMotion(ev){const r=ev.rotationRate;if(!r||(r.beta==null&&r.gamma==null))return;
+function onMotion(ev){const r=ev.rotationRate;if(!r||(r.beta==null&&r.gamma==null))return;gotMotion=true;
   const ang=((screen.orientation&&screen.orientation.angle)!=null?screen.orientation.angle:window.orientation)||0;
   let it=ev.interval||1/60;if(it>1)it/=1000;it=Math.min(it,.05);
   const b=r.beta||0,g=r.gamma||0;let yaw,pit;
@@ -104,7 +107,7 @@ function onMotion(ev){const r=ev.rotationRate;if(!r||(r.beta==null&&r.gamma==nul
 async function askMotion(){
   if(typeof DeviceMotionEvent==='undefined')return false;
   if(typeof DeviceMotionEvent.requestPermission==='function'){try{const r=await DeviceMotionEvent.requestPermission();if(r!=='granted')return false;}catch(e){return false;}}
-  addEventListener('devicemotion',onMotion);return true;}
+  addEventListener('devicemotion',onMotion);setTimeout(()=>{if(!gotMotion)motionOK=false;},2500);return true;}
 async function keepAwake(){try{if('wakeLock' in navigator)wake=await navigator.wakeLock.request('screen');}catch(_){}}
 
 function connect(){
@@ -129,9 +132,10 @@ function onData(d){lastRx=performance.now();if(!d||d.t!=='st')return;
   $('skill').classList.toggle('ready',!!d.sk);
   $('ammo').style.width=(d.m?Math.round(100*d.a/d.m):0)+'%';
   $('hearts').textContent=d.s==='play'||d.s==='intro'||d.s==='clear'?'♥'.repeat(Math.max(0,d.h)):'';
-  $('modes').hidden=d.s!=='title';
+  $('modes').hidden=d.s!=='title';$('mini').hidden=d.s==='title';
+  if(d.x!=null){$('dot').style.left=(d.x*100)+'%';$('dot').style.top=(d.y*100)+'%';}
   document.querySelectorAll('#modes button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===d.md));
-  stat(d.s==='play'?'<b>たいじちゅう！</b>':d.s==='title'?'<b>つながった！</b> むずかしさを えらんで スタート':'<b>つながった！</b> テレビを みてね');}
+  stat(!motionOK&&d.s==='play'?'かたむけが つかえません（◎で まんなか）':d.s==='play'?'<b>たいじちゅう！</b>':d.s==='title'?'<b>つながった！</b> むずかしさを えらんで スタート':'<b>つながった！</b> テレビを みてね');}
 
 /* ボタン：指ごとに押す・離すを管理（同時押しOK） */
 function hold(el,down,up){const ids=new Set();
