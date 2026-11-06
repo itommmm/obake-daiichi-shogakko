@@ -24,6 +24,7 @@ body{background:radial-gradient(ellipse at 50% 30%,#2a1458,#0d0a1f 70%)}
 .mini{position:relative;width:64px;height:36px;border:2px solid #4b3487;border-radius:6px;background:#1c1040;flex:none}
 .mini i{position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);left:50%;top:50%}
 .hearts{font:900 16px/1 var(--body);color:var(--pink);min-width:3em;text-align:center}
+.sens{width:auto;padding:0 10px;font-size:13px}
 .tb{width:48px;height:44px;border-radius:12px;border:2px solid var(--violet);background:#1c1040;color:#fff;font:900 18px/1 var(--body)}
 .pads{display:grid;grid-template-columns:2fr 3fr;gap:10px;min-height:0}
 .pad{position:relative;border:none;border-radius:28px;display:flex;flex-direction:column;align-items:center;justify-content:center;font:400 clamp(30px,8vw,64px)/1 var(--display);color:var(--ink);touch-action:none}
@@ -55,6 +56,7 @@ body{background:radial-gradient(ellipse at 50% 30%,#2a1458,#0d0a1f 70%)}
   <div class="top">
     <button class="tb" id="bPause" aria-label="一時停止">Ⅱ</button>
     <button class="tb" id="bCenter" aria-label="照準を まんなかに">◎</button>
+    <button class="tb sens" id="bSens" aria-label="かたむけの かんど">ふつう</button>
     <div class="stat" id="stat">つないでいます…</div>
     <div class="modes" id="modes" hidden>
       <button data-m="easy">かんたん</button><button data-m="normal">ふつう</button><button data-m="hard">むずかしい</button>
@@ -100,8 +102,8 @@ function onMotion(ev){const r=ev.rotationRate;if(!r||(r.beta==null&&r.gamma==nul
   let it=ev.interval||1/60;if(it>1)it/=1000;it=Math.min(it,.05);
   const b=r.beta||0,g=r.gamma||0;let yaw,pit;
   if(ang===90){yaw=-b;pit=-g;}else if(ang===-90||ang===270){yaw=b;pit=g;}else if(ang===180){yaw=g;pit=-b;}else{yaw=-g;pit=b;}
-  if(Math.abs(yaw)<.6)yaw=0;if(Math.abs(pit)<.6)pit=0;
-  acc.y+=yaw*it;acc.p+=pit*it;
+  if(Math.abs(yaw)<.35)yaw=0;if(Math.abs(pit)<.35)pit=0;
+  acc.y+=yaw*it*SENS[sens][1];acc.p+=pit*it*SENS[sens][1];
   const now=performance.now();if(now-lastSend>=16&&(acc.y||acc.p)){send({t:'m',y:+acc.y.toFixed(3),p:+acc.p.toFixed(3)});acc.y=acc.p=0;lastSend=now;}}
 
 async function askMotion(){
@@ -144,6 +146,11 @@ function hold(el,down,up){const ids=new Set();
   el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end);el.addEventListener('lostpointercapture',end);}
 hold($('fire'),()=>send({t:'f',d:1}),()=>send({t:'f',d:0}));
 hold($('skill'),()=>send({t:'s'}));
+/* かんど（傾けたときの照準の動きの大きさ）。ひくい＝大きく傾けても少しだけ動く */
+const SENS=[['ひくい',.55],['ふつう',.8],['たかい',1.2]];let sens=1;
+try{const v=+localStorage.getItem('obake1-sens');if(v>=0&&v<3)sens=v;}catch(_){}
+$('bSens').textContent='かんど '+SENS[sens][0];
+$('bSens').addEventListener('pointerdown',e=>{e.preventDefault();sens=(sens+1)%3;$('bSens').textContent='かんど '+SENS[sens][0];try{localStorage.setItem('obake1-sens',sens);}catch(_){}});
 $('bCenter').addEventListener('pointerdown',e=>{e.preventDefault();send({t:'c'});});
 $('bPause').addEventListener('pointerdown',e=>{e.preventDefault();send({t:'p'});});
 document.querySelectorAll('#modes button').forEach(b=>b.addEventListener('pointerdown',e=>{e.preventDefault();send({t:'mode',m:b.dataset.m});}));
