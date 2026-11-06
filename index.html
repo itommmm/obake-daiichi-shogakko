@@ -74,6 +74,11 @@ button:disabled{opacity:.5;cursor:wait}
 .tvcode{font:400 clamp(40px,7vw,64px)/1 var(--display);letter-spacing:.12em;color:var(--gold);margin:6px 0}
 .tvurl{font:500 12px/1.4 var(--body);color:#bda9f0;word-break:break-all}
 #tvStat{color:var(--cyan)}
+#calT{position:fixed;inset:0;z-index:60;display:grid;place-items:center;pointer-events:none;background:rgba(8,4,20,.7)}
+#calT .ring{width:min(26vh,200px);aspect-ratio:1;border-radius:50%;border:8px solid var(--gold);box-shadow:0 0 0 6px rgba(0,0,0,.6),0 0 40px var(--gold);display:grid;place-items:center;animation:calp 1s ease-in-out infinite}
+#calT .ring::after{content:"";width:18%;aspect-ratio:1;border-radius:50%;background:var(--gold)}
+#calT p{position:absolute;top:calc(50% + min(13vh,100px) + 18px);margin:0;text-align:center;font:400 clamp(18px,3vw,30px)/1.5 var(--display);color:#fff;text-shadow:0 2px 8px #000}
+@keyframes calp{50%{transform:scale(1.08)}}
 .mode[aria-pressed="true"]{border-color:var(--gold);background:#3a2370;box-shadow:0 0 14px rgba(255,210,63,.4)}
 .go{border:none;border-radius:14px;padding:14px;font:400 clamp(20px,3vw,28px)/1 var(--display);color:var(--ink);background:linear-gradient(180deg,#fff27a,#ffb22e);box-shadow:0 5px 0 #a8580c,0 0 24px rgba(255,200,60,.5)}
 .go:active{transform:translateY(3px);box-shadow:0 2px 0 #a8580c}
@@ -158,6 +163,8 @@ button:disabled{opacity:.5;cursor:wait}
     </div>
   </div>
 </section>
+
+<div id="calT" hidden><div class="ring"></div><p>ここに iPhoneの あたまを むけて<br>「ここ！」を おしてね</p></div>
 
 <section class="screen" id="tv" hidden>
   <div class="tvbox">
@@ -1200,7 +1207,7 @@ function hostPeer(){
 function remoteOn(){GYRO.on=true;GYRO.has=true;GYRO.remote=true;removeEventListener('devicemotion',onMotion);gyroCenter(true);updGyroBtn();
   $('tvBtn').setAttribute('aria-pressed',true);$('tvBtn').firstChild.textContent='テレビで あそぶ：つながった';
   tvStat('つながった！ iPhoneの「うつ」で スタート');toast('コントローラーが つながった！');setTimeout(()=>{if(REMOTE.conn&&REMOTE.conn.open)$('tv').hidden=true;},1200);}
-function remoteOff(){REMOTE.conn=null;REMOTE.fire=false;updDown();if(GYRO.remote){GYRO.on=false;GYRO.remote=false;updGyroBtn();}
+function remoteOff(){$('calT').hidden=true;REMOTE.conn=null;REMOTE.fire=false;updDown();if(GYRO.remote){GYRO.on=false;GYRO.remote=false;updGyroBtn();}
   $('tvBtn').setAttribute('aria-pressed',false);$('tvBtn').firstChild.textContent='テレビで あそぶ';
   tvStat('iPhoneを まってるよ…');if(state==='play'||state==='intro')togglePause();toast('コントローラーが きれました');}
 function remoteGo(){initAudio();
@@ -1210,7 +1217,10 @@ function remoteGo(){initAudio();
   else if(state==='opening')endOpening();
   else if(state==='ending'){if(G.end.t<END_T-1)G.end.t=END_T-1;}}
 function remoteData(d){if(!d||typeof d!=='object')return;
-  if(d.t==='m'){const y=+d.y||0,p=+d.p||0;GYRO.tx=clamp(GYRO.tx+y*(W/2)/24,W*.04,W*.96);GYRO.ty=clamp(GYRO.ty-p*(H/2)/16,H*.1,H*.9);}
+  if(d.t==='a'){const x=+d.x||0,y=+d.y||0;GYRO.tx=clamp(W/2+x*W/2,W*.04,W*.96);GYRO.ty=clamp(H/2-y*H/2,H*.1,H*.9);}
+  else if(d.t==='calmode'){$('calT').hidden=!d.on;}
+  else if(d.t==='r'){if(state==='play'&&G.ammo<maxAmmo())startReload();}
+  else if(d.t==='m'){const y=+d.y||0,p=+d.p||0;GYRO.tx=clamp(GYRO.tx+y*(W/2)/24,W*.04,W*.96);GYRO.ty=clamp(GYRO.ty-p*(H/2)/16,H*.1,H*.9);}
   else if(d.t==='f'){REMOTE.fire=!!d.d;if(REMOTE.fire){if(state==='play'){if((G.fireCd||0)<=0)fire();}else if(state!=='intro'&&state!=='clear')remoteGo();}updDown();}
   else if(d.t==='s'){if(state==='play')useAnySkill();else if(state!=='intro'&&state!=='clear')remoteGo();}
   else if(d.t==='c')gyroCenter();
