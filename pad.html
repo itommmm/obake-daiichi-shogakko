@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>おばけ第一小学校 コントローラー</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Maru+Gothic:wght@700;900&display=swap">
+<style>
+/* iPhone用コントローラー。画面を見なくても押せるよう、左右を大きな2つのボタンに分ける */
+:root{color-scheme:dark;--night:#0d0a1f;--panel:rgba(22,12,44,.9);--violet:#a65cff;--cyan:#5fe3ff;--gold:#ffd23f;--pink:#ff5fb8;--chalk:#f4f1ff;--ink:#1a0b25;
+  --display:"Dela Gothic One","Zen Maru Gothic","Hiragino Maru Gothic ProN",sans-serif;--body:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--night);color:var(--chalk);font-family:var(--body);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none;overscroll-behavior:none}
+body{background:radial-gradient(ellipse at 50% 30%,#2a1458,#0d0a1f 70%)}
+.wrap{position:fixed;inset:0;padding:calc(env(safe-area-inset-top,0px) + 8px) calc(env(safe-area-inset-right,0px) + 10px) calc(env(safe-area-inset-bottom,0px) + 8px) calc(env(safe-area-inset-left,0px) + 10px);display:grid;grid-template-rows:auto 1fr;gap:8px}
+.top{display:flex;align-items:center;gap:8px;min-height:44px}
+.stat{flex:1;font:900 14px/1.3 var(--body);color:#d9ccff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat b{color:var(--cyan)}
+.ammo{width:min(30vw,200px);height:14px;border-radius:7px;background:#1c1040;border:2px solid #4b3487;overflow:hidden}
+.ammo i{display:block;height:100%;width:0;background:linear-gradient(90deg,#5fe3ff,#9fefff);transition:width .2s}
+.hearts{font:900 16px/1 var(--body);color:var(--pink);min-width:3em;text-align:center}
+.tb{width:48px;height:44px;border-radius:12px;border:2px solid var(--violet);background:#1c1040;color:#fff;font:900 18px/1 var(--body)}
+.pads{display:grid;grid-template-columns:2fr 3fr;gap:10px;min-height:0}
+.pad{position:relative;border:none;border-radius:28px;display:flex;flex-direction:column;align-items:center;justify-content:center;font:400 clamp(30px,8vw,64px)/1 var(--display);color:var(--ink);touch-action:none}
+.pad small{display:block;font:900 clamp(12px,2.6vw,17px)/1.3 var(--body);margin-top:8px;color:rgba(26,11,37,.75)}
+#skill{background:linear-gradient(180deg,#5b4a2a,#3a2f1c);color:#a8946a;box-shadow:inset 0 0 0 3px #6b5a33}
+#skill.ready{background:linear-gradient(180deg,#fff27a,#ffb22e);color:var(--ink);box-shadow:0 6px 0 #a8580c,0 0 30px rgba(255,200,60,.6)}
+#skill:not(.ready) small{color:#a8946a}
+#fire{background:linear-gradient(180deg,#9ff6ff,#3fb7e0);box-shadow:0 6px 0 #1b6f93,0 0 30px rgba(95,227,255,.5)}
+.pad.on{transform:translateY(4px);filter:brightness(1.15)}
+#fire.on{box-shadow:0 2px 0 #1b6f93,0 0 40px rgba(95,227,255,.8)}
+.modes{display:flex;gap:6px}
+.modes button{border:2px solid #4b3487;background:#1c1040;color:#fff;border-radius:10px;padding:8px 10px;font:900 13px/1 var(--body)}
+.modes button[aria-pressed="true"]{border-color:var(--gold);background:#3a2370}
+/* 接続画面 */
+.join{position:fixed;inset:0;z-index:5;display:grid;place-items:center;padding:16px;background:radial-gradient(ellipse at 50% 30%,#2a1458,#0d0a1f 70%);overflow:auto}
+.card{width:min(560px,100%);background:var(--panel);border:2px solid rgba(166,92,255,.6);border-radius:20px;padding:20px;display:grid;gap:12px;text-align:center}
+.card h1{margin:0;font:400 clamp(22px,5vw,32px)/1.2 var(--display);color:#fff;text-shadow:0 0 18px var(--violet)}
+.card p{margin:0;font:700 14px/1.6 var(--body);color:#d9ccff}
+.code{font:400 40px/1 var(--display);letter-spacing:.3em;text-align:center;width:6.5em;max-width:100%;margin:0 auto;padding:10px 0 10px .3em;border-radius:14px;border:2px solid var(--violet);background:#1c1040;color:var(--gold)}
+.go{border:none;border-radius:14px;padding:16px;font:400 26px/1 var(--display);color:var(--ink);background:linear-gradient(180deg,#fff27a,#ffb22e);box-shadow:0 5px 0 #a8580c}
+.go:disabled{opacity:.5}
+#msg{color:var(--cyan);min-height:1.6em}
+#rot{position:fixed;inset:0;z-index:9;display:none;place-items:center;text-align:center;background:var(--night);padding:24px;font:900 20px/1.6 var(--body)}
+@media (orientation:portrait){#rot.need{display:grid}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <button class="tb" id="bPause" aria-label="一時停止">Ⅱ</button>
+    <button class="tb" id="bCenter" aria-label="照準を まんなかに">◎</button>
+    <div class="stat" id="stat">つないでいます…</div>
+    <div class="modes" id="modes" hidden>
+      <button data-m="easy">かんたん</button><button data-m="normal">ふつう</button><button data-m="hard">むずかしい</button>
+    </div>
+    <div class="hearts" id="hearts"></div>
+    <div class="ammo" aria-label="みずの のこり"><i id="ammo"></i></div>
+  </div>
+  <div class="pads">
+    <button class="pad" id="skill" aria-label="わざ">わざ<small>つかえる わざを だす</small></button>
+    <button class="pad" id="fire" aria-label="うつ"><span id="fireLbl">うつ</span><small id="fireSub">おしっぱなしで れんしゃ</small></button>
+  </div>
+</div>
+
+<section class="join" id="join">
+  <div class="card">
+    <h1>コントローラー</h1>
+    <p>テレビ（Mac）に でている 4けたの ばんごうを いれてね</p>
+    <input class="code" id="code" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" aria-label="ばんごう">
+    <button class="go" id="go">はじめる</button>
+    <p id="msg"></p>
+    <p style="font-size:12px;color:#bda9f0">iPhoneを よこむきに もって、かたむけると しょうじゅんが うごくよ。<br>「うごきと ほうこう」の きょかを きかれたら「許可」を おしてね。</p>
+  </div>
+</section>
+<div id="rot"><div>よこむきに してね</div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const PEER_PREFIX='obake1sg-';
+const qs=new URLSearchParams(location.search);
+if(qs.get('c'))$('code').value=qs.get('c').replace(/\D/g,'').slice(0,4);
+function peerOpts(){const q=qs.get('ps');if(!q)return {};const [h,pt]=q.split(':');return {host:h,port:+pt||9000,path:'/',secure:false};}
+let lastRx=0,peer=null,conn=null,code='',motionOK=false,wake=null,acc={y:0,p:0},lastSend=0,want=false;
+const msg=t=>{$('msg').textContent=t;};
+const stat=t=>{$('stat').innerHTML=t;};
+function send(o){if(conn&&conn.open){try{conn.send(o);}catch(_){}}}
+
+/* 傾き：回転の速さ（度/秒）を積み上げてMacへ送る。横持ちの向きに合わせて左右・上下を入れかえる */
+function onMotion(ev){const r=ev.rotationRate;if(!r||(r.beta==null&&r.gamma==null))return;
+  const ang=((screen.orientation&&screen.orientation.angle)!=null?screen.orientation.angle:window.orientation)||0;
+  let it=ev.interval||1/60;if(it>1)it/=1000;it=Math.min(it,.05);
+  const b=r.beta||0,g=r.gamma||0;let yaw,pit;
+  if(ang===90){yaw=-b;pit=-g;}else if(ang===-90||ang===270){yaw=b;pit=g;}else if(ang===180){yaw=g;pit=-b;}else{yaw=-g;pit=b;}
+  if(Math.abs(yaw)<.6)yaw=0;if(Math.abs(pit)<.6)pit=0;
+  acc.y+=yaw*it;acc.p+=pit*it;
+  const now=performance.now();if(now-lastSend>=16&&(acc.y||acc.p)){send({t:'m',y:+acc.y.toFixed(3),p:+acc.p.toFixed(3)});acc.y=acc.p=0;lastSend=now;}}
+
+async function askMotion(){
+  if(typeof DeviceMotionEvent==='undefined')return false;
+  if(typeof DeviceMotionEvent.requestPermission==='function'){try{const r=await DeviceMotionEvent.requestPermission();if(r!=='granted')return false;}catch(e){return false;}}
+  addEventListener('devicemotion',onMotion);return true;}
+async function keepAwake(){try{if('wakeLock' in navigator)wake=await navigator.wakeLock.request('screen');}catch(_){}}
+
+function connect(){
+  if(typeof Peer==='undefined'){msg('つうしんの じゅんびが できませんでした（ネットを かくにんしてね）');return;}
+  if(peer&&!peer.destroyed){try{peer.destroy();}catch(_){}}
+  stat('つないでいます…');
+  peer=new Peer(undefined,peerOpts());
+  peer.on('open',()=>{const c=peer.connect(PEER_PREFIX+code,{serialization:'json',reliable:true});conn=c;
+    c.on('open',()=>{if(c!==conn)return;lastRx=performance.now();$('join').hidden=true;$('rot').classList.add('need');stat('<b>つながった！</b> テレビを みてね');});
+    c.on('data',d=>{if(c===conn)onData(d);});
+    c.on('close',()=>{if(c===conn)lost();});c.on('error',()=>{if(c===conn)lost();});});
+  peer.on('error',err=>{if(err.type==='peer-unavailable'){msg('ばんごうが みつかりません。テレビの ばんごうを たしかめてね');showJoin();}
+    else{msg('つながりませんでした。もういちど「はじめる」を おしてね');showJoin();}});
+}
+function showJoin(){want=false;$('join').hidden=false;$('go').disabled=false;$('rot').classList.remove('need');}
+function lost(){if(!conn)return;conn=null;stat('きれました。つなぎなおしています…');if(want)setTimeout(()=>{if(want&&!(conn&&conn.open))connect();},1200);}
+
+/* Macから届く状態でボタンの表示を変える */
+const LBL={title:['スタート','タップで はじめる'],result:['もういちど','タップで さいしょから'],pause:['つづける','タップで さいかい'],opening:['スキップ','タップで とばす'],ending:['スキップ','タップで とばす']};
+function onData(d){lastRx=performance.now();if(!d||d.t!=='st')return;
+  const l=LBL[d.s];$('fireLbl').textContent=l?l[0]:'うつ';$('fireSub').textContent=l?l[1]:(d.r?'みずを いれてるよ…':'おしっぱなしで れんしゃ');
+  $('skill').classList.toggle('ready',!!d.sk);
+  $('ammo').style.width=(d.m?Math.round(100*d.a/d.m):0)+'%';
+  $('hearts').textContent=d.s==='play'||d.s==='intro'||d.s==='clear'?'♥'.repeat(Math.max(0,d.h)):'';
+  $('modes').hidden=d.s!=='title';
+  document.querySelectorAll('#modes button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===d.md));
+  stat(d.s==='play'?'<b>たいじちゅう！</b>':d.s==='title'?'<b>つながった！</b> むずかしさを えらんで スタート':'<b>つながった！</b> テレビを みてね');}
+
+/* ボタン：指ごとに押す・離すを管理（同時押しOK） */
+function hold(el,down,up){const ids=new Set();
+  el.addEventListener('pointerdown',e=>{e.preventDefault();ids.add(e.pointerId);try{el.setPointerCapture(e.pointerId);}catch(_){}el.classList.add('on');down();});
+  const end=e=>{if(!ids.delete(e.pointerId))return;if(!ids.size){el.classList.remove('on');up&&up();}};
+  el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end);el.addEventListener('lostpointercapture',end);}
+hold($('fire'),()=>send({t:'f',d:1}),()=>send({t:'f',d:0}));
+hold($('skill'),()=>send({t:'s'}));
+$('bCenter').addEventListener('pointerdown',e=>{e.preventDefault();send({t:'c'});});
+$('bPause').addEventListener('pointerdown',e=>{e.preventDefault();send({t:'p'});});
+document.querySelectorAll('#modes button').forEach(b=>b.addEventListener('pointerdown',e=>{e.preventDefault();send({t:'mode',m:b.dataset.m});}));
+document.addEventListener('gesturestart',e=>e.preventDefault());
+document.addEventListener('contextmenu',e=>e.preventDefault());
+
+$('code').addEventListener('input',()=>{$('code').value=$('code').value.replace(/\D/g,'').slice(0,4);});
+$('go').addEventListener('click',async()=>{
+  code=$('code').value.replace(/\D/g,'');if(code.length!==4){msg('4けたの ばんごうを いれてね');return;}
+  $('go').disabled=true;msg('つないでいます…');
+  motionOK=await askMotion();if(!motionOK)msg('かたむけ操作が つかえません（ボタンだけ つかえます）');
+  keepAwake();want=true;connect();});
+/* 生きているかの合図（1秒ごと）。Macから10秒なにも来なければ、つなぎなおす */
+setInterval(()=>{if(!conn||!conn.open)return;send({t:'hb'});if(performance.now()-lastRx>10000){const c=conn;try{c.close();}catch(_){}lost();}},1000);
+/* 画面を消してもどったとき：つなぎなおし・画面消灯防止のかけなおし */
+document.addEventListener('visibilitychange',()=>{if(document.hidden){send({t:'f',d:0});return;}keepAwake();if(want&&!(conn&&conn.open))connect();});
+</script>
+</body>
+</html>

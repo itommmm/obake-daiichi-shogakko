@@ -1,3 +1,8 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>おばけ第一小学校</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -61,6 +66,14 @@ button:disabled{opacity:.5;cursor:wait}
 .mode{border:2px solid #4b3487;background:#1c1040;color:var(--chalk);border-radius:12px;padding:10px 4px;font:900 clamp(13px,1.7vw,16px)/1.2 var(--body)}
 .mode small{display:block;font-weight:500;font-size:.72em;color:#bda9f0;margin-top:3px}
 .gyro{width:100%}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tvbox{width:min(640px,100%);background:var(--panel);border:2px solid rgba(166,92,255,.6);border-radius:20px;padding:clamp(14px,3vw,24px);display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center}
+.tvbox img{width:clamp(130px,22vw,190px);height:auto;border-radius:12px;background:#fff;padding:8px;image-rendering:pixelated}
+.tvbox h2{margin:0 0 6px;font:400 clamp(20px,3vw,28px)/1.2 var(--display);color:#fff}
+.tvbox p{margin:4px 0;font:700 14px/1.6 var(--body);color:#d9ccff}
+.tvcode{font:400 clamp(40px,7vw,64px)/1 var(--display);letter-spacing:.12em;color:var(--gold);margin:6px 0}
+.tvurl{font:500 12px/1.4 var(--body);color:#bda9f0;word-break:break-all}
+#tvStat{color:var(--cyan)}
 .mode[aria-pressed="true"]{border-color:var(--gold);background:#3a2370;box-shadow:0 0 14px rgba(255,210,63,.4)}
 .go{border:none;border-radius:14px;padding:14px;font:400 clamp(20px,3vw,28px)/1 var(--display);color:var(--ink);background:linear-gradient(180deg,#fff27a,#ffb22e);box-shadow:0 5px 0 #a8580c,0 0 24px rgba(255,200,60,.5)}
 .go:active{transform:translateY(3px);box-shadow:0 2px 0 #a8580c}
@@ -87,6 +100,8 @@ button:disabled{opacity:.5;cursor:wait}
 @media (max-width:640px) and (orientation:portrait){.card{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){.sk.ready{animation:none}#rotate .ph{animation:none}}
 </style>
+</head>
+<body>
 
 <canvas id="gl" aria-hidden="true"></canvas>
 <canvas id="cv" aria-label="ゲーム画面"></canvas>
@@ -126,7 +141,10 @@ button:disabled{opacity:.5;cursor:wait}
         <button class="mode" id="m-normal" data-m="normal" aria-pressed="true">ふつう<small>ハート3こ</small></button>
         <button class="mode" id="m-hard" data-m="hard" aria-pressed="false">むずかしい<small>はやい！</small></button>
       </div>
-      <button class="mode gyro" id="gyroBtn" aria-pressed="false">かたむけて ねらう：オフ<small>iPhoneを かたむけて しょうじゅんを うごかす</small></button>
+      <div class="pair">
+        <button class="mode gyro" id="gyroBtn" aria-pressed="false">かたむけて ねらう：オフ<small>iPhoneを かたむけて しょうじゅんを うごかす</small></button>
+        <button class="mode gyro" id="tvBtn" aria-pressed="false">テレビで あそぶ<small>Macで ゲーム、iPhoneが コントローラー</small></button>
+      </div>
       <button class="go" id="start" disabled>よみこみ中…</button>
       <ul class="how">
         <li><b>きみは 5ねん1くみ</b>：みずでっぽうと かいちゅうでんとうで おばけを たいじ！</li>
@@ -137,6 +155,20 @@ button:disabled{opacity:.5;cursor:wait}
         <li><b>チャイムが なったら</b>：たましいを うって ふっかつを ふせごう</li>
       </ul>
       <div class="best" id="best"></div>
+    </div>
+  </div>
+</section>
+
+<section class="screen" id="tv" hidden>
+  <div class="tvbox">
+    <img id="tvQR" alt="コントローラーの ページを ひらく QRコード">
+    <div>
+      <h2>iPhoneを コントローラーに</h2>
+      <p>iPhoneの カメラで QRコードを よみとってね。<br>または コントローラーの ページで ばんごうを いれてね。</p>
+      <div class="tvcode" id="tvCode">----</div>
+      <div class="tvurl" id="tvUrl"></div>
+      <p id="tvStat">じゅんびちゅう…</p>
+      <div class="row" style="justify-content:flex-start"><button class="sub2" id="tvClose">とじる</button></div>
     </div>
   </div>
 </section>
@@ -174,6 +206,8 @@ button:disabled{opacity:.5;cursor:wait}
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/geometries/RoundedBoxGeometry.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/environments/RoomEnvironment.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/utils/BufferGeometryUtils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 <script>
 "use strict";
 const $=id=>document.getElementById(id);
@@ -1136,6 +1170,52 @@ async function toggleGyro(){
   }catch(e){GYRO.on=false;updGyroBtn();toast(e.message==='denied'?'かたむけ操作が きょかされませんでした':'この がめんでは かたむけ操作が つかえません');}
 }
 
+/* ===== テレビで あそぶ：Macでゲーム、iPhone（pad.html）がコントローラー。PeerJS（WebRTC）で直接つなぐ ===== */
+const REMOTE={peer:null,conn:null,code:'',fire:false,stT:0};
+const PEER_PREFIX='obake1sg-';
+function peerOpts(){const q=new URLSearchParams(location.search).get('ps');if(!q)return {};const [h,pt]=q.split(':');return {host:h,port:+pt||9000,path:'/',secure:false};}
+function padURL(code){const u=new URL('pad.html',location.href);u.search='';u.hash='';u.searchParams.set('c',code);const ps=new URLSearchParams(location.search).get('ps');if(ps)u.searchParams.set('ps',ps);return u.href;}
+function tvStat(t){$('tvStat').textContent=t;}
+function openTV(){initAudio();$('tv').hidden=false;if(REMOTE.conn&&REMOTE.conn.open){tvStat('つながっています');return;}if(!REMOTE.peer||REMOTE.peer.destroyed)hostPeer();}
+function hostPeer(){
+  if(typeof Peer==='undefined'){tvStat('つうしんの じゅんびが できませんでした（ネットを かくにんしてね）');return;}
+  const code=String(Math.floor(1000+Math.random()*9000));REMOTE.code=code;
+  $('tvCode').textContent=code;const url=padURL(code);$('tvUrl').textContent=url;
+  try{const q=qrcode(0,'M');q.addData(url);q.make();$('tvQR').src=q.createDataURL(5,2);}catch(e){$('tvQR').removeAttribute('src');}
+  tvStat('iPhoneを まってるよ…');
+  const pr=new Peer(PEER_PREFIX+code,peerOpts());REMOTE.peer=pr;
+  pr.on('connection',c=>{c.on('open',()=>{if(REMOTE.conn&&REMOTE.conn!==c)try{REMOTE.conn.close();}catch(_){}
+      REMOTE.conn=c;REMOTE.rx=performance.now();remoteOn();c.send({t:'hi'});});
+    c.on('data',d=>{if(c===REMOTE.conn){REMOTE.rx=performance.now();remoteData(d);}});
+    c.on('close',()=>{if(c===REMOTE.conn)remoteOff();});c.on('error',()=>{if(c===REMOTE.conn)remoteOff();});});
+  pr.on('error',err=>{if(err.type==='unavailable-id'){pr.destroy();hostPeer();return;}
+    if(err.type==='network'||err.type==='server-error'||err.type==='socket-error'||err.type==='socket-closed')tvStat('つうしんが きれました。とじて もういちど ひらいてね');});
+  pr.on('disconnected',()=>{try{pr.reconnect();}catch(_){}});
+}
+function remoteOn(){GYRO.on=true;GYRO.has=true;GYRO.remote=true;removeEventListener('devicemotion',onMotion);gyroCenter(true);updGyroBtn();
+  $('tvBtn').setAttribute('aria-pressed',true);$('tvBtn').firstChild.textContent='テレビで あそぶ：つながった';
+  tvStat('つながった！ iPhoneの「うつ」で スタート');toast('コントローラーが つながった！');setTimeout(()=>{if(REMOTE.conn&&REMOTE.conn.open)$('tv').hidden=true;},1200);}
+function remoteOff(){REMOTE.conn=null;REMOTE.fire=false;updDown();if(GYRO.remote){GYRO.on=false;GYRO.remote=false;updGyroBtn();}
+  $('tvBtn').setAttribute('aria-pressed',false);$('tvBtn').firstChild.textContent='テレビで あそぶ';
+  tvStat('iPhoneを まってるよ…');if(state==='play'||state==='intro')togglePause();toast('コントローラーが きれました');}
+function remoteGo(){initAudio();
+  if(state==='title'&&!$('start').disabled)begin();
+  else if(state==='result')$('again').click();
+  else if(state==='pause')togglePause();
+  else if(state==='opening')endOpening();
+  else if(state==='ending'){if(G.end.t<END_T-1)G.end.t=END_T-1;}}
+function remoteData(d){if(!d||typeof d!=='object')return;
+  if(d.t==='m'){const y=+d.y||0,p=+d.p||0;GYRO.tx=clamp(GYRO.tx+y*(W/2)/24,0,W);GYRO.ty=clamp(GYRO.ty-p*(H/2)/16,0,H);}
+  else if(d.t==='f'){REMOTE.fire=!!d.d;if(REMOTE.fire){if(state==='play'){if((G.fireCd||0)<=0)fire();}else if(state!=='intro'&&state!=='clear')remoteGo();}updDown();}
+  else if(d.t==='s'){if(state==='play')useAnySkill();else if(state!=='intro'&&state!=='clear')remoteGo();}
+  else if(d.t==='c')gyroCenter();
+  else if(d.t==='p'){if(state==='play'||state==='intro'||state==='pause')togglePause();}
+  else if(d.t==='mode'&&DIFFS[d.m]&&state==='title'){const b=document.querySelector(`.mode[data-m="${d.m}"]`);if(b)b.click();}}
+function remoteTick(dt){const c=REMOTE.conn;if(!c)return;const now=performance.now();
+  if(now-(REMOTE.tk||now)>800)REMOTE.rx=now;REMOTE.tk=now; // 読み込みなどで画面が止まった直後は、届いていない扱いにしない
+  if(!c.open||now-REMOTE.rx>6000){try{c.close();}catch(_){}remoteOff();return;}REMOTE.stT-=dt;if(REMOTE.stT>0)return;REMOTE.stT=.25;
+  try{c.send({t:'st',s:state,a:G.ammo|0,m:state==='play'?maxAmmo():0,sp:Math.min(100,G.sp|0),sk:state==='play'&&(G.sp>=100||G.bellCd<=0||G.lightCd<=0),h:G.hearts|0,r:G.reload>0,md:modeKey});}catch(_){}}
+
 /* ===== サイズ ===== */
 function resize(){
   DPR=Math.min(2,window.devicePixelRatio||1);W=innerWidth;H=innerHeight;
@@ -1503,7 +1583,7 @@ function drawIntro(){
   txt(G.wave.boss?'BOSS WAVE':`WAVE ${G.waveIdx+1}`,W/2-sl,H*.38,26*U,'#ffd23f',FD,'center',5*U);
   txt(G.wave.name,W/2+sl,H*.46,58*U,'#fff',FD,'center',9*U);
   txt(G.wave.sub,W/2,H*.555,20*U,'#e8dcff',FB,'center',5*U);if(G.wave.tag)txt(G.wave.tag,W/2,H*.605,18*U,'#5fe3ff',FD,'center',5*U);
-  if(GYRO.on){txt('◀ ひだりてで おす：わざ',SA.l+18*U,H*.7,20*U,'#ffe9a8',FD,'left',5*U);txt('みぎてで おす：うつ ▶',W-SA.r-18*U,H*.7,20*U,'#9fefff',FD,'right',5*U);
+  if(GYRO.on&&!GYRO.remote){txt('◀ ひだりてで おす：わざ',SA.l+18*U,H*.7,20*U,'#ffe9a8',FD,'left',5*U);txt('みぎてで おす：うつ ▶',W-SA.r-18*U,H*.7,20*U,'#9fefff',FD,'right',5*U);
     txt('2ほんゆびで おす：しょうじゅんを まんなかへ',W/2,H*.29,16*U,'#fff',FB,'center',4*U);}
   ctx.restore();
 }
@@ -1541,7 +1621,7 @@ function renderOverlay(){
     ctx.restore();}
   if(G.shockFx>0){G.shockFx=Math.max(0,G.shockFx-1/60);const k=1-G.shockFx,b=G.boss;if(b){ctx.save();ctx.strokeStyle=`rgba(255,210,63,${G.shockFx})`;ctx.lineWidth=14*U*G.shockFx+2;for(let i=0;i<3;i++){const r=(k*1.4-i*.15)*W;if(r<=0)continue;ctx.beginPath();ctx.ellipse(b.sx,b.sy+b.u,r,r*.28,0,0,7);ctx.stroke();}ctx.restore();}}
   if(G.lightning>.2){ctx.fillStyle=`rgba(230,220,255,${(G.lightning-.2)*1.2})`;ctx.fillRect(0,0,W,H);}
-  if(state==='play'||state==='intro')drawReticle();if(GYRO.on&&state==='play')drawGyroZones();
+  if(state==='play'||state==='intro')drawReticle();if(GYRO.on&&!GYRO.remote&&state==='play')drawGyroZones();
   if(G.flash>0){ctx.fillStyle=`rgba(255,240,255,${G.flash*.6})`;ctx.fillRect(0,0,W,H);}
   if(state==='intro')drawIntro();
   if(state==='clear')drawClear();
@@ -1566,7 +1646,7 @@ function setPtr(e){ptr.x=e.clientX;ptr.y=e.clientY;}
 /* タッチは指ごとに記録する（押しっぱなしが残って連射し続ける事故を防ぐ）。
    かたむけモード：左手側＝わざ、右手側＝うつ、2本指＝照準をまんなかへ（テレビだけ見て遊べる） */
 const TOUCH=new Map();
-function updDown(){let f=false;for(const v of TOUCH.values())if(v==='fire')f=true;ptr.down=f&&(state==='play'||state==='intro');}
+function updDown(){let f=REMOTE.fire;for(const v of TOUCH.values())if(v==='fire')f=true;ptr.down=f&&(state==='play'||state==='intro');}
 function useAnySkill(){if(state!=='play')return;
   if(G.sp>=100)skillSp();else if(G.black>0&&G.lightCd<=0)skillLight();else if(G.bellCd<=0)skillBell();else if(G.lightCd<=0)skillLight();
   else{addText(W*.22,H*.62,'わざは じゅんびちゅう','#cfe9ff',18);tone(160,.08,'square',.04);}}
@@ -1601,7 +1681,7 @@ addEventListener('keyup',e=>{if(e.key===' ')ptr.down=false;});
 function bindSkill(id,fn){const b=$(id);b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();initAudio();fn();});b.addEventListener('keydown',e=>{if(e.key==='Enter'){fn();}});}
 bindSkill('sLight',skillLight);bindSkill('sBell',skillBell);bindSkill('sSp',skillSp);
 $('bReload').addEventListener('pointerdown',e=>{e.stopPropagation();if(state==='play')startReload();});
-$('bPause').addEventListener('click',togglePause);$('gyroBtn').addEventListener('click',toggleGyro);$('bCenter').addEventListener('pointerdown',e=>{e.stopPropagation();gyroCenter();});$('bMute').addEventListener('click',toggleMute);
+$('bPause').addEventListener('click',togglePause);$('gyroBtn').addEventListener('click',()=>{if(GYRO.remote)return;toggleGyro();});$('tvBtn').addEventListener('click',openTV);$('tvClose').addEventListener('click',()=>{$('tv').hidden=true;});$('bCenter').addEventListener('pointerdown',e=>{e.stopPropagation();gyroCenter();});$('bMute').addEventListener('click',toggleMute);
 $('bQual').addEventListener('click',()=>{if(Q.auto){Q.auto=false;Q.level=0;}else if(Q.level<2)Q.level++;else{Q.auto=true;Q.level=coarse?1:0;}applyQuality();toast(Q.auto?'画質：自動':`画質：${QL[Q.level].name}`);try{localStorage.setItem('obake1-q',JSON.stringify({level:Q.level,auto:Q.auto}));}catch(e){}});
 function togglePause(){if(state==='play'||state==='intro'){G.prev=state;state='pause';TOUCH.clear();ptr.down=false;$('pause').hidden=false;}else if(state==='pause'){state=G.prev||'play';$('pause').hidden=true;}}
 function toggleMute(){muted=!muted;$('bMute').textContent=muted?'×':'♪';$('bMute').setAttribute('aria-pressed',muted);}
@@ -1623,7 +1703,7 @@ const fontsReady=document.fonts&&document.fonts.ready?Promise.race([document.fon
 fontsReady.then(()=>{makeTextures();buildGun();buildKid();buildRoom(G.place);$('start').disabled=false;$('start').textContent='スタート！';});
 let last=performance.now();
 function loop(t){const dt=Math.min(.05,(t-last)/1000);last=t;
-  try{gyroAim(dt);update(dt);if(TEX.bump){sync3D(dt);update3D(dt);render3D();}renderOverlay();}catch(err){console.error(err);}
+  try{gyroAim(dt);remoteTick(dt);update(dt);if(TEX.bump){sync3D(dt);update3D(dt);render3D();}renderOverlay();}catch(err){console.error(err);}
   if(Q.auto&&TEX.bump&&!document.hidden){Q.grace-=dt;if(Q.grace<=0){Q.frames++;Q.t+=dt;if(Q.t>=2.5){const fps=Q.frames/Q.t;Q.frames=0;Q.t=0;if(fps<45&&Q.level<2){Q.level++;applyQuality();toast(`画質を「${QL[Q.level].name}」にしました`);}}}}
   requestAnimationFrame(loop);}
 requestAnimationFrame(loop);
