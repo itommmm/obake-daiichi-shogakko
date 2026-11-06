@@ -1502,8 +1502,12 @@ function drawIntro(){
   const sl=(1-Math.min(1,(2.8-k)*2.5))*W*.2;
   txt(G.wave.boss?'BOSS WAVE':`WAVE ${G.waveIdx+1}`,W/2-sl,H*.38,26*U,'#ffd23f',FD,'center',5*U);
   txt(G.wave.name,W/2+sl,H*.46,58*U,'#fff',FD,'center',9*U);
-  txt(G.wave.sub,W/2,H*.555,20*U,'#e8dcff',FB,'center',5*U);if(G.wave.tag)txt(G.wave.tag,W/2,H*.605,18*U,'#5fe3ff',FD,'center',5*U);ctx.restore();
+  txt(G.wave.sub,W/2,H*.555,20*U,'#e8dcff',FB,'center',5*U);if(G.wave.tag)txt(G.wave.tag,W/2,H*.605,18*U,'#5fe3ff',FD,'center',5*U);
+  if(GYRO.on){txt('◀ ひだりてで おす：わざ',SA.l+18*U,H*.7,20*U,'#ffe9a8',FD,'left',5*U);txt('みぎてで おす：うつ ▶',W-SA.r-18*U,H*.7,20*U,'#9fefff',FD,'right',5*U);
+    txt('2ほんゆびで おす：しょうじゅんを まんなかへ',W/2,H*.29,16*U,'#fff',FB,'center',4*U);}
+  ctx.restore();
 }
+function drawGyroZones(){ctx.save();ctx.globalAlpha=.35;txt('◀ わざ',SA.l+12*U,H*.58,15*U,'#ffe9a8',FD,'left',4*U);txt('うつ ▶',W-SA.r-12*U,H*.58,15*U,'#9fefff',FD,'right',4*U);ctx.restore();}
 function drawClear(){ctx.save();ctx.fillStyle='rgba(8,4,20,.5)';ctx.fillRect(0,H*.3,W,H*.36);
   txt(G.waveIdx+1<WAVES.length?'WAVE CLEAR!':'がっこうが もとに もどった！',W/2,H*.4,(G.waveIdx+1<WAVES.length?56:46)*U,'#ffd23f',FD,'center',9*U);
   (G.clearInfo||[]).forEach((s,i)=>txt(s,W/2,H*.5+i*30*U,20*U,'#fff',FB,'center',5*U));ctx.restore();}
@@ -1537,7 +1541,7 @@ function renderOverlay(){
     ctx.restore();}
   if(G.shockFx>0){G.shockFx=Math.max(0,G.shockFx-1/60);const k=1-G.shockFx,b=G.boss;if(b){ctx.save();ctx.strokeStyle=`rgba(255,210,63,${G.shockFx})`;ctx.lineWidth=14*U*G.shockFx+2;for(let i=0;i<3;i++){const r=(k*1.4-i*.15)*W;if(r<=0)continue;ctx.beginPath();ctx.ellipse(b.sx,b.sy+b.u,r,r*.28,0,0,7);ctx.stroke();}ctx.restore();}}
   if(G.lightning>.2){ctx.fillStyle=`rgba(230,220,255,${(G.lightning-.2)*1.2})`;ctx.fillRect(0,0,W,H);}
-  if(state==='play'||state==='intro')drawReticle();
+  if(state==='play'||state==='intro')drawReticle();if(GYRO.on&&state==='play')drawGyroZones();
   if(G.flash>0){ctx.fillStyle=`rgba(255,240,255,${G.flash*.6})`;ctx.fillRect(0,0,W,H);}
   if(state==='intro')drawIntro();
   if(state==='clear')drawClear();
@@ -1559,17 +1563,33 @@ function render3D(){
 
 /* ===== 入力 ===== */
 function setPtr(e){ptr.x=e.clientX;ptr.y=e.clientY;}
+/* タッチは指ごとに記録する（押しっぱなしが残って連射し続ける事故を防ぐ）。
+   かたむけモード：左手側＝わざ、右手側＝うつ、2本指＝照準をまんなかへ（テレビだけ見て遊べる） */
+const TOUCH=new Map();
+function updDown(){let f=false;for(const v of TOUCH.values())if(v==='fire')f=true;ptr.down=f&&(state==='play'||state==='intro');}
+function useAnySkill(){if(state!=='play')return;
+  if(G.sp>=100)skillSp();else if(G.black>0&&G.lightCd<=0)skillLight();else if(G.bellCd<=0)skillBell();else if(G.lightCd<=0)skillLight();
+  else{addText(W*.22,H*.62,'わざは じゅんびちゅう','#cfe9ff',18);tone(160,.08,'square',.04);}}
 cv.addEventListener('pointerdown',e=>{initAudio();e.preventDefault();
   if(state==='opening'){endOpening();return;}
   if(state==='ending'){if(G.end.t<END_T-1)G.end.t=END_T-1;return;}
   if(e.button===2){if(state==='play')startReload();return;}
-  if(ptr.id!==null&&ptr.down&&e.pointerType==='touch')return;
-  ptr.id=e.pointerId;if(!GYRO.on)setPtr(e);
-  if(state==='play'){ptr.down=true;if((G.fireCd||0)<=0)fire();}
+  const touch=e.pointerType!=='mouse';
+  if(GYRO.on&&touch){
+    let fingers=0;for(const v of TOUCH.values())if(v!=='used')fingers++;
+    if(fingers>=1&&performance.now()-(TOUCH.last||0)<260){for(const k of TOUCH.keys())TOUCH.set(k,'used');TOUCH.set(e.pointerId,'used');gyroCenter();updDown();return;}
+    TOUCH.last=performance.now();
+    if(e.clientX<W*.4){TOUCH.set(e.pointerId,'skill');useAnySkill();}
+    else{TOUCH.set(e.pointerId,'fire');updDown();if(state==='play'&&(G.fireCd||0)<=0)fire();}
+  }else{
+    TOUCH.set(e.pointerId,'fire');ptr.id=e.pointerId;if(!GYRO.on)setPtr(e);
+    updDown();if(state==='play'&&(G.fireCd||0)<=0)fire();
+  }
   try{cv.setPointerCapture(e.pointerId);}catch(_){}});
-cv.addEventListener('pointermove',e=>{if(GYRO.on)return;if(ptr.id===null||e.pointerId===ptr.id||e.pointerType==='mouse')setPtr(e);});
-const up=e=>{if(e.pointerId===ptr.id){ptr.down=false;ptr.id=null;}};
-cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+cv.addEventListener('pointermove',e=>{if(GYRO.on)return;if(e.pointerType==='mouse'||e.pointerId===ptr.id||ptr.id===null)setPtr(e);});
+const up=e=>{TOUCH.delete(e.pointerId);if(e.pointerId===ptr.id)ptr.id=null;updDown();};
+cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);cv.addEventListener('lostpointercapture',up);
+addEventListener('blur',()=>{TOUCH.clear();updDown();});
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('gesturestart',e=>e.preventDefault());
 addEventListener('keydown',e=>{const k=e.key.toLowerCase();
@@ -1583,7 +1603,7 @@ bindSkill('sLight',skillLight);bindSkill('sBell',skillBell);bindSkill('sSp',skil
 $('bReload').addEventListener('pointerdown',e=>{e.stopPropagation();if(state==='play')startReload();});
 $('bPause').addEventListener('click',togglePause);$('gyroBtn').addEventListener('click',toggleGyro);$('bCenter').addEventListener('pointerdown',e=>{e.stopPropagation();gyroCenter();});$('bMute').addEventListener('click',toggleMute);
 $('bQual').addEventListener('click',()=>{if(Q.auto){Q.auto=false;Q.level=0;}else if(Q.level<2)Q.level++;else{Q.auto=true;Q.level=coarse?1:0;}applyQuality();toast(Q.auto?'画質：自動':`画質：${QL[Q.level].name}`);try{localStorage.setItem('obake1-q',JSON.stringify({level:Q.level,auto:Q.auto}));}catch(e){}});
-function togglePause(){if(state==='play'||state==='intro'){G.prev=state;state='pause';ptr.down=false;$('pause').hidden=false;}else if(state==='pause'){state=G.prev||'play';$('pause').hidden=true;}}
+function togglePause(){if(state==='play'||state==='intro'){G.prev=state;state='pause';TOUCH.clear();ptr.down=false;$('pause').hidden=false;}else if(state==='pause'){state=G.prev||'play';$('pause').hidden=true;}}
 function toggleMute(){muted=!muted;$('bMute').textContent=muted?'×':'♪';$('bMute').setAttribute('aria-pressed',muted);}
 function showHUD(on){$('skills').hidden=!on;$('tools').hidden=!on;}
 document.querySelectorAll('.mode').forEach(b=>b.addEventListener('click',()=>{modeKey=b.dataset.m;document.querySelectorAll('.mode').forEach(o=>o.setAttribute('aria-pressed',o===b));try{localStorage.setItem('obake1-mode',modeKey);}catch(e){}}));
