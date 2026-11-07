@@ -1399,14 +1399,14 @@ function resize(){
 
 /* ===== ゲーム進行（ロジックは2D版と同じ） ===== */
 function newGame(withOpening){
-  const d=DIFFS[modeKey];G.diff=d;G.score=0;G.hearts=d.hearts;G.maxHearts=d.hearts;G.maxCombo=0;G.totalKills=0;G.dda=0;G.shotN=0;G.sp=0;G.parts=[];G.texts=[];
-  G.wlv=1;G.pow=null;G.lightCd=0;G.bellCd=0;if(withOpening&&KID)startOpening();else startWave(0);
+  const d=DIFFS[modeKey];G.diff=d;G.score=0;G.hearts=d.hearts;G.maxHearts=d.hearts;G.maxCombo=0;G.totalKills=0;G.dda=0;G.shotN=0;G.hitShotN=0;G.sp=0;G.parts=[];G.texts=[];
+  G.wlv=1;G.pow=null;G.lightCd=0;G.bellCd=0;G.fireCd=0;if(withOpening&&KID)startOpening();else startWave(0);
 }
 function startWave(i){
   grade.uniforms.uExposure.value=.95;G.scroll=0;G.rushed=0;G.pow=null;G.bossDie=0;G.dawn=0;G.lightning=0;G.shockFx=0;const w=WAVES[i];G.wave=w;G.waveIdx=i;G.kills=0;G.goal=w.goal||0;G.time=w.time+G.diff.time;
   G.enemies=[];G.souls=[];G.items=[];G.fallen=[];G.tracers=[];G.spawnT=1.4;G.chimeT=w.boss?999:18;G.chime=null;
   G.blackT=w.blackout?9:Infinity;G.black=0;G.ammo=maxAmmo();G.reload=0;G.combo=0;G.comboT=0;G.lightT=0;G.spT=0;G.inv=0;G.noHit=true;G.boss=null;G.rage=0;
-  setPlace(w.place);state='intro';G.introT=2.8;if(GYRO.on)gyroCenter(true);SFX.sting();showHUD(true);
+  setPlace(w.place);state='intro';G.introT=i===0?2.2:1.6;if(GYRO.on)gyroCenter(true);SFX.sting();showHUD(true);
 }
 function setPlace(p){if(G.place!==p||!ROOM){G.place=p;if(TEX.bump)buildRoom(p);}}
 function pickType(types){let tot=0;for(const k in types)tot+=types[k];let r=Math.random()*tot;for(const k in types){r-=types[k];if(r<=0)return k;}return Object.keys(types)[0];}
@@ -1441,8 +1441,9 @@ function update(dt){
   G.fireCd=(G.fireCd||0)-dt;
   if(ptr.down&&G.fireCd<=0)fire();
   const w=G.wave;G.spawnT-=dt;
-  const need=w.boss?99:G.goal-G.kills-alive();
-  if(!w.boss&&need>0&&alive()===0&&G.spawnT>.3)G.spawnT=.3;   // 画面が からっぽの時間を つくらない
+  const active=alive(),need=w.boss?99:G.goal-G.kills-active;
+  // 敵が少なくなったら次を早く出し、敵がいない待ち時間を減らす
+  if(!w.boss&&need>0&&active<=2)G.spawnT=Math.min(G.spawnT,active===0?.08:.26);
   if(G.spawnT<=0){G.spawnT=w.every*rnd(.7,1.2)/(G.diff.spd*.6+.4)*(1+G.dda*.5);if(alive()<w.max&&need>0){spawn(pickType(w.types));if(!w.boss&&G.waveIdx>=2&&Math.random()<.35&&alive()<w.max&&need>1)spawn(pickType(w.types));}}
   G.dda=Math.max(0,G.dda-dt*.04);
   if(w.blackout){G.blackT-=dt;if(G.blackT<=0){if(G.black>0){G.black=0;G.blackT=12;}else{G.black=6;G.blackT=6;addText(W/2,H*.3,'ていでん！ Zで ライト！','#ffe9a8',34);SFX.revive();}}if(G.black>0)G.black-=dt;}
@@ -1570,12 +1571,12 @@ function waveClear(){
   if(G.noHit){G.score+=2500;G.clearInfo.push('ノーダメージ +2500');}
   const up={1:2,3:3,5:4}[G.waveIdx];if(up&&(G.wlv||1)<up){G.wlv=up;G.clearInfo.unshift('みずでっぽう パワーアップ！ Lv'+up+' '+WLV[up].name);G.ammo=maxAmmo();G.gunFx=1.5;setTimeout(()=>{SFX.clear();tone(1568,.4,'triangle',.1,1,.3);},300);}
   const nx=WAVES[G.waveIdx+1];if(nx&&nx.boss&&G.hearts<G.maxHearts){G.hearts=G.maxHearts;G.clearInfo.push('ほけんしつで ぜんかいふく！');}else if(G.hearts<G.maxHearts&&nx){G.hearts++;G.clearInfo.push('ハート +1');}
-  state='clear';G.clearT=G.waveIdx+1<WAVES.length?3:4.5;SFX.clear();
+  state='clear';G.clearT=G.waveIdx+1<WAVES.length?(up?2.3:1.7):4.5;SFX.clear();
 }
 function finish(win,msg){
   state='result';showHUD(false);ptr.down=false;
-  // さいごの ボーナス：命中率（たおした数÷うった数）と 最大コンボで、うまさの差が スコアに出るように
-  const acc=Math.min(1,(G.totalKills||0)/Math.max(1,G.shotN||0));const accB=Math.round(acc*20000/100)*100,comboB=G.maxCombo*150;
+  // さいごの ボーナス：実際に当たった発射回数÷実際の発射回数 と 最大コンボ
+  const acc=Math.min(1,(G.hitShotN||0)/Math.max(1,G.shotN||0));const accB=Math.round(acc*20000/100)*100,comboB=G.maxCombo*150;
   G.score+=accB+comboB;G.finalBonus={acc:Math.round(acc*100),accB,comboB};
   let best=0;try{best=+localStorage.getItem('obake1-best')||0;if(G.score>best)localStorage.setItem('obake1-best',G.score);}catch(e){}
   const rank=!win?(G.score>=140000?'B':'C'):G.score>=185000?'S':G.score>=175000?'A':'B';
@@ -1586,21 +1587,23 @@ function finish(win,msg){
 }
 
 /* ===== 射撃 ===== */
-function fire(){G.shotN=(G.shotN||0)+1;
+function fire(){
   if(G.reload>0)return;
   const L=WLV[G.wlv||1],pw=G.pow&&G.pow.t>0?G.pow.kind:null;
   if(G.ammo<=0&&pw!=='rapid'){startReload();return;}
+  G.shotN++;let hitSomething=false;
   if(pw!=='rapid')G.ammo--;G.fireCd=L.cd*(pw==='rapid'?.6:1);G.recoil=1;SFX.shoot();
   const mz=muzzle();
   const asst=GYRO.on?1.75:coarse?1.3:1.08; // 傾き操作は細かく合わせにくいので当たり判定を広げる
-  for(const s of G.souls){if(Math.hypot(s.sx-ptr.x,s.sy-ptr.y)<s.u*1.6*asst*(pw==='wide'?2:1)){s.hit=true;spark(s.sx,s.sy,'#9fefff',14);SFX.soul();G.score+=50;addText(s.sx,s.sy,'じょうぶつ!','#9fefff',18);}}
+  for(const s of G.souls){if(Math.hypot(s.sx-ptr.x,s.sy-ptr.y)<s.u*1.6*asst*(pw==='wide'?2:1)){hitSomething=true;s.hit=true;spark(s.sx,s.sy,'#9fefff',14);SFX.soul();G.score+=50;addText(s.sx,s.sy,'じょうぶつ!','#9fefff',18);}}
   G.souls=G.souls.filter(s=>!s.hit);
-  for(const it of G.items){if(Math.hypot(it.sx-ptr.x,it.sy-ptr.y)<it.u*1.4*asst){it.gone=true;getItem(it);}}
+  for(const it of G.items){if(Math.hypot(it.sx-ptr.x,it.sy-ptr.y)<it.u*1.4*asst){hitSomething=true;it.gone=true;getItem(it);}}
   // 主ターゲット（照準の真上）と、レベル・ワイドで増える追加ターゲット
   let best=null;
   for(const e of G.enemies){if(e.dead)continue;const d=Math.hypot(e.sx-ptr.x,e.sy-ptr.y);if(d<e.sr*asst&&(!best||e.z<best.z))best=e;}
   const n=pw==='wide'?6:L.n,rad=pw==='wide'?2.6:L.rad,mul=L.dmg*(pw==='jumbo'?(best&&best.T.boss?1.4:2):1);
   const extra=G.enemies.filter(e=>!e.dead&&e!==best&&!e.T.boss&&Math.hypot(e.sx-ptr.x,e.sy-ptr.y)<e.sr*asst*rad+40*U*(rad-1)).sort((a,b)=>Math.hypot(a.sx-ptr.x,a.sy-ptr.y)-Math.hypot(b.sx-ptr.x,b.sy-ptr.y)).slice(0,best?n-1:n);
+  if(best||extra.length)hitSomething=true;
   const tw=pw==='jumbo'?1.8:1;
   G.tracers.push({x0:mz[0],y0:mz[1],x1:ptr.x,y1:ptr.y,t:.13,max:.13,w:tw,col:pw?POW[pw].col:null});
   for(const e of extra)G.tracers.push({x0:mz[0],y0:mz[1],x1:e.sx,y1:e.sy,t:.13,max:.13,w:tw*.8,col:pw?POW[pw].col:null});
@@ -1611,6 +1614,7 @@ function fire(){G.shotN=(G.shotN||0)+1;
   else if(best){damage(best,mul*(inLight(best)?2:1));splash(ptr.x,ptr.y,pw==='jumbo'?24:14);SFX.splash();}
   else splash(ptr.x,ptr.y,6);
   for(const e of extra){damage(e,mul*(inLight(e)?2:1));splash(e.sx,e.sy,8);}
+  if(hitSomething)G.hitShotN++;
   if(G.ammo<=0&&pw!=='rapid')startReload();
 }
 const WLV={1:{name:'ふつう',n:1,rad:1,cd:.11,dmg:1},2:{name:'ダブルノズル',n:2,rad:1.5,cd:.11,dmg:1},3:{name:'トリプル＆おおタンク',n:3,rad:1.8,cd:.11,dmg:1},4:{name:'ハイパーポンプ',n:3,rad:1.9,cd:.08,dmg:1.2}};
