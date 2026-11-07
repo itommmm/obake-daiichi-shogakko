@@ -17,6 +17,16 @@ CAM_Z = 22                # 目の高さ（小学生の目線）
 X0 = 1024                 # 校庭の中心（マップのピクセル座標）
 FOCAL = (H / 2) / math.tan(math.radians(FOV) / 2)
 PD = 40                   # 主人公が立っている位置（カメラの前方）
+TOUCH_LIFT = 24           # スマホ：指で照準がかくれないよう、指より上に照準を出す
+
+
+def is_touch_device():
+    # ブラウザ（Pyodide）で動いているときだけ、タッチ画面かどうかを調べる
+    try:
+        import js  # noqa: Pyodide専用
+        return bool(js.window.matchMedia("(pointer: coarse)").matches)
+    except Exception:
+        return False
 GOAL = 25                 # ボスが来るまでに たおす数
 BOSS_HP = 60
 
@@ -360,6 +370,7 @@ class Game:
         self.best = 0
         self.stars = [(random.randrange(W), random.randrange(40), random.choice((WH, LV, GY))) for _ in range(40)]
         self.auto = os.environ.get("OBAKE_AUTO")  # 動作確認用の自動プレイ
+        self.touch = is_touch_device() or bool(os.environ.get("OBAKE_TOUCH"))
         self.title()
         pyxel.run(self.update, self.draw)
 
@@ -470,7 +481,7 @@ class Game:
             self.auto_aim()
         elif pyxel.mouse_x != getattr(self, "_mx", None) or pyxel.mouse_y != getattr(self, "_my", None):
             self._mx, self._my = pyxel.mouse_x, pyxel.mouse_y
-            self.aim = [float(pyxel.mouse_x), float(pyxel.mouse_y)]
+            self.aim = [float(pyxel.mouse_x), float(pyxel.mouse_y - (TOUCH_LIFT if self.touch else 0))]
         k = 3
         if pyxel.btn(pyxel.KEY_LEFT) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_LEFT): self.aim[0] -= k
         if pyxel.btn(pyxel.KEY_RIGHT) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_RIGHT): self.aim[0] += k
@@ -1024,7 +1035,7 @@ class Game:
         pyxel.rect(4, H - 4 - h, 22, h, VI if not ready else LV)
         pyxel.blt(8, H - 22, 1, 112, 0, 14, 11, 0)
         if ready:
-            self.otext(4, H - 12, "X/タップ", WH, K)
+            self.otext(4, H - 12, "タップ" if self.touch else "X/タップ", WH, K)
         # メッセージ
         if self.msg and self.msg[1] > 0:
             s, d = self.msg
@@ -1060,11 +1071,16 @@ class Game:
             pyxel.blt(x, y, 1, u, v, 16, 16, 0, scale=1.5)
         pyxel.blt(W - 40, H - 30, 1, 0, 16, 16, 24, 0)
         if t % 60 < 40:
-            s = "クリック／タップで スタート"
+            s = "タップで スタート" if self.touch else "クリック／タップで スタート"
             self.otext(W / 2 - self.font.text_width(s) / 2, 112, s, WH, K)
-        s = "ねらう：マウス・タッチ・やじるし"
-        self.otext(8, H - 24, s, GY, K)
-        s = "うつ：おす・Z   チャイム：X"
+        if self.touch:
+            s = "ゆびで ねらう・うつ（しょうじゅんは ゆびの上）"
+            self.otext(8, H - 24, s, GY, K)
+            s = "チャイム：ひだり下の ベルを タップ"
+        else:
+            s = "ねらう：マウス・タッチ・やじるし"
+            self.otext(8, H - 24, s, GY, K)
+            s = "うつ：おす・Z   チャイム：X"
         self.otext(8, H - 12, s, GY, K)
         if self.best:
             s = "ハイスコア %d" % self.best
