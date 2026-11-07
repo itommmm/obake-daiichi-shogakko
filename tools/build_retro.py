@@ -26,7 +26,7 @@ def build():
     (ROOT / "retro/font.bdf").write_text(header + "\n".join(glyphs) + "\nENDFONT\n")
     with zipfile.ZipFile(ROOT / "retro.pyxapp", "w", zipfile.ZIP_DEFLATED) as archive:
         files = {".pyxapp_startup_script": b"main.py"}
-        for name in ("main.py", "font.bdf", "boss_school.png", "over_bg.png", "title_bg.png"):
+        for name in ("main.py", "font.bdf", "boss_school.png", "over_bg.png", "title_bg.png", "enemies.png"):
             files[name] = (ROOT / "retro" / name).read_bytes()
         for name, data in sorted(files.items()):
             info = zipfile.ZipInfo("retro/" + name, date_time=(2026, 1, 1, 0, 0, 0))
@@ -34,7 +34,16 @@ def build():
             archive.writestr(info, data)
     encoded = base64.b64encode((ROOT / "retro.pyxapp").read_bytes()).decode()
     html_path = ROOT / "retro.html"
-    html, count = re.subn(r'base64: "[A-Za-z0-9+/=]+"', f'base64: "{encoded}"', html_path.read_text())
+    html = html_path.read_text()
+    # Resolve only generated-payload conflicts; never discard differing HTML.
+    def resolve_embed(match):
+        ours, theirs = match.group(1), match.group(2)
+        normalize = lambda s: re.sub(r'base64: "[A-Za-z0-9+/=]+"', 'base64: "GENERATED"', s)
+        if normalize(ours) != normalize(theirs) or 'base64: "GENERATED"' not in normalize(ours):
+            raise RuntimeError("HTML merge conflict includes non-generated changes; resolve manually")
+        return ours
+    html = re.sub(r'(?m)^<<<<<<< [^\n]*\n(.*?)^=======\n(.*?)^>>>>>>> [^\n]*\n', resolve_embed, html, flags=re.S | re.M)
+    html, count = re.subn(r'base64: "[A-Za-z0-9+/=]+"', f'base64: "{encoded}"', html)
     if count != 1:
         raise RuntimeError(f"Expected one embedded app, found {count}")
     html_path.write_text(html)

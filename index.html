@@ -1440,7 +1440,8 @@ function buildSchoolTrick(w){
   const root=new THREE.Group(),mats=[],balls=[];
   const material=c=>{const m=new THREE.MeshStandardMaterial({color:c,roughness:.45});mats.push(m);return m;};
   const metal=material('#71d9ef'),kind=w.place==='gym'?'balls':'water';
-  root.position.set(xW(-.65,.5),0,zD(.5));ROOM.add(root);
+  // 敵と同じ遭遇座標に置き、背景のループ移動で照準とずれないようにする。
+  root.position.set(xW(-.65,.5),0,zD(.5));STATIC.add(root);
   if(kind==='balls'){
     for(const x of[-.4,.4])for(const z of[-.25,.25])add(root,CYL,metal,x,.45,z,0,0,0,.035,.9,.035);
     for(const y of[.18,.5,.85]){add(root,BOX,metal,0,y,-.25,0,0,0,.85,.035,.035);add(root,BOX,metal,0,y,.25,0,0,0,.85,.035,.035);for(const x of[-.4,.4])add(root,BOX,metal,x,y,0,0,0,0,.035,.035,.5);}

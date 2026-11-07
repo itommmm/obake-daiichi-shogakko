@@ -297,6 +297,7 @@ def build_images():
     art(img, 16, 0, ISU)
     art(img, 32, 0, BALL)
     art(img, 48, 0, UWABAKI)
+    load_enemy_sheet(img)
     art(img, 64, 0, PAPER, 8)
     art(img, 72, 0, SOUL, 6)
     art(img, 80, 0, GUN, 8)
@@ -349,6 +350,24 @@ def build_images():
 BOSS_PNG = "boss_school.png"
 BOSS_EYES = ((19, 36, 9, 9), (68, 36, 9, 9))
 BOSS_EYE_C = [(25, 34), (73, 34)]   # 当たり判定の中心（96x64 の絵の上の座標）。draw_school の絵の位置
+
+
+# 生成画像の敵4体（64x16、NIGHT パレットに減色ずみ。ENEMY_SPR と同じ順）。
+# 無いとき・読めないとき・マスが空（全部 色0）のキャラは、上の文字のドット絵のまま
+ENEMY_PNG = "enemies.png"
+
+
+def load_enemy_sheet(img):
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ENEMY_PNG)
+    if not os.path.exists(path):
+        return
+    try:
+        img.load(0, 0, path)
+    except Exception:
+        pass
+    for (u, v), rows in zip(ENEMY_SPR.values(), (RANDOSERU, ISU, BALL, UWABAKI)):
+        if all(img.pget(u + x, v + y) == 0 for y in range(16) for x in range(16)):
+            art(img, u, v, rows)
 
 
 # 生成画像のタイトル背景（288x162、NIGHT パレットに減色ずみ）。無いときは今までどおり校庭の景色
@@ -1051,6 +1070,8 @@ class Game:
     def hurt(self):
         if self.inv > 0 or self.state != "play":
             return
+        if os.environ.get("OBAKE_NODIE"):   # 動作確認用：自動プレイで中ボス・ボスまで進めるよう、やられない
+            return
         self.hearts -= 1
         self.dmg_taken += 1
         self.dda = min(1.0, self.dda + 0.34)   # やられたら しばらく やさしく
@@ -1321,7 +1342,7 @@ class Game:
         cx = sx
         cy = sy_bottom - h * sc / 2
         if flash:
-            for c in range(1, 16):
+            for c in range(1, len(NIGHT)):
                 pyxel.pal(c, WH)
         pyxel.blt(cx - w / 2, cy - h / 2, 1, u, v, w, h, 0, scale=sc)
         if flash:

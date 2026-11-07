@@ -136,7 +136,7 @@ class GameplayTests(unittest.TestCase):
         payload = base64.b64decode(encoded)
         self.assertEqual(payload, (ROOT / "retro.pyxapp").read_bytes())
         with zipfile.ZipFile(io.BytesIO(payload)) as archive:
-            for name in ("main.py", "font.bdf", "boss_school.png", "over_bg.png", "title_bg.png"):
+            for name in ("main.py", "font.bdf", "boss_school.png", "over_bg.png", "title_bg.png", "enemies.png"):
                 self.assertEqual(archive.read("retro/" + name), (ROOT / "retro" / name).read_bytes())
 
 
