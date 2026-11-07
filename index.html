@@ -4,6 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>おばけ第一小学校</title>
+<meta name="description" content="夜の学校に あらわれた おばけを、みずでっぽうと かいちゅうでんとうで たいじする 3Dシューティング。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="おばけ第一小学校 ～夜の学校おばけポン！～">
+<meta property="og:description" content="夜の学校に あらわれた おばけを、みずでっぽうと かいちゅうでんとうで たいじしよう！">
+<meta property="og:url" content="https://itommmm.github.io/obake-daiichi-shogakko/">
+<meta property="og:image" content="https://itommmm.github.io/obake-daiichi-shogakko/assets/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/icon_32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="assets/icon_180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -54,6 +63,7 @@ button:disabled{opacity:.5;cursor:wait}
 .screen{position:fixed;inset:0;z-index:10;display:grid;place-items:center;padding:calc(env(safe-area-inset-top,0px) + 10px) max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 10px) max(16px,env(safe-area-inset-left,0px));background:radial-gradient(ellipse at 50% 40%,rgba(40,16,80,.25),rgba(6,3,16,.78));overflow:auto}
 /* 生成画像：タイトル背景（上は空、下へ行くほど暗くして文字を読みやすく）。画像が無いときは色だけ */
 #title{background:linear-gradient(180deg,rgba(6,3,16,.10) 0%,rgba(6,3,16,.35) 30%,rgba(6,3,16,.72) 62%,rgba(6,3,16,.90) 100%),url(assets/title_bg.webp) center 30%/cover no-repeat,#0b0820}
+#titleFx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}#title>.card{position:relative;z-index:1}
 .card{width:min(820px,100%);display:grid;grid-template-columns:1.1fr 1fr;gap:clamp(12px,3vw,32px);align-items:center}
 .logo{text-align:center}
 .logo .ruby{font:900 clamp(12px,1.8vw,18px)/1 var(--body);letter-spacing:.6em;color:#d8c6ff;margin-left:.6em}
@@ -62,6 +72,12 @@ button:disabled{opacity:.5;cursor:wait}
 .ghosts{display:flex;justify-content:center;gap:14px;margin-top:14px;font-size:clamp(11px,1.4vw,13px);color:#cdb8ff;flex-wrap:wrap}
 .ghosts span{display:inline-flex;align-items:center;gap:4px}
 .ghosts i{width:10px;height:10px;border-radius:50%;display:inline-block}
+/* 生成画像のキャラ絵（あれば色の丸のかわりに出して、ふわふわ浮かせる） */
+.ghosts span:has(img){flex-direction:column;gap:2px}
+.ghosts img{width:clamp(40px,5.2vw,60px);height:clamp(40px,5.2vw,60px);object-fit:contain;filter:drop-shadow(0 0 8px rgba(166,92,255,.7));animation:charaFloat 2.6s ease-in-out infinite}
+.ghosts span:nth-child(2) img{animation-delay:-.65s}.ghosts span:nth-child(3) img{animation-delay:-1.3s}.ghosts span:nth-child(4) img{animation-delay:-1.95s}.ghosts span:nth-child(5) img{animation-delay:-.3s}
+.ghosts img+i{display:none}
+@keyframes charaFloat{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-6px) rotate(3deg)}}
 .menu{background:var(--panel);border:2px solid rgba(166,92,255,.6);border-radius:18px;padding:clamp(12px,2.4vw,22px);display:grid;gap:10px;box-shadow:0 0 30px rgba(120,60,255,.35)}
 .menu h2{margin:0;font:900 clamp(14px,1.8vw,17px)/1.3 var(--body);color:var(--gold)}
 .modes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
@@ -90,6 +106,9 @@ button:disabled{opacity:.5;cursor:wait}
 .how{font-size:clamp(11px,1.35vw,13px);line-height:1.65;color:#d9ccff;margin:0;padding-left:1.1em}
 .how b{color:#fff}
 .best{font-size:13px;color:#cdb8ff;text-align:center}
+/* 生成画像：結果画面の背景（クリア＝夜明けの校舎、ゲームオーバー＝おばけが大よろこびの教室）。無ければ今までの色 */
+#result[data-r=win]{background:radial-gradient(ellipse at 50% 50%,rgba(6,3,16,.55),rgba(6,3,16,.25) 70%),url(assets/result_win.webp) center/cover no-repeat,#0b0820}
+#result[data-r=lose]{background:radial-gradient(ellipse at 50% 50%,rgba(6,3,16,.6),rgba(6,3,16,.3) 70%),url(assets/result_lose.webp) center/cover no-repeat,#0b0820}
 .result{width:min(560px,100%);background:var(--panel);border:2px solid rgba(166,92,255,.6);border-radius:20px;padding:clamp(14px,3vw,26px);text-align:center;display:grid;gap:10px}
 .result h2{margin:0;font:400 clamp(26px,4.6vw,44px)/1.1 var(--display);color:#fff;text-shadow:0 0 18px var(--violet)}
 .rank{font:400 clamp(60px,10vw,96px)/1 var(--display);color:var(--gold);text-shadow:0 0 24px rgba(255,210,63,.7)}
@@ -108,7 +127,7 @@ button:disabled{opacity:.5;cursor:wait}
   .tb{width:32px;height:32px;border-radius:9px;font-size:13px}.tb.q{font-size:10px}
   .sk{width:52px}.sk .lbl{display:none}#skills{bottom:calc(env(safe-area-inset-bottom,0px) + 6px)}}
 @media (max-width:640px) and (orientation:portrait){.card{grid-template-columns:1fr}}
-@media (prefers-reduced-motion:reduce){.sk.ready{animation:none}#rotate .ph{animation:none}}
+@media (prefers-reduced-motion:reduce){.sk.ready{animation:none}#rotate .ph{animation:none}.ghosts img{animation:none}}
 </style>
 </head>
 <body>
@@ -132,16 +151,18 @@ button:disabled{opacity:.5;cursor:wait}
 </div>
 
 <section class="screen" id="title">
+  <canvas id="titleFx" aria-hidden="true"></canvas>
   <div class="card">
     <div class="logo">
       <div class="ruby">よるのがっこう</div>
       <h1>おばけ第一小学校</h1>
       <div class="sub">夜の学校おばけポン！</div>
       <div class="ghosts">
-        <span><i style="background:#e02838"></i>ランドセロ</span>
-        <span><i style="background:#b07a45"></i>いすわらし</span>
-        <span><i style="background:#8a7a9a"></i>つくえんぼ</span>
-        <span><i style="background:#9aa0ad"></i>ロッカーだいおう</span>
+        <span><img src="assets/chara_randoseru.webp" alt="" onerror="this.remove()"><i style="background:#e02838"></i>ランドセロ</span>
+        <span><img src="assets/chara_isu.webp" alt="" onerror="this.remove()"><i style="background:#b07a45"></i>いすわらし</span>
+        <span><img src="assets/chara_tsukue.webp" alt="" onerror="this.remove()"><i style="background:#8a7a9a"></i>つくえんぼ</span>
+        <span><img src="assets/chara_locker.webp" alt="" onerror="this.remove()"><i style="background:#9aa0ad"></i>ロッカーだいおう</span>
+        <span><img src="assets/chara_kousha.webp" alt="" onerror="this.parentNode.remove()">おばけこうしゃ</span>
       </div>
     </div>
     <div class="menu">
@@ -1579,7 +1600,7 @@ function finish(win,msg){
   G.score+=accB+comboB;G.finalBonus={acc:Math.round(acc*100),accB,comboB};
   let best=0;try{best=+localStorage.getItem('obake1-best')||0;if(G.score>best)localStorage.setItem('obake1-best',G.score);}catch(e){}
   const rank=!win?(G.score>=140000?'B':'C'):G.score>=185000?'S':G.score>=175000?'A':'B';
-  $('rTitle').textContent=win?'ぜんぶ たいじ！':msg;$('rRank').textContent=rank;
+  $('result').dataset.r=win?'win':'lose';$('rTitle').textContent=win?'ぜんぶ たいじ！':msg;$('rRank').textContent=rank;
   $('rScore').textContent=G.score.toLocaleString();$('rKills').textContent=G.totalKills;$('rCombo').textContent=G.maxCombo+(G.finalBonus?'（めいちゅう '+G.finalBonus.acc+'%）':'');
   $('rBest').textContent=G.score>best?'ハイスコア こうしん！':`ハイスコア ${best.toLocaleString()}`;
   $('result').hidden=false;if(win)SFX.clear();
@@ -2002,6 +2023,59 @@ function showBest(){let b=0;try{b=+localStorage.getItem('obake1-best')||0;}catch
 addEventListener('resize',resize);
 resize();showBest();
 const fontsReady=document.fonts&&document.fonts.ready?Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,2500))]):Promise.resolve();
+/* ===== タイトル画面の動き（背景の生成画像 title_bg に合わせて、雨・稲妻・外灯の光と火の粉・けむり・窓のゆらぎを重ねる） =====
+   座標は画像（1920x1080）の上の位置。CSS の background: center 30%/cover と同じ変換で画面に合わせる */
+const TitleFX=(()=>{const cv=$('titleFx'),g=cv.getContext('2d');const IW=1920,IH=1080;
+  const LAMPS=[[235,470,1],[1680,572,.85]];               // かぼちゃ外灯の頭（x,y,大きさ）
+  const WINS=[[505,655,120],[1218,705,95],[1462,868,110]]; // おばけの影がいる窓
+  const BOLT=[1530,365];                                    // 遠くの稲妻のあたり（カードにかくれるときは別の空へ）
+  const calm=matchMedia('(prefers-reduced-motion: reduce)');
+  let W=0,H=0,dpr=1,sc=1,ox=0,oy=0,rain=[],sparks=[],smoke=[],flash=0,bolt=null,nextBolt=3,last=0,running=false;
+  const P=(x,y)=>[ox+x*sc,oy+y*sc];
+  function resize(){dpr=Math.min(devicePixelRatio||1,1.5);W=innerWidth;H=innerHeight;cv.width=W*dpr|0;cv.height=H*dpr|0;g.setTransform(dpr,0,0,dpr,0,0);
+    sc=Math.max(W/IW,H/IH);ox=(W-IW*sc)*.5;oy=(H-IH*sc)*.3;
+    const n=Math.round(Math.min(260,W*H/5200));rain=[];for(let i=0;i<n;i++)rain.push({x:Math.random()*W,y:Math.random()*H,v:rnd(.7,1.3),l:rnd(.6,1.2),a:rnd(.08,.28)});}
+  function makeBolt(){let [bx,by]=P(BOLT[0]+rnd(-260,180),BOLT[1]-rnd(80,200));
+    // メニューのカードに かくれない空の位置をえらぶ（画面がせまいときは画像の稲妻のあたりのまま）
+    const cr=document.querySelector('#title .menu')?.getBoundingClientRect();
+    if(cr&&cr.width)for(let k=0;k<12;k++){const x=rnd(.06,.94)*W;if(x<cr.left-30||x>cr.right+30){bx=x;by=rnd(.02,.1)*H;break;}}
+    let x=bx,y=by;const pts=[[x,y]],br=[];const end=by+rnd(.16,.26)*H;
+    while(y<end){x+=rnd(-1,1)*18*sc*2;y+=rnd(10,26)*sc*2;pts.push([x,y]);if(Math.random()<.18)br.push([x,y,rnd(-1,1)]);}return{pts,br,t:0};}
+  function step(dt,t){const wind=-.22;
+    for(const r of rain){r.y+=dt*900*r.v;r.x+=dt*900*r.v*wind;if(r.y>H){r.y=-20;r.x=Math.random()*(W+120);}if(r.x<-20)r.x+=W+40;}
+    for(const [lx,ly,k] of LAMPS){if(Math.random()<dt*9*k){const [x,y]=P(lx+rnd(-30,30),ly-40);sparks.push({x,y,vx:rnd(-12,12),vy:-rnd(30,70),l:rnd(1.2,2.6),t:0,s:rnd(1,2.4)});}
+      if(Math.random()<dt*1.6*k){const [x,y]=P(lx+rnd(-10,10),ly-70);smoke.push({x,y,r:rnd(10,18)*sc*2,t:0,l:rnd(2.5,4),ph:rnd(0,6)});}}
+    sparks=sparks.filter(p=>(p.t+=dt)<p.l);for(const p of sparks){p.x+=(p.vx+Math.sin(t*3+p.y*.05)*14)*dt;p.y+=p.vy*dt;}
+    smoke=smoke.filter(p=>(p.t+=dt)<p.l);for(const p of smoke){p.y-=22*dt;p.x+=Math.sin(t*.9+p.ph)*10*dt;p.r+=6*dt;}
+    flash=Math.max(0,flash-dt*2.2);nextBolt-=dt;if(nextBolt<=0){nextBolt=rnd(5,11);flash=1;bolt=makeBolt();if(Math.random()<.5)setTimeout(()=>flash=Math.max(flash,.55),140);}
+    if(bolt&&(bolt.t+=dt)>.45)bolt=null;}
+  function draw(t){g.clearRect(0,0,W,H);const still=calm.matches;
+    g.globalCompositeOperation='lighter';
+    // 窓のあたたかい光のゆらぎ（おばけの影がいる窓だけ、それぞれ別のリズム）
+    WINS.forEach(([wx,wy,wr],i)=>{const [x,y]=P(wx,wy),r=wr*sc*1.6;const k=.10+.06*Math.sin(t*(1.3+i*.37)+i*2)+.03*Math.sin(t*7.1+i);
+      const gr=g.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,`rgba(255,170,70,${k})`);gr.addColorStop(1,'rgba(255,140,40,0)');g.fillStyle=gr;g.fillRect(x-r,y-r,r*2,r*2);});
+    // かぼちゃ外灯の光（ちらちら）
+    LAMPS.forEach(([lx,ly,k],i)=>{const [x,y]=P(lx,ly);const f=.55+.25*Math.sin(t*9+i*3)*Math.sin(t*5.3+i)+.1*Math.random();const r=170*sc*k*(1+.08*f);
+      const gr=g.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,`rgba(255,190,90,${.38*f})`);gr.addColorStop(.35,`rgba(255,120,30,${.16*f})`);gr.addColorStop(1,'rgba(255,90,20,0)');g.fillStyle=gr;g.fillRect(x-r,y-r,r*2,r*2);});
+    // 火の粉
+    for(const p of sparks){const a=1-p.t/p.l;g.fillStyle=`rgba(255,${150+90*a|0},70,${a*.9})`;g.beginPath();g.arc(p.x,p.y,p.s*Math.max(sc*1.6,.7),0,7);g.fill();}
+    g.globalCompositeOperation='source-over';
+    // けむり
+    for(const p of smoke){const a=Math.sin(p.t/p.l*Math.PI)*.10;const gr=g.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r);gr.addColorStop(0,`rgba(200,195,225,${a})`);gr.addColorStop(1,'rgba(200,195,225,0)');g.fillStyle=gr;g.fillRect(p.x-p.r,p.y-p.r,p.r*2,p.r*2);}
+    if(still)return;
+    // 雨（風でななめ）
+    g.strokeStyle='rgba(190,205,255,1)';g.lineWidth=1;g.lineCap='round';
+    for(const r of rain){g.globalAlpha=r.a;g.beginPath();g.moveTo(r.x,r.y);g.lineTo(r.x+0.22*26*r.l,r.y-26*r.l);g.stroke();}g.globalAlpha=1;
+    // 稲妻
+    if(bolt){const a=1-bolt.t/.45;g.save();g.globalCompositeOperation='lighter';g.shadowColor='#b9a4ff';g.shadowBlur=18;g.lineJoin='round';
+      for(const [w,c] of [[5,`rgba(150,120,255,${a*.5})`],[1.8,`rgba(240,235,255,${a})`]]){g.lineWidth=w;g.strokeStyle=c;g.beginPath();bolt.pts.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.stroke();
+        for(const [x,y,d] of bolt.br){g.beginPath();g.moveTo(x,y);g.lineTo(x+d*40*sc*2,y+30*sc*2);g.lineTo(x+d*55*sc*2,y+62*sc*2);g.stroke();}}g.restore();}
+    if(flash>0){g.fillStyle=`rgba(200,195,255,${flash*.28})`;g.fillRect(0,0,W,H);}}
+  function loop(now){if($('title').hidden||document.hidden){running=false;return;}const t=now/1000,dt=Math.min(.05,last?t-last:0);last=t;step(dt,t);draw(t);requestAnimationFrame(loop);}
+  function start(){if(running)return;running=true;last=0;requestAnimationFrame(loop);}
+  addEventListener('resize',resize);document.addEventListener('visibilitychange',start);
+  new MutationObserver(start).observe($('title'),{attributes:true,attributeFilter:['hidden']});
+  resize();start();return{start,zap:()=>{nextBolt=0;}};})();   // zap は動作確認用（すぐ稲妻）
 fontsReady.then(()=>{makeTextures();buildGun();buildKid();buildRoom(G.place);$('start').disabled=false;$('start').textContent='スタート！';});
 let last=performance.now();
 function loop(t){const dt=Math.min(.05,(t-last)/1000);last=t;

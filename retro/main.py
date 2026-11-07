@@ -311,6 +311,7 @@ def build_images():
     for i, mode in enumerate(("obake", "angry", "normal")):
         draw_school(pyxel.images[2], 0, i * 64, mode)
     load_boss_image(pyxel.images[2])
+    load_title_image()
     # 地面のタイル（バンク0）
     g = pyxel.images[0]
     g.cls(0)
@@ -348,6 +349,28 @@ def build_images():
 BOSS_PNG = "boss_school.png"
 BOSS_EYES = ((19, 36, 9, 9), (68, 36, 9, 9))
 BOSS_EYE_C = [(25, 34), (73, 34)]   # 当たり判定の中心（96x64 の絵の上の座標）。draw_school の絵の位置
+
+
+# 生成画像のタイトル背景（288x162、NIGHT パレットに減色ずみ）。無いときは今までどおり校庭の景色
+TITLE_PNG = "title_bg.png"
+TITLE_IMG = []
+TITLE_LAMPS = ((35, 70), (252, 86))   # 絵の中の かぼちゃ外灯の頭
+
+
+# 生成画像のゲームオーバー背景（288x162）。無いときは今までどおりゲーム画面の上に帯だけ
+OVER_PNG = "over_bg.png"
+OVER_IMG = []
+
+
+def load_title_image():
+    here = os.path.dirname(os.path.abspath(__file__))
+    for name, box in ((TITLE_PNG, TITLE_IMG), (OVER_PNG, OVER_IMG)):
+        path = os.path.join(here, name)
+        if os.path.exists(path):
+            try:
+                box.append(pyxel.Image.from_image(path))
+            except Exception:
+                pass
 
 
 def load_boss_image(img):
@@ -1150,7 +1173,8 @@ class Game:
     def draw(self):
         sx = random.randint(-2, 2) if getattr(self, "shake", 0) else 0
         pyxel.camera(sx, 0)
-        self.draw_world()
+        if not (self.state == "title" and TITLE_IMG):   # タイトルは生成画像の背景を使う
+            self.draw_world()
         if self.state == "title":
             self.draw_title()
         elif self.state in ("play", "over"):
@@ -1466,8 +1490,25 @@ class Game:
 
     def draw_title(self):
         t = self.t
+        if TITLE_IMG:
+            pyxel.blt(0, 0, TITLE_IMG[0], 0, 0, W, H)
+            for i, (lx, ly) in enumerate(TITLE_LAMPS):   # 外灯の光のゆらぎと火の粉
+                f = 0.25 + 0.12 * math.sin(t * 0.17 + i * 2) + 0.06 * math.sin(t * 0.53 + i)
+                pyxel.dither(f)
+                pyxel.circ(lx, ly, 13, OR)
+                pyxel.dither(f * 0.8)
+                pyxel.circ(lx, ly, 7, OY)
+                pyxel.dither(1)
+                if random.random() < 0.25:
+                    self.sparks.append([lx + random.uniform(-4, 4), ly - 5, random.uniform(-0.15, 0.15),
+                                        random.uniform(-0.6, -0.3), random.randint(20, 45)])
         self.draw_weather()
-        pyxel.rect(0, 16, W, 66, K)
+        if TITLE_IMG:
+            pyxel.dither(0.6)
+            pyxel.rect(0, 16, W, 66, K)
+            pyxel.dither(1)
+        else:
+            pyxel.rect(0, 16, W, 66, K)
         pyxel.line(0, 16, W, 16, VI)
         pyxel.line(0, 81, W, 81, VI)
         s1 = "よるの がっこう レトロ"
@@ -1506,7 +1547,14 @@ class Game:
             self.otext(4, 4, s, GO, K)
 
     def draw_over(self):
-        pyxel.rect(0, 50, W, 50, K)
+        if OVER_IMG:   # 生成画像の背景を ゆっくり重ねる（はじめの1秒はディザで だんだん）
+            pyxel.dither(min(1, self.t / 60))
+            pyxel.blt(0, 0, OVER_IMG[0], 0, 0, W, H)
+            pyxel.dither(0.6)
+            pyxel.rect(0, 50, W, 50, K)
+            pyxel.dither(1)
+        else:
+            pyxel.rect(0, 50, W, 50, K)
         s = "やられた… がっこうは おばけの もの…"
         self.otext(W / 2 - self.font.text_width(s) / 2, 58, s, PK, K)
         s = "スコア %d   ランク %s" % (self.score, self.rank)
