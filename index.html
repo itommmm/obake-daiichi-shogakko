@@ -4,6 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>おばけ第一小学校</title>
+<meta name="description" content="夜の学校に あらわれた おばけを、みずでっぽうと かいちゅうでんとうで たいじする 3Dシューティング。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="おばけ第一小学校 ～夜の学校おばけポン！～">
+<meta property="og:description" content="夜の学校に あらわれた おばけを、みずでっぽうと かいちゅうでんとうで たいじしよう！">
+<meta property="og:url" content="https://itommmm.github.io/obake-daiichi-shogakko/">
+<meta property="og:image" content="https://itommmm.github.io/obake-daiichi-shogakko/assets/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/icon_32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="assets/icon_180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -66,7 +75,7 @@ button:disabled{opacity:.5;cursor:wait}
 /* 生成画像のキャラ絵（あれば色の丸のかわりに出して、ふわふわ浮かせる） */
 .ghosts span:has(img){flex-direction:column;gap:2px}
 .ghosts img{width:clamp(40px,5.2vw,60px);height:clamp(40px,5.2vw,60px);object-fit:contain;filter:drop-shadow(0 0 8px rgba(166,92,255,.7));animation:charaFloat 2.6s ease-in-out infinite}
-.ghosts span:nth-child(2) img{animation-delay:-.65s}.ghosts span:nth-child(3) img{animation-delay:-1.3s}.ghosts span:nth-child(4) img{animation-delay:-1.95s}
+.ghosts span:nth-child(2) img{animation-delay:-.65s}.ghosts span:nth-child(3) img{animation-delay:-1.3s}.ghosts span:nth-child(4) img{animation-delay:-1.95s}.ghosts span:nth-child(5) img{animation-delay:-.3s}
 .ghosts img+i{display:none}
 @keyframes charaFloat{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-6px) rotate(3deg)}}
 .menu{background:var(--panel);border:2px solid rgba(166,92,255,.6);border-radius:18px;padding:clamp(12px,2.4vw,22px);display:grid;gap:10px;box-shadow:0 0 30px rgba(120,60,255,.35)}
@@ -97,6 +106,9 @@ button:disabled{opacity:.5;cursor:wait}
 .how{font-size:clamp(11px,1.35vw,13px);line-height:1.65;color:#d9ccff;margin:0;padding-left:1.1em}
 .how b{color:#fff}
 .best{font-size:13px;color:#cdb8ff;text-align:center}
+/* 生成画像：結果画面の背景（クリア＝夜明けの校舎、ゲームオーバー＝おばけが大よろこびの教室）。無ければ今までの色 */
+#result[data-r=win]{background:radial-gradient(ellipse at 50% 50%,rgba(6,3,16,.55),rgba(6,3,16,.25) 70%),url(assets/result_win.webp) center/cover no-repeat,#0b0820}
+#result[data-r=lose]{background:radial-gradient(ellipse at 50% 50%,rgba(6,3,16,.6),rgba(6,3,16,.3) 70%),url(assets/result_lose.webp) center/cover no-repeat,#0b0820}
 .result{width:min(560px,100%);background:var(--panel);border:2px solid rgba(166,92,255,.6);border-radius:20px;padding:clamp(14px,3vw,26px);text-align:center;display:grid;gap:10px}
 .result h2{margin:0;font:400 clamp(26px,4.6vw,44px)/1.1 var(--display);color:#fff;text-shadow:0 0 18px var(--violet)}
 .rank{font:400 clamp(60px,10vw,96px)/1 var(--display);color:var(--gold);text-shadow:0 0 24px rgba(255,210,63,.7)}
@@ -150,6 +162,7 @@ button:disabled{opacity:.5;cursor:wait}
         <span><img src="assets/chara_isu.webp" alt="" onerror="this.remove()"><i style="background:#b07a45"></i>いすわらし</span>
         <span><img src="assets/chara_tsukue.webp" alt="" onerror="this.remove()"><i style="background:#8a7a9a"></i>つくえんぼ</span>
         <span><img src="assets/chara_locker.webp" alt="" onerror="this.remove()"><i style="background:#9aa0ad"></i>ロッカーだいおう</span>
+        <span><img src="assets/chara_kousha.webp" alt="" onerror="this.parentNode.remove()">おばけこうしゃ</span>
       </div>
     </div>
     <div class="menu">
@@ -1587,7 +1600,7 @@ function finish(win,msg){
   G.score+=accB+comboB;G.finalBonus={acc:Math.round(acc*100),accB,comboB};
   let best=0;try{best=+localStorage.getItem('obake1-best')||0;if(G.score>best)localStorage.setItem('obake1-best',G.score);}catch(e){}
   const rank=!win?(G.score>=140000?'B':'C'):G.score>=185000?'S':G.score>=175000?'A':'B';
-  $('rTitle').textContent=win?'ぜんぶ たいじ！':msg;$('rRank').textContent=rank;
+  $('result').dataset.r=win?'win':'lose';$('rTitle').textContent=win?'ぜんぶ たいじ！':msg;$('rRank').textContent=rank;
   $('rScore').textContent=G.score.toLocaleString();$('rKills').textContent=G.totalKills;$('rCombo').textContent=G.maxCombo+(G.finalBonus?'（めいちゅう '+G.finalBonus.acc+'%）':'');
   $('rBest').textContent=G.score>best?'ハイスコア こうしん！':`ハイスコア ${best.toLocaleString()}`;
   $('result').hidden=false;if(win)SFX.clear();

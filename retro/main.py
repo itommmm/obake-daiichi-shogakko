@@ -357,13 +357,20 @@ TITLE_IMG = []
 TITLE_LAMPS = ((35, 70), (252, 86))   # 絵の中の かぼちゃ外灯の頭
 
 
+# 生成画像のゲームオーバー背景（288x162）。無いときは今までどおりゲーム画面の上に帯だけ
+OVER_PNG = "over_bg.png"
+OVER_IMG = []
+
+
 def load_title_image():
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), TITLE_PNG)
-    if os.path.exists(path):
-        try:
-            TITLE_IMG.append(pyxel.Image.from_image(path))
-        except Exception:
-            pass
+    here = os.path.dirname(os.path.abspath(__file__))
+    for name, box in ((TITLE_PNG, TITLE_IMG), (OVER_PNG, OVER_IMG)):
+        path = os.path.join(here, name)
+        if os.path.exists(path):
+            try:
+                box.append(pyxel.Image.from_image(path))
+            except Exception:
+                pass
 
 
 def load_boss_image(img):
@@ -1540,7 +1547,14 @@ class Game:
             self.otext(4, 4, s, GO, K)
 
     def draw_over(self):
-        pyxel.rect(0, 50, W, 50, K)
+        if OVER_IMG:   # 生成画像の背景を ゆっくり重ねる（はじめの1秒はディザで だんだん）
+            pyxel.dither(min(1, self.t / 60))
+            pyxel.blt(0, 0, OVER_IMG[0], 0, 0, W, H)
+            pyxel.dither(0.6)
+            pyxel.rect(0, 50, W, 50, K)
+            pyxel.dither(1)
+        else:
+            pyxel.rect(0, 50, W, 50, K)
         s = "やられた… がっこうは おばけの もの…"
         self.otext(W / 2 - self.font.text_width(s) / 2, 58, s, PK, K)
         s = "スコア %d   ランク %s" % (self.score, self.rank)

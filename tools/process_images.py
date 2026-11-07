@@ -9,6 +9,9 @@
     assets/boss_school.png  384x256 透過 → retro/boss_school.png（96x64・NIGHT 20色）
     assets/title_bg.png     → retro/title_bg.png（288x162・NIGHT 20色、レトロ版タイトルの背景）
     assets/chara_*.png 透過  → assets/chara_*.webp（192x192、3D版タイトルのキャラ絵）
+    assets/result_win.png・result_lose.png 1920x1080 → .webp（3D版の結果画面）、retro/over_bg.png（レトロ版ゲームオーバー）
+    assets/icon_app.png 1024x1024 → assets/icon_512/192/180/32.png（アイコン）
+    （生成なし）title_bg.png＋chara_*.png → assets/og.jpg（リンクのプレビュー画像 1200x630）
 
 ボスは最近傍で 96x64 に縮小し、retro/main.py の NIGHT パレットへ減色する。
 とうめい部分は色0（blt で抜ける色）、それ以外は色1〜19 だけを使う。
@@ -110,7 +113,7 @@ def retro_title():
     print("%s  %d KB" % (dst, os.path.getsize(dst) // 1024))
 
 
-CHARAS = ("randoseru", "isu", "tsukue", "locker")
+CHARAS = ("randoseru", "isu", "tsukue", "locker", "kousha")
 
 
 def charas():
@@ -133,11 +136,85 @@ def charas():
         print("%s -> %s  %d KB" % (src, dst, os.path.getsize(dst) // 1024))
 
 
+def to_night(im, size, dark_from=None, dark_k=0.5):
+    """画像を NIGHT パレットへ減色（ディザなし）。dark_from より下を だんだん暗く"""
+    src = ImageEnhance.Contrast(im.convert("RGB").resize(size, Image.LANCZOS)).enhance(1.15)
+    if dark_from is not None:
+        px = src.load()
+        for y in range(dark_from, size[1]):
+            k = 1.0 - dark_k * (y - dark_from) / (size[1] - dark_from)
+            for x in range(size[0]):
+                r, g, b = px[x, y]
+                px[x, y] = (int(r * k), int(g * k), int(b * k))
+    pal = Image.new("P", (1, 1))
+    pal.putpalette([v for c in RGB for v in c] + list(RGB[0]) * (256 - len(RGB)))
+    return src.quantize(palette=pal, dither=Image.Dither.NONE).convert("RGB")
+
+
+def results():
+    """結果画面の背景（3D版）と、レトロ版ゲームオーバーの背景"""
+    for n in ("result_win", "result_lose"):
+        if os.path.exists(os.path.join(A, n + ".png")):
+            webp(n, (1920, 1080))
+        else:
+            print("（なし）", n)
+    src = os.path.join(A, "result_lose.png")
+    if os.path.exists(src):
+        out = to_night(Image.open(src), (288, 162))
+        dst = os.path.join(ROOT, "retro", "over_bg.png")
+        out.save(dst, optimize=True)
+        print("%s  %d KB" % (dst, os.path.getsize(dst) // 1024))
+
+
+def icons():
+    """アプリのアイコン（3D版・コントローラー）"""
+    src = os.path.join(A, "icon_app.png")
+    if not os.path.exists(src):
+        print("（なし）", src)
+        return
+    im = Image.open(src).convert("RGB")
+    for n in (512, 192, 180, 32):
+        dst = os.path.join(A, "icon_%d.png" % n)
+        im.resize((n, n), Image.LANCZOS).save(dst, optimize=True)
+        print(dst, os.path.getsize(dst) // 1024, "KB")
+
+
+def og():
+    """リンクのプレビュー画像（1200x630）：タイトル背景＋キャラ絵を下にならべる。文字は og:title で出るので入れない"""
+    bg = Image.open(os.path.join(A, "title_bg.png")).convert("RGB")
+    w, h = 1200, 630
+    s = max(w / bg.width, h / bg.height)
+    bg = bg.resize((round(bg.width * s), round(bg.height * s)), Image.LANCZOS)
+    top = int((bg.height - h) * 0.3)
+    bg = bg.crop(((bg.width - w) // 2, top, (bg.width - w) // 2 + w, top + h)).convert("RGBA")
+    shade = Image.new("RGBA", (w, h))
+    for y in range(h):
+        a = int(170 * max(0, (y - h * 0.45) / (h * 0.55)))
+        for x in range(w):
+            shade.putpixel((x, y), (6, 3, 16, a))
+    bg.alpha_composite(shade)
+    names = [n for n in CHARAS + ("kousha",) if os.path.exists(os.path.join(A, "chara_%s.png" % n))]
+    size = 230 if len(names) <= 4 else 200
+    gap = (w - size * len(names)) // (len(names) + 1)
+    for i, n in enumerate(names):
+        c = Image.open(os.path.join(A, "chara_%s.png" % n)).convert("RGBA")
+        bb = c.getchannel("A").point(lambda v: 255 if v > 16 else 0).getbbox()
+        c = c.crop(bb)
+        k = size / max(c.size)
+        c = c.resize((round(c.width * k), round(c.height * k)), Image.LANCZOS)
+        x = gap + i * (size + gap) + (size - c.width) // 2
+        y = h - 28 - c.height - (14 if i % 2 else 0)
+        bg.alpha_composite(c, (x, y))
+    dst = os.path.join(A, "og.jpg")
+    bg.convert("RGB").save(dst, quality=84, optimize=True)
+    print(dst, os.path.getsize(dst) // 1024, "KB")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--stamp-eyes", action="store_true", help="目の位置に白目＋ピンクの黒目を描きこむ（画像の目がずれているとき用）")
     ap.add_argument("--crop", type=int, nargs=4, metavar=("L", "T", "R", "B"), help="縮小前に切り出す範囲（元画像の座標）")
-    ap.add_argument("--only", choices=("title", "board", "boss", "retro_title", "chara"))
+    ap.add_argument("--only", choices=("title", "board", "boss", "retro_title", "chara", "results", "icons", "og"))
     a = ap.parse_args()
     if a.only in (None, "title"):
         webp("title_bg", (1920, 1080))
@@ -149,9 +226,16 @@ def main():
         retro_title()
     if a.only in (None, "chara"):
         charas()
-    total = sum(os.path.getsize(os.path.join(A, f)) for f in ("title_bg.webp", "board_face.webp") + tuple("chara_%s.webp" % n for n in CHARAS)
+    if a.only in (None, "results"):
+        results()
+    if a.only in (None, "icons"):
+        icons()
+    if a.only in (None, "og"):
+        og()
+    total = sum(os.path.getsize(os.path.join(A, f)) for f in ("title_bg.webp", "board_face.webp", "result_win.webp", "result_lose.webp")
+                + tuple("chara_%s.webp" % n for n in CHARAS)
                 if os.path.exists(os.path.join(A, f)))
-    for f in ("boss_school.png", "title_bg.png"):
+    for f in ("boss_school.png", "title_bg.png", "over_bg.png"):
         f = os.path.join(ROOT, "retro", f)
         total += os.path.getsize(f) if os.path.exists(f) else 0
     print("ゲームが読む画像の合計: %d KB（目標 1024 KB 以下）" % (total // 1024))
