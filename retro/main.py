@@ -518,6 +518,9 @@ class Game:
         self.gold_next = 14   # 何体たおしたら光るおばけが出るか
         self.dda = 0.0        # やられたら上がる「やさしさ」（ボスと弾がゆるくなる）
         self.form_t = 120
+        self.formation_n = 0
+        self.dodge_until = 0
+        self.safe_x = None
         self.dmg_taken = 0
         self.combo = 0
         self.combo_t = 0
@@ -680,6 +683,13 @@ class Game:
             self.flash -= 1
 
     def auto_aim(self):
+        # 動作確認用オートも、新しい予告の安全地帯へ移動する。
+        safe = self.safe_x if self.run < self.dodge_until else None
+        if self.boss and self.boss.state == "fight" and (self.boss.warn or self.bullets):
+            safe = getattr(self.boss, "safe_x", None)
+        if safe is not None:
+            self.aim[0] = max(4, min(W - 4, W / 2 + (safe - self.px) * W / 9))
+            return
         best = None
         for e in self.enemies:
             if e.mode == "tire":
@@ -715,7 +725,12 @@ class Game:
             prog = self.run / STAGE_LEN
             self.form_t -= 1
             alive = len([e for e in self.enemies if e.mode != "tire"])
+            if self.run < self.dodge_until:
+                return
             if self.form_t <= 0 and alive < 5:   # 隊列は最大6体なので、同時に10体前後までにおさえる
+                if prog > 0.25 and (self.formation_n + 1) % 3 == 0 and self.enemies:
+                    self.form_t = 10
+                    return
                 self.formation(prog)
                 self.form_t = int(random.uniform(95, 125) - prog * 45)
             elif alive == 0 and self.form_t > 20:
@@ -726,6 +741,32 @@ class Game:
             self.update_mid()
 
     def formation(self, prog):
+        self.formation_n += 1
+        if prog > 0.25 and self.formation_n % 3 == 0:
+            self.safe_x = max(X0 - 75, min(X0 + 75, self.cx + random.choice((-55, 0, 55))))
+            for b in self.bullets:
+                p = self.proj(b.x, b.y, b.z)
+                if p:
+                    self.fx.append(("pop", p[0], p[1], 0, 0, 10))
+            self.bullets.clear()
+            self.dodge_until = self.run + 155
+            self.form_t = 100
+            for dx in (-90, -45, 0, 45, 90):
+                x = self.cx + dx
+                if abs(x - self.safe_x) > 32:
+                    self.spawn("tire", x, self.cy - 230, mode="tire")
+            self.say("よける！ みずいろの すきまへ", 100)
+            return
+        before = len(self.enemies)
+        self.spawn_formation(prog)
+        members = [e for e in self.enemies[before:] if e.mode != "tire"]
+        if len(members) >= 2:
+            group = {"left": len(members), "failed": False}
+            for e in members:
+                e.formation = group
+        self.say("ねらって ぜんぶ ポン！", 65)
+
+    def spawn_formation(self, prog):
         r = random.random()
         cx = self.px + random.uniform(-40, 40)
         far = self.cy - 300
@@ -762,7 +803,8 @@ class Game:
                 self.spawn("tire", self.px + random.uniform(-70, 70), far - i * 50, mode="tire")
             self.spawn(random.choice(("randoseru", "ball")), cx, far - 40)
         else:
-            self.formation(0.4)
+            for dx in (-30, 0, 30):
+                self.spawn("randoseru", cx + dx, far, mode="line")
             self.spawn("uwabaki", cx, far - 60, mode="dive")
 
     def spawn(self, kind=None, x=None, y=None, mode="sway"):
@@ -832,6 +874,8 @@ class Game:
                 e.throw = int(random.randint(110, 200) * (1 + self.dda * 0.8) - prog * 40)
         if dist < PD:
             e.gone = True
+            if hasattr(e, "formation"):
+                e.formation["failed"] = True
             # ぶつかって いたいのは「つっこむ うわばき」と「タイヤ」だけ（見てわかる危険）。
             # ふつうの おばけは 頭の上を とびこえて にげる（コンボが きれる）
             if e.mode in ("tire", "dive"):
@@ -844,6 +888,10 @@ class Game:
 
     # ---------- 中ボス：ランドセルだいおう ----------
     def start_mid(self):
+        self.dodge_until = 0
+        self.safe_x = None
+        self.enemies = [e for e in self.enemies if e.mode != "tire"]
+        self.bullets.clear()
         self.phase = "mid"
         m = self.spawn("randoseru", self.px, self.cy - 260, mode="mid")
         m.big = True
@@ -964,7 +1012,18 @@ class Game:
         self.fx.append(("splash", ax, ay, 0, 0, 10))
 
     def kill(self, e):
+        if e.gone:
+            return
         e.gone = True
+        if hasattr(e, "formation"):
+            group = e.formation
+            group["left"] -= 1
+            if group["left"] == 0 and not group["failed"]:
+                self.score += 1000
+                self.ammo = min(AMMO_MAX, self.ammo + 8)
+                self.chime = min(100, self.chime + (0 if getattr(self, "chiming", False) else 10))
+                self.say("ぜんぶ ポン！ +1000 みず +8", 90)
+                pyxel.play(2, 10)
         self.kills += 1
         self.combo += 1
         self.combo_t = 100
@@ -1031,6 +1090,10 @@ class Game:
 
     # ---------- ボス：おばけこうしゃ ----------
     def start_boss(self):
+        self.dodge_until = 0
+        self.safe_x = None
+        self.enemies.clear()
+        self.bullets.clear()
         b = Obj()
         b.dist = 520.0
         b.y = self.cy - b.dist
@@ -1040,6 +1103,8 @@ class Game:
         b.t = 0
         b.atk = 120
         b.hit = 0
+        b.pattern = 0
+        b.warn = False
         self.boss = b
         pyxel.playm(1, loop=True)
         pyxel.play(3, 7)
@@ -1077,16 +1142,20 @@ class Game:
         elif b.state == "fight":
             b.atk -= 1
             rage = b.hp < BOSS_HP / 2
+            if b.atk <= 60 and not b.warn:
+                b.warn = True
+                b.pattern = (b.pattern + 1) % 3
+                b.safe_x = max(X0 - 75, min(X0 + 75, self.cx + (55 if b.pattern == 0 else -55 if b.pattern == 1 else 0)))
+                self.say(("ひだりめ！ みぎへ よけよう", "みぎめ！ ひだりへ よけよう", "りょうめ！ まんなかが あんぜん")[b.pattern], 65)
+                pyxel.play(3, 7)
             if b.atk <= 0:
-                kind = random.choice(("paper", "paper", "minion"))
-                if kind == "paper":
-                    n = (5 if rage else 3) - int(self.dda * 2)
-                    for i in range(max(1, n)):
-                        self.throw(b.x + random.uniform(-40, 40), b.y + 5, 30, dur=90)
-                else:
-                    for i in range(2):
-                        self.spawn(None, b.x + random.uniform(-50, 50), b.y + 10)
-                b.atk = int((70 if rage else 110) * (1 + self.dda * 0.8))
+                for dx in (-90, -45, 0, 45, 90):
+                    tx = self.cx + dx
+                    if abs(tx - b.safe_x) > 32:
+                        self.throw(b.x + dx * 0.4, b.y + 5, 30, dur=80 if rage else 95)
+                        self.bullets[-1].tx = tx
+                b.atk = int((125 if rage else 155) * (1 + self.dda * 0.8))
+                b.warn = False
             if rage and b.t % 240 == 0:
                 self.say("おこった！ めが まっかだ！", 90)
         elif b.state == "die":
@@ -1258,7 +1327,20 @@ class Game:
         if flash:
             pyxel.pal()
 
+    def draw_safe_lane(self, world_x):
+        p = self.proj(world_x, self.cy - PD, 1)
+        if not p:
+            return
+        x = max(18, min(W - 18, p[0]))
+        pyxel.rectb(x - 16, H - 30, 32, 19, CY_)
+        if p[0] < 18 or p[0] > W - 18:
+            self.otext(x - 3, H - 25, "<" if p[0] < 18 else ">", CY_, K)
+
     def draw_play(self):
+        if self.run < self.dodge_until and self.safe_x is not None:
+            self.draw_safe_lane(self.safe_x)
+        if self.boss and self.boss.state == "fight" and (self.boss.warn or self.bullets):
+            self.draw_safe_lane(self.boss.safe_x)
         # ボス
         if self.boss:
             b = self.boss
@@ -1278,6 +1360,9 @@ class Game:
                     ex, ey, er = self.boss_eye_pos(i)
                     if self.t % 30 < 15:
                         pyxel.circb(ex, ey, er + 3, GO)
+                    if b.warn and (b.pattern == 2 or i == b.pattern):
+                        pyxel.circ(ex, ey, max(2, er * 0.5), WH if self.t % 12 < 6 else GO)
+                        pyxel.circb(ex, ey, er + 5, GO)
         # 木・おばけ・紙くず（奥から順に）
         for zc, kind, o, p in self.sprites():
             if kind == "tree":
@@ -1287,6 +1372,7 @@ class Game:
             elif kind == "enemy":
                 if o.mode == "tire":
                     self.draw_sprite(128, 0, 16, 16, p[0], p[1] + FOCAL * 4 / zc, 16, zc)
+                    self.otext(p[0] - 2, p[1] - FOCAL * 16 / zc - 8, "!", RD, WH)
                     continue
                 u, v = ENEMY_SPR[o.kind]
                 # かげ
@@ -1302,6 +1388,7 @@ class Game:
                     self.otext(p[0] - 3, p[1] - FOCAL * o.s / zc - 12, "!", RD, WH)
             else:
                 self.draw_sprite(64, 0, 8, 8, p[0], p[1], 7, zc)
+                pyxel.circb(p[0], p[1] - FOCAL * 3 / zc, max(3, FOCAL * 5 / zc), RD)
         # みずでっぽうの水・エフェクト
         for f in self.fx:
             kind = f[0]
@@ -1601,4 +1688,5 @@ class Game:
         pyxel.text(x, y, s, col, self.font)
 
 
-Game()
+if __name__ == "__main__":
+    Game()
