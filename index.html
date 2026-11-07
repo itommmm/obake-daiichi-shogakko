@@ -1418,7 +1418,7 @@ function resize(){
   applyQuality();
 }
 
-/* ===== ゲーム進行（ロジックは2D版と同じ） ===== */
+/* ===== ゲーム進行 ===== */
 function newGame(withOpening){
   const d=DIFFS[modeKey];G.diff=d;G.score=0;G.hearts=d.hearts;G.maxHearts=d.hearts;G.maxCombo=0;G.totalKills=0;G.dda=0;G.shotN=0;G.hitShotN=0;G.sp=0;G.parts=[];G.texts=[];
   G.wlv=1;G.pow=null;G.lightCd=0;G.bellCd=0;G.fireCd=0;if(withOpening&&KID)startOpening();else startWave(0);
