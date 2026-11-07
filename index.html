@@ -259,13 +259,13 @@ const DIFFS={
   hard:{hearts:3,spd:1.3,time:-10,label:'むずかしい'},
 };
 const WAVES=[
-  {place:'classroom',name:'5-1 きょうしつ',sub:'つくえ・ランドセル・いすが うごきだした！',goal:16,time:70,types:{randoseru:3,isu:3,tsukue:2,keshigomu:2},max:4,every:1.6},
-  {place:'hallway',name:'2かい ろうか ダッシュ',sub:'ろうかを はしって すすめ！ ていでんに ちゅうい',tag:'▶ まえへ すすむ ステージ',goal:24,time:80,types:{sheet:4,randoseru:2,keshigomu:3,isu:1},max:5,every:1.2,blackout:1,chime:1},
-  {place:'science',name:'りかしつ',sub:'みどりの フラスコを うつと だいばくはつ！',goal:28,time:80,types:{flask:4,globe:2,scissors:3,pencup:2,sheet:1},max:6,every:1.1,chime:1},
-  {place:'getabako',name:'しょうこうぐち',sub:'げたばこから うわばきが とびだす！',tag:'▶ よこへ すすむ ステージ',goal:28,time:80,types:{uwabaki:6,keshigomu:2,sheet:2,randoseru:1},max:6,every:.95,chime:1},
-  {place:'gym',name:'よるの おんがくかい',sub:'がっきが おとを たてて とんでくる！',tag:'たいいくかん',goal:30,time:85,types:{taiko:2,cymbal:3,triangle:3,recorder:3,tambourine:2,kenhamo:2},max:6,every:1.0,chime:1},
-  {place:'yard',name:'よるの こうてい',sub:'ぜんそくりょくで かけぬけろ！ そらからも くるぞ',tag:'▶▶ こうそく ぜんしん ステージ',goal:34,time:90,types:{sheet:4,ball:3,scissors:2,globe:1,uwabaki:2},max:7,every:.85,chime:1},
-  {place:'boss',name:'5-1 きょうしつ ふたたび',sub:'ちゅうボス ロッカーだいおうが あらわれた！',time:100,types:{randoseru:2,isu:2,keshigomu:2,sheet:1},max:5,every:2.6,chime:1,boss:'locker'},
+  {place:'classroom',name:'5-1 きょうしつ',sub:'つくえ・ランドセル・いすが うごきだした！',goal:22,time:70,types:{randoseru:3,isu:3,tsukue:2,keshigomu:2},max:6,every:1.2},
+  {place:'hallway',name:'2かい ろうか ダッシュ',sub:'ろうかを はしって すすめ！ ていでんに ちゅうい',tag:'▶ まえへ すすむ ステージ',goal:34,time:80,types:{sheet:4,randoseru:2,keshigomu:3,isu:1},max:7,every:.9,blackout:1,chime:1},
+  {place:'science',name:'りかしつ',sub:'みどりの フラスコを うつと だいばくはつ！',goal:39,time:80,types:{flask:4,globe:2,scissors:3,pencup:2,sheet:1},max:8,every:.85,chime:1},
+  {place:'getabako',name:'しょうこうぐち',sub:'げたばこから うわばきが とびだす！',tag:'▶ よこへ すすむ ステージ',goal:39,time:80,types:{uwabaki:6,keshigomu:2,sheet:2,randoseru:1},max:8,every:.72,chime:1},
+  {place:'gym',name:'よるの おんがくかい',sub:'がっきが おとを たてて とんでくる！',tag:'たいいくかん',goal:42,time:85,types:{taiko:2,cymbal:3,triangle:3,recorder:3,tambourine:2,kenhamo:2},max:8,every:.75,chime:1},
+  {place:'yard',name:'よるの こうてい',sub:'ぜんそくりょくで かけぬけろ！ そらからも くるぞ',tag:'▶▶ こうそく ぜんしん ステージ',goal:48,time:90,types:{sheet:4,ball:3,scissors:2,globe:1,uwabaki:2},max:9,every:.65,chime:1},
+  {place:'boss',name:'5-1 きょうしつ ふたたび',sub:'ちゅうボス ロッカーだいおうが あらわれた！',time:100,types:{randoseru:2,isu:2,keshigomu:2,sheet:1},max:6,every:2.1,chime:1,boss:'locker'},
   {place:'bossyard',name:'さいごの たたかい',sub:'がっこう そのものが おばけに なった!!',tag:'ボス：おばけこうしゃ',time:160,types:{randoseru:2,isu:2,sheet:1,keshigomu:1},max:3,every:5.5,boss:'kousha'},
 ];
 // zb:奥の壁 spawn:出現位置 halfW:部屋の半幅(m) ceil:天井(m) xs:左右の広がり
@@ -1244,7 +1244,7 @@ function resize(){
 
 /* ===== ゲーム進行（ロジックは2D版と同じ） ===== */
 function newGame(withOpening){
-  const d=DIFFS[modeKey];G.diff=d;G.score=0;G.hearts=d.hearts;G.maxHearts=d.hearts;G.maxCombo=0;G.totalKills=0;G.sp=0;G.parts=[];G.texts=[];
+  const d=DIFFS[modeKey];G.diff=d;G.score=0;G.hearts=d.hearts;G.maxHearts=d.hearts;G.maxCombo=0;G.totalKills=0;G.dda=0;G.shotN=0;G.sp=0;G.parts=[];G.texts=[];
   G.wlv=1;G.pow=null;G.lightCd=0;G.bellCd=0;if(withOpening&&KID)startOpening();else startWave(0);
 }
 function startWave(i){
@@ -1287,7 +1287,9 @@ function update(dt){
   if(ptr.down&&G.fireCd<=0)fire();
   const w=G.wave;G.spawnT-=dt;
   const need=w.boss?99:G.goal-G.kills-alive();
-  if(G.spawnT<=0){G.spawnT=w.every*rnd(.7,1.2)/(G.diff.spd*.6+.4);if(alive()<w.max&&need>0)spawn(pickType(w.types));}
+  if(!w.boss&&need>0&&alive()===0&&G.spawnT>.3)G.spawnT=.3;   // 画面が からっぽの時間を つくらない
+  if(G.spawnT<=0){G.spawnT=w.every*rnd(.7,1.2)/(G.diff.spd*.6+.4)*(1+G.dda*.5);if(alive()<w.max&&need>0){spawn(pickType(w.types));if(!w.boss&&G.waveIdx>=2&&Math.random()<.35&&alive()<w.max&&need>1)spawn(pickType(w.types));}}
+  G.dda=Math.max(0,G.dda-dt*.04);
   if(w.blackout){G.blackT-=dt;if(G.blackT<=0){if(G.black>0){G.black=0;G.blackT=12;}else{G.black=6;G.blackT=6;addText(W/2,H*.3,'ていでん！ Zで ライト！','#ffe9a8',34);SFX.revive();}}if(G.black>0)G.black-=dt;}
   if(w.chime&&!G.chime){G.chimeT-=dt;if(G.chimeT<=0){if(G.fallen.length>=2)startChime();else G.chimeT=4;}}
   if(G.chime)updChime(dt);
@@ -1328,7 +1330,12 @@ function updEnemies(dt,live){
     }
     if(T.inst&&live){e.bang=Math.max(0,(e.bang||0)-dt);e.snd=(e.snd==null?rnd(.3,1.8):e.snd)-dt;if(e.snd<=0&&e.appear>.9){e.snd=rnd(1.4,2.8);const v=clamp(1.2-e.z,.25,1);const r=INSTS[T.inst](v);addText(e.sx+rnd(-20,20)*U,e.sy-e.u*1.25,r[0],r[1],14+v*8);e.bang=.25;}}
     if(live&&!T.boss&&!T.minor&&G.waveIdx>=1&&!(G.wave&&G.wave.boss)&&e.z<.75&&e.appear>=1){e.throwT=(e.throwT==null?rnd(1.5,4):e.throwT)-dt;
-      if(e.throwT<=0){e.throwT=rnd(2.6,4.6)/(1+G.waveIdx*.08);if(G.enemies.filter(o=>o.T.minor&&!o.dead).length<4){const pr=spawn(G.place==='science'?'pen':'paper',e.x,Math.max(.1,e.z-.03),e.h+.2);pr.appear=.6;pr.spdMul=1.05;addText(e.sx,e.sy-e.u,'ポイッ','#ffffff',15);}}}
+      if(e.throwT<=0){e.throwT=rnd(2.6,4.6)/(1+G.waveIdx*.14)*(1+G.dda);if(G.enemies.filter(o=>o.T.minor&&!o.dead).length<6){const pr=spawn(G.place==='science'?'pen':'paper',e.x,Math.max(.1,e.z-.03),e.h+.2);pr.appear=.6;pr.spdMul=(1.05+G.waveIdx*.05)/(1+G.dda*.4);addText(e.sx,e.sy-e.u,'ポイッ','#ffffff',15);}}}
+    if(live&&!T.boss&&!T.minor&&G.waveIdx>=1&&!(G.wave&&G.wave.boss)&&e.appear>=1){
+      if(e.charger==null)e.charger=Math.random()<(.14+G.waveIdx*.035)*(1-G.dda*.7);
+      if(e.charger&&!e.chg&&e.z<.62){e.chg=.55;e.spdMul0=e.spdMul||1;e.spdMul=0;addText(e.sx,e.sy-e.u*1.4,'！','#ff5f5f',38);SFX.hurt&&tone(880,.08,'square',.05);}
+      if(e.chg>0){e.chg-=dt;e.flash=Math.max(e.flash,.05);if(e.chg<=0){e.chg=-1;e.spdMul=e.spdMul0*4.5;}}
+    }
     if(e.dropH>0){e.dropH=Math.max(0,e.dropH-dt*2.2);e.h+=e.dropH;}
     const RM=ROOMS[G.place];
     if(RM.mode==='side'&&!T.boss){e.x-=RM.spd*dt/((.8+.6*Math.max(0,e.z))*RM.xs);if(e.x<-1.3){e.dead=true;continue;}}
@@ -1349,12 +1356,12 @@ function bossAI(e,dt,live){
   e.atk-=dt;const r=e.hp/e.max;
   if(r<.66&&G.rage<1){G.rage=1;rageUp();}
   if(r<.33&&G.rage<2){G.rage=2;rageUp();}
-  if(e.atk<=0){e.atk=(G.rage===2?1.6:G.rage?2.2:3.0)/G.diff.spd;e.mouth=.6;
+  if(e.atk<=0){e.atk=(G.rage===2?1.6:G.rage?2.2:3.0)/G.diff.spd*(1+(G.dda||0)*.6);e.mouth=.6;
     if(Math.random()<.55){const n=G.rage===2?2:1;for(let i=0;i<n;i++){const p=spawn('paper',e.x+rnd(-.25,.25),e.z-.04,.4);p.appear=.6;}addText(e.sx,e.sy-e.u,'テストこうげき!','#fff',20);}
     else if(alive()<G.wave.max)spawn(pickType(G.wave.types),e.x+rnd(-.3,.3),e.z-.03);}
   if(e.mouth>0)e.mouth-=dt;
 }
-function hurtPlayer(msg){if(G.inv>0)return;G.hearts--;G.inv=1.4;G.shake=1;G.hurt=1;G.combo=0;G.noHit=false;SFX.hurt();addText(W/2,H*.62,msg,'#ff5fb8',54);if(G.hearts<=0)finish(false,'やられた…');}
+function hurtPlayer(msg){if(G.inv>0)return;G.dda=Math.min(1,(G.dda||0)+.34);G.hearts--;G.inv=1.4;G.shake=1;G.hurt=1;G.combo=0;G.noHit=false;SFX.hurt();addText(W/2,H*.62,msg,'#ff5fb8',54);if(G.hearts<=0)finish(false,'やられた…');}
 function kAI(e,dt,live){
   e.x=Math.sin(e.t*.25)*.1;e.z=5.1;
   if(e.hT==null){e.hT=0;e.mode='idle';e.mt=2.5;e.mouthOpen=0;e.tongue=0;}
@@ -1374,7 +1381,7 @@ function kAI(e,dt,live){
   e.mouthOpen=Math.max(0,e.mouthOpen-dt*2);
   if(e.mt<=0){
     const opts=G.rage?['windows','paper','tongue','chime','windows','tongue']:['windows','paper','tongue','chime'];let a=opts[Math.random()*opts.length|0];if(a===e.last)a=opts[(opts.indexOf(a)+1)%opts.length];e.last=a;
-    e.mt=(G.rage===2?2.4:G.rage?3:3.6)/G.diff.spd;
+    e.mt=(G.rage===2?2.4:G.rage?3:3.6)/G.diff.spd*(1+(G.dda||0)*.6);
     if(a==='windows'){e.winFx=1;SFX.boom();addText(W/2,H*.3,'まどから つくえ ミサイル!','#ffd23f',32);const n=G.rage?2:1;for(let i=0;i<n;i++){const m=spawn(['tsukue','isu','randoseru'][(i+(e.t|0))%3],rnd(-.85,.85),1.45);m.dropH=2.6+rnd(0,1);m.spdMul=1.2;m.appear=.5;}}
     else if(a==='paper'){addText(W/2,H*.3,'テストようし ふぶき!','#ffffff',32);SFX.revive();for(let i=0;i<(G.rage?4:3);i++){const m=spawn('paper',rnd(-.8,.8),1.5,.4);m.dropH=2+rnd(0,1.5);m.appear=.4;m.spdMul=.7;}}
     else if(a==='tongue'){e.mode='tongueWarn';e.mt=3.0;e.tongueHP=G.rage?4:3;addText(W/2,H*.3,'ろうかベロが くる！ くちを うて!!','#ff8fd0',34);SFX.revive();}
@@ -1385,7 +1392,7 @@ function rageUp(){G.shake=.8;SFX.boom();addText(W/2,H*.32,'ロッカーだいお
 function bite(e){
   e.dead=true;puff(e,16,'#ff5fb8');
   if(G.inv>0)return;
-  G.hearts--;G.inv=1.2;G.shake=.5;G.hurt=1;G.combo=0;G.noHit=false;SFX.hurt();
+  G.hearts--;G.inv=1.2;G.shake=.5;G.hurt=1;G.combo=0;G.noHit=false;G.dda=Math.min(1,(G.dda||0)+.34);SFX.hurt();
   addText(W/2,H*.62,'ガブッ!','#ff5fb8',54);
   if(G.hearts<=0)finish(false,'やられた…');
 }
@@ -1405,23 +1412,26 @@ function waveClear(){
   for(const e of G.enemies)if(!e.dead){e.dead=true;puff(e,10,'#b47cff');}
   G.souls=[];G.chime=null;G.items=[];
   const tb=Math.ceil(G.time)*50;G.score+=tb;G.clearInfo=[`タイムボーナス +${tb}`];
-  if(G.noHit){G.score+=1000;G.clearInfo.push('ノーダメージ +1000');}
+  if(G.noHit){G.score+=2500;G.clearInfo.push('ノーダメージ +2500');}
   const up={1:2,3:3,5:4}[G.waveIdx];if(up&&(G.wlv||1)<up){G.wlv=up;G.clearInfo.unshift('みずでっぽう パワーアップ！ Lv'+up+' '+WLV[up].name);G.ammo=maxAmmo();G.gunFx=1.5;setTimeout(()=>{SFX.clear();tone(1568,.4,'triangle',.1,1,.3);},300);}
   const nx=WAVES[G.waveIdx+1];if(nx&&nx.boss&&G.hearts<G.maxHearts){G.hearts=G.maxHearts;G.clearInfo.push('ほけんしつで ぜんかいふく！');}else if(G.hearts<G.maxHearts&&nx){G.hearts++;G.clearInfo.push('ハート +1');}
   state='clear';G.clearT=G.waveIdx+1<WAVES.length?3:4.5;SFX.clear();
 }
 function finish(win,msg){
   state='result';showHUD(false);ptr.down=false;
+  // さいごの ボーナス：命中率（たおした数÷うった数）と 最大コンボで、うまさの差が スコアに出るように
+  const acc=Math.min(1,(G.totalKills||0)/Math.max(1,G.shotN||0));const accB=Math.round(acc*20000/100)*100,comboB=G.maxCombo*150;
+  G.score+=accB+comboB;G.finalBonus={acc:Math.round(acc*100),accB,comboB};
   let best=0;try{best=+localStorage.getItem('obake1-best')||0;if(G.score>best)localStorage.setItem('obake1-best',G.score);}catch(e){}
-  const rank=!win?(G.score>=60000?'B':'C'):G.score>=115000?'S':G.score>=90000?'A':'B';
+  const rank=!win?(G.score>=140000?'B':'C'):G.score>=185000?'S':G.score>=175000?'A':'B';
   $('rTitle').textContent=win?'ぜんぶ たいじ！':msg;$('rRank').textContent=rank;
-  $('rScore').textContent=G.score.toLocaleString();$('rKills').textContent=G.totalKills;$('rCombo').textContent=G.maxCombo;
+  $('rScore').textContent=G.score.toLocaleString();$('rKills').textContent=G.totalKills;$('rCombo').textContent=G.maxCombo+(G.finalBonus?'（めいちゅう '+G.finalBonus.acc+'%）':'');
   $('rBest').textContent=G.score>best?'ハイスコア こうしん！':`ハイスコア ${best.toLocaleString()}`;
   $('result').hidden=false;if(win)SFX.clear();
 }
 
 /* ===== 射撃 ===== */
-function fire(){
+function fire(){G.shotN=(G.shotN||0)+1;
   if(G.reload>0)return;
   const L=WLV[G.wlv||1],pw=G.pow&&G.pow.t>0?G.pow.kind:null;
   if(G.ammo<=0&&pw!=='rapid'){startReload();return;}
