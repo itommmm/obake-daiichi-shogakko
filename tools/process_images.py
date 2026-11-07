@@ -193,7 +193,7 @@ def og():
         for x in range(w):
             shade.putpixel((x, y), (6, 3, 16, a))
     bg.alpha_composite(shade)
-    names = [n for n in CHARAS + ("kousha",) if os.path.exists(os.path.join(A, "chara_%s.png" % n))]
+    names = [n for n in CHARAS if os.path.exists(os.path.join(A, "chara_%s.png" % n))]
     size = 230 if len(names) <= 4 else 200
     gap = (w - size * len(names)) // (len(names) + 1)
     for i, n in enumerate(names):
