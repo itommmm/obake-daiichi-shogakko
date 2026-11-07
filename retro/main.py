@@ -310,6 +310,7 @@ def build_images():
     # 校舎（バンク2）：0,0 = おばけ校舎、0,64 = いかり、0,128 = もとに戻った校舎
     for i, mode in enumerate(("obake", "angry", "normal")):
         draw_school(pyxel.images[2], 0, i * 64, mode)
+    load_boss_image(pyxel.images[2])
     # 地面のタイル（バンク0）
     g = pyxel.images[0]
     g.cls(0)
@@ -339,6 +340,31 @@ def build_images():
             else:
                 t = (4, 0) if rnd.random() < 0.3 else (0, 0)
             tm.pset(tx, ty, t)
+
+
+# 生成画像のボス（96x64、NIGHT パレットに減色ずみ）。"obake" と "angry" をこれで置きかえる。
+# 目（弱点）は boss_eye_pos と同じ位置：左 x20-29・右 x68-77、y29-38。
+# "angry" は目の中のピンクを赤に置きかえる。画像が無いときは draw_school の絵のまま。
+BOSS_PNG = "boss_school.png"
+BOSS_EYES = ((20, 29, 10, 10), (68, 29, 10, 10))
+
+
+def load_boss_image(img):
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), BOSS_PNG)
+    if not os.path.exists(path):
+        return
+    try:
+        img.load(0, 0, path)
+        img.load(0, 64, path)
+    except Exception:
+        for i, mode in enumerate(("obake", "angry")):
+            draw_school(img, 0, i * 64, mode)
+        return
+    for ex, ey, ew, eh in BOSS_EYES:
+        for y in range(ey, ey + eh):
+            for x in range(ex, ex + ew):
+                if img.pget(x, 64 + y) == PK:
+                    img.pset(x, 64 + y, RD)
 
 
 def draw_school(img, ox, oy, mode):
