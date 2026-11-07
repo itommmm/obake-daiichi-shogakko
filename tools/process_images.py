@@ -7,6 +7,8 @@
     assets/title_bg.png     1920x1080  → assets/title_bg.webp（品質80）
     assets/board_face.png   1024x512   → assets/board_face.webp（品質80）
     assets/boss_school.png  384x256 透過 → retro/boss_school.png（96x64・NIGHT 20色）
+    assets/title_bg.png     → retro/title_bg.png（288x162・NIGHT 20色、レトロ版タイトルの背景）
+    assets/chara_*.png 透過  → assets/chara_*.webp（192x192、3D版タイトルのキャラ絵）
 
 ボスは最近傍で 96x64 に縮小し、retro/main.py の NIGHT パレットへ減色する。
 とうめい部分は色0（blt で抜ける色）、それ以外は色1〜19 だけを使う。
@@ -17,7 +19,7 @@ import argparse
 import os
 import sys
 
-from PIL import Image
+from PIL import Image, ImageEnhance
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 A = os.path.join(ROOT, "assets")
@@ -88,11 +90,54 @@ def boss(stamp_eyes, crop):
     return out
 
 
+def retro_title():
+    """タイトル背景を レトロ版の画面（288x162）に縮めて NIGHT パレットへ減色（ディザなし）"""
+    src = Image.open(os.path.join(A, "title_bg.png")).convert("RGB").resize((288, 162), Image.LANCZOS)
+    src = ImageEnhance.Contrast(src).enhance(1.15)
+    # 下ほど暗く（3D版と同じく、上に重ねる文字を読みやすくする）
+    px = src.load()
+    for y in range(162):
+        k = 1.0 if y < 96 else 1.0 - 0.5 * (y - 96) / 66
+        for x in range(288):
+            r, g, b = px[x, y]
+            px[x, y] = (int(r * k), int(g * k), int(b * k))
+    pal = Image.new("P", (1, 1))
+    flat = [v for c in RGB for v in c]
+    pal.putpalette(flat + list(RGB[0]) * (256 - len(RGB)))
+    out = src.quantize(palette=pal, dither=Image.Dither.NONE).convert("RGB")
+    dst = os.path.join(ROOT, "retro", "title_bg.png")
+    out.save(dst, optimize=True)
+    print("%s  %d KB" % (dst, os.path.getsize(dst) // 1024))
+
+
+CHARAS = ("randoseru", "isu", "tsukue", "locker")
+
+
+def charas():
+    """キャラ絵（透過 PNG）を 192x192 の透過 WebP に。無いものは飛ばす"""
+    for n in CHARAS:
+        src = os.path.join(A, "chara_%s.png" % n)
+        if not os.path.exists(src):
+            print("（なし）", src)
+            continue
+        im = Image.open(src).convert("RGBA")
+        bb = im.getchannel("A").point(lambda v: 255 if v > 16 else 0).getbbox()
+        if bb:
+            im = im.crop(bb)
+        side = max(im.size)
+        sq = Image.new("RGBA", (side, side), (0, 0, 0, 0))
+        sq.paste(im, ((side - im.width) // 2, (side - im.height) // 2))
+        sq = sq.resize((192, 192), Image.LANCZOS)
+        dst = os.path.join(A, "chara_%s.webp" % n)
+        sq.save(dst, "WEBP", quality=85, method=6)
+        print("%s -> %s  %d KB" % (src, dst, os.path.getsize(dst) // 1024))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--stamp-eyes", action="store_true", help="目の位置に白目＋ピンクの黒目を描きこむ（画像の目がずれているとき用）")
     ap.add_argument("--crop", type=int, nargs=4, metavar=("L", "T", "R", "B"), help="縮小前に切り出す範囲（元画像の座標）")
-    ap.add_argument("--only", choices=("title", "board", "boss"))
+    ap.add_argument("--only", choices=("title", "board", "boss", "retro_title", "chara"))
     a = ap.parse_args()
     if a.only in (None, "title"):
         webp("title_bg", (1920, 1080))
@@ -100,10 +145,15 @@ def main():
         webp("board_face", (1024, 512))
     if a.only in (None, "boss"):
         boss(a.stamp_eyes, a.crop)
-    total = sum(os.path.getsize(os.path.join(A, f)) for f in ("title_bg.webp", "board_face.webp")
+    if a.only in (None, "retro_title"):
+        retro_title()
+    if a.only in (None, "chara"):
+        charas()
+    total = sum(os.path.getsize(os.path.join(A, f)) for f in ("title_bg.webp", "board_face.webp") + tuple("chara_%s.webp" % n for n in CHARAS)
                 if os.path.exists(os.path.join(A, f)))
-    total += os.path.getsize(os.path.join(ROOT, "retro", "boss_school.png")) if os.path.exists(
-        os.path.join(ROOT, "retro", "boss_school.png")) else 0
+    for f in ("boss_school.png", "title_bg.png"):
+        f = os.path.join(ROOT, "retro", f)
+        total += os.path.getsize(f) if os.path.exists(f) else 0
     print("ゲームが読む画像の合計: %d KB（目標 1024 KB 以下）" % (total // 1024))
     if total > 1024 * 1024:
         sys.exit("1MB をこえています")

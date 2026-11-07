@@ -63,3 +63,58 @@ Two windows are its EYES: white squares with pink pupils, placed at left x=80..1
 and right x=272..312, y=116..156. The entrance door at the bottom center is its MOUTH with white teeth.
 No text.
 ```
+
+---
+
+# 第2弾：キャラ絵4枚（3D版タイトルのおばけ紹介に使う）
+
+4枚とも同じ絵柄にするため、下の「共通」を毎回プロンプトの先頭に付けてください。
+保存先は `assets/chara_randoseru.png`・`assets/chara_isu.png`・`assets/chara_tsukue.png`・`assets/chara_locker.png`。
+できたら次で push します。
+
+```bash
+git checkout feature/gen-images-2 && git pull && git add assets/chara_*.png && git commit -m "キャラ絵4枚を追加" && git push origin feature/gen-images-2
+```
+
+共通（毎回先頭に付ける）:
+
+```
+Generate an image, 1024x1024 PNG with a TRANSPARENT background.
+Cute-spooky ("kowa-kawa") mascot character for a kids' game about haunted school objects at night.
+One character only, centered, full body, slightly floating, 3/4 front view.
+Chibi proportions, big round eyes, mischievous but friendly smile, thick clean dark outline, soft cel shading,
+a faint purple ghostly glow around the body. No text, no letters, no background scenery, no shadow on the ground,
+no blood, no violence.
+```
+
+## 4. assets/chara_randoseru.png（ランドセロ）
+
+```
+The character: "Randosero", a haunted RED Japanese school backpack (randoseru) that came alive.
+The flap is its face with two big eyes and a grinning mouth, the shoulder straps wiggle like little arms,
+a wispy white ghost tail comes out of the bottom. Glossy red leather with gold clasp.
+```
+
+## 5. assets/chara_isu.png（いすわらし）
+
+```
+The character: "Isuwarashi", a haunted small wooden school chair (light brown wood seat and backrest,
+dark grey metal legs). The backrest is its face with big eyes and a cheeky smile; it hops on its legs.
+A small wispy white ghost tail floats behind it.
+```
+
+## 6. assets/chara_tsukue.png（つくえんぼ）
+
+```
+The character: "Tsukuenbo", a haunted Japanese school desk (wooden top, grey-purple metal frame and drawer box).
+The front of the drawer box is its face with big sleepy-mischievous eyes and a toothy grin,
+pencils and an eraser float around it. A wispy white ghost tail below.
+```
+
+## 7. assets/chara_locker.png（ロッカーだいおう）
+
+```
+The character: "Locker Daiou" (the Locker King), a BIG haunted grey steel school locker, the mid-boss.
+Its door vents form angry-but-cute eyebrows and big glowing eyes, the slightly open door is a mouth with
+a long playful tongue. A small golden crown on top. Purple ghostly aura, a bit bigger and bolder than the others.
+```
