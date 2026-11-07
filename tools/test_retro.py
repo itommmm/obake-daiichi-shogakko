@@ -116,20 +116,26 @@ class GameplayTests(unittest.TestCase):
             self.assertLessEqual(abs(self.g.safe_x - game.X0), 75)
 
     def test_headless_run_and_draw(self):
-        # Smoke test every gameplay frame through both bosses with generous health.
-        self.g.hearts = 999
+        # Smoke test every gameplay frame through all stages (mid-boss and boss each) with generous health.
         seen = set()
-        for _ in range(18000):
+        stages = set()
+        for _ in range(90000):
+            self.g.hearts = 999
             self.g.t += 1
+            if self.g.state == "clear":
+                self.g.update_clear()
+                continue
             self.g.update_play()
             if self.g.t % 60 == 0:
                 self.g.draw_play()
                 game.pyxel.reset_mock()
             seen.add(self.g.phase)
+            stages.add(self.g.st["name"])
             if self.g.state == "ending":
                 break
         self.assertEqual(self.g.state, "ending")
         self.assertTrue({"road", "mid", "road2"}.issubset(seen))
+        self.assertEqual(len(stages), len(game.STAGES))
 
     def test_embedded_browser_app_matches_source(self):
         encoded = re.search(r'base64: "([A-Za-z0-9+/=]+)"', (ROOT / "retro.html").read_text())[1]
