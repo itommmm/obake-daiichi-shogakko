@@ -177,3 +177,51 @@ no text. Keep important parts inside the central 80% (corners will be rounded by
 ```
 
 できたら、このチャット（Claude）に「push した」と伝えてください。
+
+---
+
+# 第4弾：レトロ版の敵4体（16x16 のドット絵）
+
+下の「まとめて頼む文」を **そのまま1回** Codex に貼ってください。4枚を作って保存するところまでで止まります（push はしません）。
+できたら画像を見て、よければ次で push してください。
+
+```bash
+git fetch && git checkout feature/retro-enemies && git pull && codex
+```
+
+```bash
+git add assets/enemy_*.png && git commit -m "レトロ版の敵ドット絵4枚を追加" && git push origin feature/retro-enemies
+```
+
+まとめて頼む文:
+
+```
+Use your built-in image generation tool to create the following 4 images, one after another, and save each one
+exactly at the given path as PNG. Do not edit any other file. Do NOT run git (no add, no commit, no push).
+When done, tell me the tool / model name shown (if any) and the date.
+
+Rules for ALL 4 images (very important, they will be reduced to 16x16 pixels for a retro game):
+- 256x256 PNG with a TRANSPARENT background.
+- True pixel art on a 16x16 grid: every art pixel is a perfect 16x16 square aligned to the canvas
+  (cell borders at x,y = 0,16,32,...,256). No anti-aliasing, no gradients, no blur, no dithering noise, no shadows.
+- The character fills about 14 cells wide and 14 cells tall, centered, feet/bottom on the 15th row (row 15 empty).
+- A 1-cell dark navy outline (#1D1440) around the whole character.
+- Use ONLY these colors: #1D1440 (outline), #F4F1FF (white), #E8433A (red), #FF5FB8 (pink), #FFD23F (yellow),
+  #A65CFF (light purple), #6B3FB0 (purple), #5E4A5A (dark grey-brown), #8A8AA0 (grey), #FF8A2A (orange),
+  #7A3010 (brown), #3B2C3E (very dark brown). At most 6 colors per character.
+- Cute-spooky kids' game enemy, front view, big simple eyes (2x2 or 2x3 cells each), friendly mischievous face.
+- The bottom 2 rows are a light-purple (#A65CFF) wispy ghost tail in 3-4 little points, like a ghost.
+- No text, no letters.
+
+[1] assets/enemy_randoseru.png — "Randosero": a RED Japanese school backpack (randoseru) ghost. The flap is the face
+    (white eyes with dark pupils, small mouth), a yellow clasp band across the middle, little strap arms on both sides.
+
+[2] assets/enemy_isu.png — "Isuwarashi": a small wooden school chair ghost. Brown wood backrest is the face
+    (white eyes, pink cheeks, grin), a brown seat below it, two grey metal legs.
+
+[3] assets/enemy_ball.png — "Ball Obake": a round white dodgeball ghost with a pink stripe band, big eyes and a wide
+    pink grin, round and bouncy.
+
+[4] assets/enemy_uwabaki.png — "Uwabakyun": a white Japanese indoor school slipper (uwabaki) ghost seen from the side
+    and a bit front, red rubber toe and red sole stripe, eyes on the white upper part, cheeky smile.
+```
