@@ -917,7 +917,8 @@ const MODEL={
   randoseru(){const g=new THREE.Group(),P={};
     const lea=mstd('#a10d24',.34,0,{bumpMap:TEX.bump,bumpScale:.025}),flap=mstd('#d21d36',.26,0,{bumpMap:TEX.bump,bumpScale:.02}),edge=mstd('#5a0712',.5,0),met=mstd('#dfe3ea',.18,1);
     add(g,RB(1.7,1.72,1.0,.24),lea,0,-.12,0);add(g,RB(1.78,1.55,.72,.14),edge,0,-.16,-.06);
-    add(g,RB(1.68,1.14,.16,.07),flap,0,.3,.5,-.07);add(g,RB(.18,.36,.07,.02),flap,0,-.2,.56);add(g,RB(.34,.22,.1,.03),met,0,-.24,.6);
+    P.flap=new THREE.Group();P.flap.position.set(0,.87,.5);g.add(P.flap);
+    add(P.flap,RB(1.68,1.14,.16,.07),flap,0,-.57,0,-.07);add(P.flap,RB(.18,.36,.07,.02),flap,0,-1.07,.06);add(P.flap,RB(.34,.22,.1,.03),met,0,-1.11,.1);
     for(const sx of[-.6,.6])add(g,RB(.16,1.4,.12,.05),edge,sx,-.05,-.56);
     face(g,{y:.45,z:.6,ex:.36,es:.17});P.mouth=face(g,{my:-.48,mz:.51,mw:.5,mh:.26,tongue:1});
     P.arms=arms(g,-.1,.86);return{g,P};},
@@ -1035,7 +1036,7 @@ const MODEL={
     P.arms=arms(g,-.2,.84,1.3);return{g,P};},
 };
 const ANIM={
-  randoseru(e,P,t){P.mouth.scale.y=1+.3*Math.sin(t*6);},
+  randoseru(e,P,t){P.mouth.scale.y=1+.3*Math.sin(t*6);P.flap.rotation.x=bagOpen(e)?-1.65:0;},
   isu(e,P,t){P.mouth.scale.y=1+.4*Math.sin(t*7);},
   tsukue(e,P,t){P.mouth.scale.y=1+.5*Math.abs(Math.sin(t*4));P.paper.rotation.z=.2+Math.sin(t*3)*.25;P.paper.position.y=1.15+Math.sin(t*2)*.08;},
   keshigomu(e,P,t){P.mouth.scale.y=1+.5*Math.sin(t*8);},
@@ -1064,7 +1065,7 @@ const ANIM={
 const LIVE=[];let au=null;
 const _v=new THREE.Vector3();
 function proj(x,y,z){_v.set(x,y,z).project(camera);return[(_v.x+1)/2*W,(1-_v.y)/2*H];}
-function placeOf(e){const ap=e.appear<1?.25+.75*e.appear:1;const s=e.T.size*SCL*ap;return{x:xW(e.x,e.z),y:e.h*LIFT+s+Math.sin(e.t*3+e.ph)*.02,z:zD(e.z),s};}
+function placeOf(e){const ap=e.appear<1?.25+.75*e.appear:1;const s=e.T.size*SCL*ap*(e.tower?1.45:1);return{x:xW(e.x,e.z),y:e.h*LIFT+s+Math.sin(e.t*3+e.ph)*.02,z:zD(e.z),s};}
 function makeEnemy3D(e){
   CUR=[];const m=MODEL[e.type]();const root=new THREE.Group();root.add(m.g);
   const auraM=new THREE.SpriteMaterial({map:TEX.aura,color:e.T.boss?new THREE.Color(2.2,.4,1.4):e.type==='flask'?new THREE.Color(.4,1.8,.9):new THREE.Color(1.1,.5,2.2),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,opacity:.5});
@@ -1397,7 +1398,7 @@ function remoteData(d){if(!d||typeof d!=='object')return;
   else if(d.t==='calmode'){$('calT').hidden=!d.on;}
   else if(d.t==='r'){if(state==='play'&&G.ammo<maxAmmo())startReload();}
   else if(d.t==='m'){const y=+d.y||0,p=+d.p||0;GYRO.tx=clamp(GYRO.tx+y*(W/2)/24,W*.04,W*.96);GYRO.ty=clamp(GYRO.ty-p*(H/2)/16,H*.1,H*.9);}
-  else if(d.t==='f'){REMOTE.fire=!!d.d;if(REMOTE.fire){if(state==='play'){if((G.fireCd||0)<=0)fire();}else if(state!=='intro'&&state!=='clear')remoteGo();}updDown();}
+  else if(d.t==='f'){REMOTE.fire=!!d.d;if(REMOTE.fire){if(state==='route')chooseRoute(ptr.x>=W/2);else if(state==='play'){if((G.fireCd||0)<=0)fire();}else if(state!=='intro'&&state!=='clear')remoteGo();}updDown();}
   else if(d.t==='s'){if(state==='play')useAnySkill();else if(state!=='intro'&&state!=='clear')remoteGo();}
   else if(d.t==='c')gyroCenter();
   else if(d.t==='p'){if(state==='play'||state==='intro'||state==='pause')togglePause();}
@@ -1418,16 +1419,58 @@ function resize(){
   applyQuality();
 }
 
-/* ===== ゲーム進行（ロジックは2D版と同じ） ===== */
+/* ===== ゲーム進行 ===== */
 function newGame(withOpening){
-  const d=DIFFS[modeKey];G.diff=d;G.score=0;G.hearts=d.hearts;G.maxHearts=d.hearts;G.maxCombo=0;G.totalKills=0;G.dda=0;G.shotN=0;G.sp=0;G.parts=[];G.texts=[];
-  G.wlv=1;G.pow=null;G.lightCd=0;G.bellCd=0;if(withOpening&&KID)startOpening();else startWave(0);
+  G.route=null;G.routeReward=null;
+  const d=DIFFS[modeKey];G.diff=d;G.score=0;G.hearts=d.hearts;G.maxHearts=d.hearts;G.maxCombo=0;G.totalKills=0;G.dda=0;G.shotN=0;G.hitShotN=0;G.sp=0;G.parts=[];G.texts=[];
+  G.wlv=1;G.pow=null;G.lightCd=0;G.bellCd=0;G.fireCd=0;if(withOpening&&KID)startOpening();else startWave(0);
 }
 function startWave(i){
-  grade.uniforms.uExposure.value=.95;G.scroll=0;G.rushed=0;G.pow=null;G.bossDie=0;G.dawn=0;G.lightning=0;G.shockFx=0;const w=WAVES[i];G.wave=w;G.waveIdx=i;G.kills=0;G.goal=w.goal||0;G.time=w.time+G.diff.time;
+  grade.uniforms.uExposure.value=.95;G.scroll=0;G.rushed=0;G.pow=null;G.bossDie=0;G.dawn=0;G.lightning=0;G.shockFx=0;let w=WAVES[i];if(i===2&&G.route==='music')w={...w,place:'gym',name:'よりみち おんがくしつ',sub:'がっきを たいじして ワイドを ゲット！',types:{taiko:2,cymbal:2,triangle:2,recorder:2},blackout:0};G.wave=w;G.waveIdx=i;G.kills=0;G.goal=w.goal||0;G.time=w.time+G.diff.time;
   G.enemies=[];G.souls=[];G.items=[];G.fallen=[];G.tracers=[];G.spawnT=1.4;G.chimeT=w.boss?999:18;G.chime=null;
   G.blackT=w.blackout?9:Infinity;G.black=0;G.ammo=maxAmmo();G.reload=0;G.combo=0;G.comboT=0;G.lightT=0;G.spT=0;G.inv=0;G.noHit=true;G.boss=null;G.rage=0;
-  setPlace(w.place);state='intro';G.introT=2.8;if(GYRO.on)gyroCenter(true);SFX.sting();showHUD(true);
+  setPlace(w.place);state='intro';G.introT=i===0?2.2:1.6;if(GYRO.on)gyroCenter(true);SFX.sting();showHUD(true);
+  buildSchoolTrick(w);
+  if(i===3&&G.routeReward){G.pow={kind:G.routeReward,t:10,max:10};G.routeReward=null;}
+}
+function bagOpen(e){return e.type==='randoseru'&&(e.t+e.ph)%3.2<1.1;}
+function buildSchoolTrick(w){
+  const old=G.gimmick;if(old&&old.root){old.root.removeFromParent();for(const m of old.mats)m.dispose();}
+  G.gimmick=null;if(w.boss)return;
+  const root=new THREE.Group(),mats=[],balls=[];
+  const material=c=>{const m=new THREE.MeshStandardMaterial({color:c,roughness:.45});mats.push(m);return m;};
+  const metal=material('#71d9ef'),kind=w.place==='gym'?'balls':'water';
+  // 敵と同じ遭遇座標に置き、背景のループ移動で照準とずれないようにする。
+  root.position.set(xW(-.65,.5),0,zD(.5));STATIC.add(root);
+  if(kind==='balls'){
+    for(const x of[-.4,.4])for(const z of[-.25,.25])add(root,CYL,metal,x,.45,z,0,0,0,.035,.9,.035);
+    for(const y of[.18,.5,.85]){add(root,BOX,metal,0,y,-.25,0,0,0,.85,.035,.035);add(root,BOX,metal,0,y,.25,0,0,0,.85,.035,.035);for(const x of[-.4,.4])add(root,BOX,metal,x,y,0,0,0,0,.035,.035,.5);}
+    for(let i=0;i<6;i++){const m=add(root,geo('trickBall',()=>new THREE.SphereGeometry(.16,12,8)),material(['#ffd23f','#ff8fd0','#f4f1ff'][i%3]),(i%3-1)*.25,.35+Math.floor(i/3)*.3,0);balls.push(m);}
+  }else{
+    add(root,BOX,material('#43556b'),0,.35,0,0,0,0,.6,.7,.45);
+    add(root,CYL,metal,0,.9,0,0,0,0,.07,.5,.07);add(root,CYL,metal,.17,1.1,0,0,0,Math.PI/2,.07,.4,.07);
+    add(root,BOX,material('#ffd23f'),0,1.2,0,0,0,0,.35,.05,.07);
+  }
+  G.gimmick={used:false,t:0,kind,root,mats,balls};
+}
+function trickScreen(){const g=G.gimmick;if(!g||!g.root)return null;const p=proj(g.root.position.x,g.root.position.y+.9,g.root.position.z);return{x:p[0],y:p[1],r:Math.max(30*U,Math.min(55*U,H*.065))};}
+function updateSchoolTrick(dt){const g=G.gimmick;if(!g||!g.used)return;g.t+=dt;if(g.kind==='balls'){g.root.rotation.z=-Math.min(1,g.t)*.7;g.balls.forEach((b,i)=>{b.position.x+=(i%2?1:-1)*dt*.8;b.position.y=Math.max(.16,b.position.y-dt);b.position.z+=dt*(.5+i*.12);b.rotation.x+=dt*4;});}else if(g.t<2.5){const p=trickScreen();if(p)splash(p.x+rnd(-45,45)*U,p.y+rnd(-70,50)*U,2);}}
+function updateMerges(dt){
+  for(const e of G.enemies){
+    if(e.dead||e.type!=='tsukue'||e.tower)continue;
+    if(e.merge==null&&e.t>2){const chair=G.enemies.find(o=>!o.dead&&o.type==='isu'&&!o.mergeOwner&&Math.abs(o.x-e.x)<.5&&Math.abs(o.z-e.z)<.35);if(chair){e.partner=chair;chair.mergeOwner=e;e.merge=2.5;}}
+    if(!(e.merge>0))continue;
+    const c=e.partner;if(!c||c.dead){e.merge=0;e.partner=null;continue;}
+    e.merge-=dt;c.x+=(e.x-c.x)*Math.min(1,dt*2);c.z+=(e.z-c.z)*Math.min(1,dt*2);
+    if(e.merge<=0){e.tower=true;e.hp+=2;e.max+=2;c.h=1;addText(e.sx,e.sy,'がったい！ つくえタワー','#ff8fd0',26);}
+  }
+}
+function chooseRoute(music){if(state!=='route')return;G.route=music?'music':'science';ptr.down=false;REMOTE.fire=false;TOUCH.clear();startWave(2);}
+function drawSchoolTricks(){
+  if(state==='route'){ctx.fillStyle='rgba(8,4,20,.9)';ctx.fillRect(0,0,W,H);txt('どっちに よりみち？',W/2,H*.28,32*U,'#fff',FD,'center',4*U);for(const [x,title,reward]of[[.25,'1：りかしつ','ごほうび：ジャンボ'],[.75,'2：おんがくしつ','ごほうび：ワイド']]){ctx.strokeStyle='#5fe3ff';ctx.lineWidth=3*U;ctx.strokeRect(W*(x-.22),H*.4,W*.44,H*.35);txt(title,W*x,H*.52,24*U,'#ffd23f',FD,'center',3*U);txt(reward,W*x,H*.64,18*U,'#fff',FB,'center',3*U);}txt('タップ / 1・2 キー / ねらって うつ',W/2,H*.84,18*U,'#cfe9ff',FB,'center',3*U);drawReticle();return;}
+  if(state!=='play')return;
+  for(const e of G.enemies){if(e.dead)continue;if(bagOpen(e)){ctx.strokeStyle='#ffd23f';ctx.lineWidth=3*U;ctx.beginPath();ctx.arc(e.sx,e.sy-e.sr*.35,e.sr*.45,0,7);ctx.stroke();txt('なかを ねらえ！',e.sx,e.sy-e.sr*1.1,14*U,'#ffd23f',FB,'center',3*U);}if(e.merge>0||e.tower)txt(e.tower?'つくえタワー！':'がったいまで '+Math.ceil(e.merge),e.sx,e.sy-e.sr*1.25,16*U,'#ff8fd0',FB,'center',3*U);}
+  const g=G.gimmick,p=trickScreen();if(g&&p&&!g.used){ctx.strokeStyle='#5fe3ff';ctx.lineWidth=2*U;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,7);ctx.stroke();txt(g.kind==='balls'?'ボールかご':'じゃぐち',p.x,p.y-p.r-8*U,16*U,'#5fe3ff',FB,'center',3*U);txt('うつと おたすけ！',p.x,p.y+p.r+18*U,13*U,'#fff',FB,'center',3*U);}
 }
 function setPlace(p){if(G.place!==p||!ROOM){G.place=p;if(TEX.bump)buildRoom(p);}}
 function pickType(types){let tot=0;for(const k in types)tot+=types[k];let r=Math.random()*tot;for(const k in types){r-=types[k];if(r<=0)return k;}return Object.keys(types)[0];}
@@ -1447,13 +1490,15 @@ function update(dt){
   G.t+=dt;
   if(state==='pause')return;
   updFx(dt);
+  if(state==='route')return;
+  if(state==='play'||state==='intro')updateSchoolTrick(dt);
   if(state==='title'){demo(dt);return;}
   if(state==='opening'){opUpdate(dt);return;}
   if(state==='ending'){endUpdate(dt);return;}
   if(state==='result')return;
   bgm(dt);
   if(state==='intro'){G.introT-=dt;if(G.introT<=0){state='play';if(G.wave.boss){const bt=G.wave.boss;const b=spawn(bt);if(bt==='kousha'){b.h=-2.6;G.shake=1.6;addText(W/2,H*.4,'おばけこうしゃ!!','#ff5fb8',60);SFX.boom();setTimeout(()=>SFX.boom(),400);setTimeout(()=>SFX.chime(),900);}else{addText(W/2,H*.4,'ロッカーだいおう!','#ff5fb8',48);G.shake=.6;SFX.boom();}}}updEnemies(dt,false);return;}
-  if(state==='clear'){G.clearT-=dt;updEnemies(dt,false);if(G.clearT<=0){if(G.waveIdx+1<WAVES.length)startWave(G.waveIdx+1);else if(KID)startEnding();else finish(true);}return;}
+  if(state==='clear'){G.clearT-=dt;updEnemies(dt,false);if(G.clearT<=0){if(G.waveIdx===1&&!G.route){state='route';ptr.down=false;TOUCH.clear();REMOTE.fire=false;}else if(G.waveIdx+1<WAVES.length)startWave(G.waveIdx+1);else if(KID)startEnding();else finish(true);}return;}
   G.time-=dt;if(G.time<=0){G.time=0;finish(false,'じかんぎれ…');return;}
   G.inv-=dt;G.lightCd-=dt;G.bellCd-=dt;G.reload>0&&(G.reload-=dt,G.reload<=0&&(G.ammo=maxAmmo(),SFX.reload()));
   if(G.lightT>0)G.lightT-=dt;
@@ -1462,8 +1507,9 @@ function update(dt){
   G.fireCd=(G.fireCd||0)-dt;
   if(ptr.down&&G.fireCd<=0)fire();
   const w=G.wave;G.spawnT-=dt;
-  const need=w.boss?99:G.goal-G.kills-alive();
-  if(!w.boss&&need>0&&alive()===0&&G.spawnT>.3)G.spawnT=.3;   // 画面が からっぽの時間を つくらない
+  const active=alive(),need=w.boss?99:G.goal-G.kills-active;
+  // 敵が少なくなったら次を早く出し、敵がいない待ち時間を減らす
+  if(!w.boss&&need>0&&active<=2)G.spawnT=Math.min(G.spawnT,active===0?.08:.26);
   if(G.spawnT<=0){G.spawnT=w.every*rnd(.7,1.2)/(G.diff.spd*.6+.4)*(1+G.dda*.5);if(alive()<w.max&&need>0){spawn(pickType(w.types));if(!w.boss&&G.waveIdx>=2&&Math.random()<.35&&alive()<w.max&&need>1)spawn(pickType(w.types));}}
   G.dda=Math.max(0,G.dda-dt*.04);
   if(w.blackout){G.blackT-=dt;if(G.blackT<=0){if(G.black>0){G.black=0;G.blackT=12;}else{G.black=6;G.blackT=6;addText(W/2,H*.3,'ていでん！ Zで ライト！','#ffe9a8',34);SFX.revive();}}if(G.black>0)G.black-=dt;}
@@ -1487,8 +1533,10 @@ function lightR(){return (G.lightT>0?210:G.black>0?80:0)*U*(coarse?1.15:1);}
 function screenOf(e){const p=placeOf(e);const c=proj(p.x,p.y,p.z),t=proj(p.x,p.y+p.s*1.05,p.z);e.sx=c[0];e.sy=c[1];e.sr=Math.max(6,Math.abs(c[1]-t[1]));e.u=e.sr;}
 function updEnemies(dt,live){
   const sm0=(G.diff?G.diff.spd:1);
+  if(live&&!G.wave.boss)updateMerges(dt);
   for(const e of G.enemies){
     if(e.dead)continue;e.t+=dt;e.appear=Math.min(1,e.appear+dt*2.5);e.flash-=dt;e.stun-=dt;
+    if(e.mergeOwner&&e.mergeOwner.tower&&!e.mergeOwner.dead){e.x=e.mergeOwner.x;e.z=e.mergeOwner.z;e.h=1;continue;}
     const lit=inLight(e);
     let sm=sm0*(e.stun>0?0:1)*(lit?0:1)*(G.lightT>0?.6:1);
     const T=e.T,spd=T.spd*sm*(e.spdMul||1)*(T.boss||(G.wave&&G.wave.boss)?1:1+(G.waveIdx||0)*.07);
@@ -1530,11 +1578,12 @@ function bossAI(e,dt,live){
   e.x=Math.sin(e.t*.5)*.55;e.z=.62;e.h=.04+Math.sin(e.t*2)*.03;
   if(!live||e.stun>0)return;
   e.atk-=dt;const r=e.hp/e.max;
+  if(e.atk<.9&&!e.attackKind){e.attackKind=Math.random()<.55?'paper':'minion';addText(W/2,H*.28,e.attackKind==='paper'?'テストが くる！ うちおとそう':'なかまを よぶぞ！','#ffd23f',26);}
   if(r<.66&&G.rage<1){G.rage=1;rageUp();}
   if(r<.33&&G.rage<2){G.rage=2;rageUp();}
   if(e.atk<=0){e.atk=(G.rage===2?1.6:G.rage?2.2:3.0)/G.diff.spd*(1+(G.dda||0)*.6);e.mouth=.6;
-    if(Math.random()<.55){const n=G.rage===2?2:1;for(let i=0;i<n;i++){const p=spawn('paper',e.x+rnd(-.25,.25),e.z-.04,.4);p.appear=.6;}addText(e.sx,e.sy-e.u,'テストこうげき!','#fff',20);}
-    else if(alive()<G.wave.max)spawn(pickType(G.wave.types),e.x+rnd(-.3,.3),e.z-.03);}
+    if(e.attackKind==='paper'){const n=G.rage===2?2:1;for(let i=0;i<n;i++){const p=spawn('paper',e.x+rnd(-.25,.25),e.z-.04,.4);p.appear=.6;}addText(e.sx,e.sy-e.u,'テストこうげき!','#fff',20);}
+    else if(alive()<G.wave.max)spawn(pickType(G.wave.types),e.x+rnd(-.3,.3),e.z-.03);e.attackKind=null;}
   if(e.mouth>0)e.mouth-=dt;
 }
 function hurtPlayer(msg){if(G.inv>0)return;G.dda=Math.min(1,(G.dda||0)+.34);G.hearts--;G.inv=1.4;G.shake=1;G.hurt=1;G.combo=0;G.noHit=false;SFX.hurt();addText(W/2,H*.62,msg,'#ff5fb8',54);if(G.hearts<=0)finish(false,'やられた…');}
@@ -1556,7 +1605,8 @@ function kAI(e,dt,live){
     if(e.mt<=0){e.mode='idle';e.mt=1.6;e.tongue=0;}return;}
   e.mouthOpen=Math.max(0,e.mouthOpen-dt*2);
   if(e.mt<=0){
-    const opts=G.rage?['windows','paper','tongue','chime','windows','tongue']:['windows','paper','tongue','chime'];let a=opts[Math.random()*opts.length|0];if(a===e.last)a=opts[(opts.indexOf(a)+1)%opts.length];e.last=a;
+    if(!e.nextAttack){const opts=G.rage?['windows','paper','tongue','chime','windows','tongue']:['windows','paper','tongue','chime'];let a=opts[Math.random()*opts.length|0];if(a===e.last)a=opts[(opts.indexOf(a)+1)%opts.length];e.nextAttack=a;e.mt=1.2;addText(W/2,H*.28,{windows:'まどが ピカッ！ とんできたら うて！',paper:'かみふぶき！ うちおとそう！',tongue:'くちが あくぞ！ くちを ねらおう！',chime:'チャイムが くる！ たましいを ねらえ！'}[a],'#ffd23f',28);SFX.alert();return;}
+    const a=e.nextAttack;e.nextAttack=null;e.last=a;
     e.mt=(G.rage===2?2.4:G.rage?3:3.6)/G.diff.spd*(1+(G.dda||0)*.6);
     if(a==='windows'){e.winFx=1;SFX.boom();addText(W/2,H*.3,'まどから つくえ ミサイル!','#ffd23f',32);const n=G.rage?2:1;for(let i=0;i<n;i++){const m=spawn(['tsukue','isu','randoseru'][(i+(e.t|0))%3],rnd(-.85,.85),1.45);m.dropH=2.6+rnd(0,1);m.spdMul=1.2;m.appear=.5;}}
     else if(a==='paper'){addText(W/2,H*.3,'テストようし ふぶき!','#ffffff',32);SFX.revive();for(let i=0;i<(G.rage?4:3);i++){const m=spawn('paper',rnd(-.8,.8),1.5,.4);m.dropH=2+rnd(0,1.5);m.appear=.4;m.spdMul=.7;}}
@@ -1566,6 +1616,7 @@ function kAI(e,dt,live){
 }
 function rageUp(){G.shake=.8;SFX.boom();addText(W/2,H*.32,'ロッカーだいおうが おこった！','#ff5fb8',34);G.fallen.push('randoseru','isu','sheet');startChime();}
 function bite(e){
+  if(e.tower&&e.partner&&!e.partner.dead){e.partner.dead=true;puff(e.partner,10,'#b47cff');}
   e.dead=true;puff(e,16,'#ff5fb8');
   if(G.inv>0)return;
   G.hearts--;G.inv=1.2;G.shake=.5;G.hurt=1;G.combo=0;G.noHit=false;G.dda=Math.min(1,(G.dda||0)+.34);SFX.hurt();
@@ -1591,12 +1642,13 @@ function waveClear(){
   if(G.noHit){G.score+=2500;G.clearInfo.push('ノーダメージ +2500');}
   const up={1:2,3:3,5:4}[G.waveIdx];if(up&&(G.wlv||1)<up){G.wlv=up;G.clearInfo.unshift('みずでっぽう パワーアップ！ Lv'+up+' '+WLV[up].name);G.ammo=maxAmmo();G.gunFx=1.5;setTimeout(()=>{SFX.clear();tone(1568,.4,'triangle',.1,1,.3);},300);}
   const nx=WAVES[G.waveIdx+1];if(nx&&nx.boss&&G.hearts<G.maxHearts){G.hearts=G.maxHearts;G.clearInfo.push('ほけんしつで ぜんかいふく！');}else if(G.hearts<G.maxHearts&&nx){G.hearts++;G.clearInfo.push('ハート +1');}
-  state='clear';G.clearT=G.waveIdx+1<WAVES.length?3:4.5;SFX.clear();
+  if(G.waveIdx===2&&G.route){G.routeReward=G.route==='music'?'wide':'jumbo';G.clearInfo.push('よりみち ごほうび！ つぎのWAVEで '+POW[G.routeReward].name);}
+  state='clear';G.clearT=G.waveIdx+1<WAVES.length?(up?2.3:1.7):4.5;SFX.clear();
 }
 function finish(win,msg){
   state='result';showHUD(false);ptr.down=false;
-  // さいごの ボーナス：命中率（たおした数÷うった数）と 最大コンボで、うまさの差が スコアに出るように
-  const acc=Math.min(1,(G.totalKills||0)/Math.max(1,G.shotN||0));const accB=Math.round(acc*20000/100)*100,comboB=G.maxCombo*150;
+  // さいごの ボーナス：実際に当たった発射回数÷実際の発射回数 と 最大コンボ
+  const acc=Math.min(1,(G.hitShotN||0)/Math.max(1,G.shotN||0));const accB=Math.round(acc*20000/100)*100,comboB=G.maxCombo*150;
   G.score+=accB+comboB;G.finalBonus={acc:Math.round(acc*100),accB,comboB};
   let best=0;try{best=+localStorage.getItem('obake1-best')||0;if(G.score>best)localStorage.setItem('obake1-best',G.score);}catch(e){}
   const rank=!win?(G.score>=140000?'B':'C'):G.score>=185000?'S':G.score>=175000?'A':'B';
@@ -1607,21 +1659,24 @@ function finish(win,msg){
 }
 
 /* ===== 射撃 ===== */
-function fire(){G.shotN=(G.shotN||0)+1;
+function fire(){
   if(G.reload>0)return;
   const L=WLV[G.wlv||1],pw=G.pow&&G.pow.t>0?G.pow.kind:null;
   if(G.ammo<=0&&pw!=='rapid'){startReload();return;}
+  G.shotN++;let hitSomething=false;
   if(pw!=='rapid')G.ammo--;G.fireCd=L.cd*(pw==='rapid'?.6:1);G.recoil=1;SFX.shoot();
+  const trick=G.gimmick,tp=trickScreen();if(trick&&tp&&!trick.used&&Math.hypot(ptr.x-tp.x,ptr.y-tp.y)<tp.r){trick.used=true;G.hitShotN++;G.tracers.push({x0:muzzle()[0],y0:muzzle()[1],x1:ptr.x,y1:ptr.y,t:.13,max:.13,w:2});for(const e of [...G.enemies])if(!e.dead&&!e.T.boss){e.stun=2;damage(e,trick.kind==='balls'?3:2);splash(e.sx,e.sy,20);}addText(W/2,H*.4,trick.kind==='balls'?'ボールが ゴロゴロ！':'みずが プシャー！','#5fe3ff',36);SFX.boom();if(G.ammo<=0)startReload();return;}
   const mz=muzzle();
   const asst=GYRO.on?1.75:coarse?1.3:1.08; // 傾き操作は細かく合わせにくいので当たり判定を広げる
-  for(const s of G.souls){if(Math.hypot(s.sx-ptr.x,s.sy-ptr.y)<s.u*1.6*asst*(pw==='wide'?2:1)){s.hit=true;spark(s.sx,s.sy,'#9fefff',14);SFX.soul();G.score+=50;addText(s.sx,s.sy,'じょうぶつ!','#9fefff',18);}}
+  for(const s of G.souls){if(Math.hypot(s.sx-ptr.x,s.sy-ptr.y)<s.u*1.6*asst*(pw==='wide'?2:1)){hitSomething=true;s.hit=true;spark(s.sx,s.sy,'#9fefff',14);SFX.soul();G.score+=50;addText(s.sx,s.sy,'じょうぶつ!','#9fefff',18);}}
   G.souls=G.souls.filter(s=>!s.hit);
-  for(const it of G.items){if(Math.hypot(it.sx-ptr.x,it.sy-ptr.y)<it.u*1.4*asst){it.gone=true;getItem(it);}}
+  for(const it of G.items){if(Math.hypot(it.sx-ptr.x,it.sy-ptr.y)<it.u*1.4*asst){hitSomething=true;it.gone=true;getItem(it);}}
   // 主ターゲット（照準の真上）と、レベル・ワイドで増える追加ターゲット
   let best=null;
   for(const e of G.enemies){if(e.dead)continue;const d=Math.hypot(e.sx-ptr.x,e.sy-ptr.y);if(d<e.sr*asst&&(!best||e.z<best.z))best=e;}
   const n=pw==='wide'?6:L.n,rad=pw==='wide'?2.6:L.rad,mul=L.dmg*(pw==='jumbo'?(best&&best.T.boss?1.4:2):1);
   const extra=G.enemies.filter(e=>!e.dead&&e!==best&&!e.T.boss&&Math.hypot(e.sx-ptr.x,e.sy-ptr.y)<e.sr*asst*rad+40*U*(rad-1)).sort((a,b)=>Math.hypot(a.sx-ptr.x,a.sy-ptr.y)-Math.hypot(b.sx-ptr.x,b.sy-ptr.y)).slice(0,best?n-1:n);
+  if(best||extra.length)hitSomething=true;
   const tw=pw==='jumbo'?1.8:1;
   G.tracers.push({x0:mz[0],y0:mz[1],x1:ptr.x,y1:ptr.y,t:.13,max:.13,w:tw,col:pw?POW[pw].col:null});
   for(const e of extra)G.tracers.push({x0:mz[0],y0:mz[1],x1:e.sx,y1:e.sy,t:.13,max:.13,w:tw*.8,col:pw?POW[pw].col:null});
@@ -1629,9 +1684,10 @@ function fire(){G.shotN=(G.shotN||0)+1;
     if(wp){for(const q of wp.eyes)if(Math.hypot(q[0]-ptr.x,q[1]-ptr.y)<wp.er*1.4*asst){dmg=2;crit=1;}
       if(best.mode==='tongueWarn'&&Math.hypot(wp.mouth[0]-ptr.x,wp.mouth[1]-ptr.y)<wp.mr*1.3*asst){best.tongueHP--;dmg=2;crit=1;addText(wp.mouth[0],wp.mouth[1]-wp.mr,'あと '+Math.max(0,best.tongueHP),'#5fe3ff',26);}}
     damage(best,dmg*mul*(inLight(best)?2:1));splash(ptr.x,ptr.y,crit?20:10);SFX.splash();if(crit)addText(ptr.x,ptr.y-24*U,'クリティカル!','#ffd23f',24);}
-  else if(best){damage(best,mul*(inLight(best)?2:1));splash(ptr.x,ptr.y,pw==='jumbo'?24:14);SFX.splash();}
+  else if(best){const weak=bagOpen(best)&&Math.hypot(ptr.x-best.sx,ptr.y-(best.sy-best.sr*.35))<best.sr*.55*asst;damage(best,weak?best.hp:mul*(inLight(best)?2:1));if(weak){G.score+=150;addText(ptr.x,ptr.y-30*U,'ふたの なか！ +150','#ffd23f',24);}splash(ptr.x,ptr.y,pw==='jumbo'?24:14);SFX.splash();}
   else splash(ptr.x,ptr.y,6);
   for(const e of extra){damage(e,mul*(inLight(e)?2:1));splash(e.sx,e.sy,8);}
+  if(hitSomething)G.hitShotN++;
   if(G.ammo<=0&&pw!=='rapid')startReload();
 }
 const WLV={1:{name:'ふつう',n:1,rad:1,cd:.11,dmg:1},2:{name:'ダブルノズル',n:2,rad:1.5,cd:.11,dmg:1},3:{name:'トリプル＆おおタンク',n:3,rad:1.8,cd:.11,dmg:1},4:{name:'ハイパーポンプ',n:3,rad:1.9,cd:.08,dmg:1.2}};
@@ -1646,6 +1702,12 @@ function damage(e,d){
   if(e.hp<=0)kill(e);
 }
 function kill(e){
+  if(e.dead)return;
+  // 連鎖ダメージが同じ敵へ戻る前に撃破済みにする。
+  e.dead=true;
+  if(e.merge>0&&e.partner&&!e.partner.dead){const partner=e.partner;e.merge=0;G.score+=300;addText(e.sx,e.sy,'がったい ストップ！ +300','#ffd23f',24);damage(partner,99);}
+  if(e.mergeOwner&&!e.mergeOwner.dead&&e.mergeOwner.merge>0){e.mergeOwner.merge=0;e.mergeOwner.partner=null;G.score+=300;addText(e.sx,e.sy,'がったい ストップ！ +300','#ffd23f',24);damage(e.mergeOwner,2);}
+  if(e.tower&&e.partner&&!e.partner.dead){e.partner.h=0;e.partner.mergeOwner=null;}
   e.dead=true;SFX.pop();if(e.T.inst)INSTS[e.T.inst](1.3);
   G.combo++;G.comboT=1.8;G.maxCombo=Math.max(G.maxCombo,G.combo);
   const mul=1+Math.min(3,Math.floor(G.combo/5)*.5);const pts=Math.round(e.T.pts*mul);G.score+=pts;
@@ -1950,6 +2012,7 @@ function renderOverlay(){
   if(state==='clear')drawClear();
   if(state==='opening')drawOpening();
   if(state==='ending')drawEnding();
+  drawSchoolTricks();
 }
 function render3D(){
   if(state==='opening'){opCamera();composer.render();return;}
@@ -1974,6 +2037,7 @@ function useAnySkill(){if(state!=='play')return;
   if(G.sp>=100)skillSp();else if(G.black>0&&G.lightCd<=0)skillLight();else if(G.bellCd<=0)skillBell();else if(G.lightCd<=0)skillLight();
   else{addText(W*.22,H*.62,'わざは じゅんびちゅう','#cfe9ff',18);tone(160,.08,'square',.04);}}
 cv.addEventListener('pointerdown',e=>{initAudio();e.preventDefault();
+  if(state==='route'){if(!GYRO.on)setPtr(e);chooseRoute(ptr.x>=W/2);return;}
   if(state==='opening'){endOpening();return;}
   if(state==='ending'){if(G.end.t<END_T-1)G.end.t=END_T-1;return;}
   if(e.button===2){if(state==='play')startReload();return;}
@@ -1996,6 +2060,7 @@ addEventListener('blur',()=>{TOUCH.clear();updDown();});
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('gesturestart',e=>e.preventDefault());
 addEventListener('keydown',e=>{const k=e.key.toLowerCase();
+  if(state==='route'){if(k==='1'||k==='arrowleft')chooseRoute(false);else if(k==='2'||k==='arrowright')chooseRoute(true);else if(k===' '||k==='enter')chooseRoute(ptr.x>=W/2);e.preventDefault();return;}
   if(state==='opening'&&(k===' '||k==='enter'||k==='escape')){endOpening();return;}
   if(state==='ending'&&(k===' '||k==='enter'||k==='escape')){if(G.end.t<END_T-1)G.end.t=END_T-1;return;}
   if(state==='play'){if(k==='z')skillLight();else if(k==='x')skillBell();else if(k==='c')skillSp();else if(k==='r')startReload();else if(k===' '){ptr.down=true;e.preventDefault();}}

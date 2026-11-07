@@ -187,7 +187,7 @@ function showJoin(){want=false;$('join').hidden=false;$('aim').hidden=true;$('go
 function lost(){if(!conn)return;conn=null;stat('きれました。つなぎなおしています…');if(want)setTimeout(()=>{if(want&&!(conn&&conn.open))connect();},1200);}
 
 /* Macから届く状態でボタンの表示を変える */
-const LBL={title:['スタート','タップで はじめる'],result:['もういちど','タップで さいしょから'],pause:['つづける','タップで さいかい'],opening:['スキップ','タップで とばす'],ending:['スキップ','タップで とばす']};
+const LBL={title:['スタート','タップで はじめる'],route:['えらぶ','テレビの ひだり・みぎを ねらって おす'],result:['もういちど','タップで さいしょから'],pause:['つづける','タップで さいかい'],opening:['スキップ','タップで とばす'],ending:['スキップ','タップで とばす']};
 function onData(d){lastRx=performance.now();if(!d||d.t!=='st')return;
   const l=LBL[d.s];$('fireLbl').textContent=l?l[0]:'うつ';$('fireSub').textContent=l?l[1]:(d.r?'みずを いれてるよ…':d.a===0?'ふって みずを いれよう！':'おしっぱなしで れんしゃ');
   $('skill').classList.toggle('ready',!!d.sk);
