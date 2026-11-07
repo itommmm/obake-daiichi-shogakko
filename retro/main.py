@@ -32,6 +32,7 @@ STAGE_LEN = 60 * 75       # ボスまでの道のり（中ボスの時間はふ�
 MID_AT = 60 * 38          # 中ボス「ランドセルだいおう」が出る地点
 MID_HP = 18
 AMMO_MAX = 30
+TITLE_BTN = (W - 78, H - 22, 74, 16)   # ゲームオーバー画面の「タイトルへ」
 RANKS = ((175000, "S"), (150000, "A"), (65000, "B"), (0, "C"))
 
 # ---- パレット（16色）。夜と朝の2組を用意し、エンディングで夜→朝へ移り変わる ----
@@ -289,6 +290,223 @@ ENEMY_SPR = {"randoseru": (0, 0), "isu": (16, 0), "ball": (32, 0), "uwabaki": (4
 ENEMY_HP = {"randoseru": 3, "isu": 4, "ball": 2, "uwabaki": 2}
 ENEMY_NAME = {"randoseru": "ランドセロ", "isu": "いすわらし", "ball": "ボールおばけ", "uwabaki": "うわばきゅん"}
 
+# ---- 2面より先で出てくる おばけ・障害物・景色（画像バンク1の空いている場所） ----
+# 文字→色：上の CMAP に、火のオレンジ(o)・火の黄(Y)・こげ茶(O)・雨の青(n) を足したもの
+CMAP2 = dict(CMAP, o=OR, Y=OY, O=OD, n=RN)
+
+
+def art2(img, x, y, rows, w=16):
+    for j, r in enumerate(rows):
+        for i, ch in enumerate(r.ljust(w, ".")[:w]):
+            img.pset(x + i, y + j, CMAP2.get(ch, 0))
+
+
+BUCKET = [   # バケツおばけ（ろうか）
+    "................",
+    ".....kkkkkk.....",
+    "....k......k....",
+    "...k........k...",
+    "..kkkkkkkkkkkk..",
+    "..kwccccccccck..",
+    "..kcwwccccwwck..",
+    "..kcwkccccwkck..",
+    "...kcccppccck...",
+    "...kcccccccck...",
+    "...knnnnnnnnk...",
+    "....knnnnnnk....",
+    "....kkkkkkkk....",
+    ".....c....c.....",
+    "......c..c......",
+    "................",
+]
+ONPU = [     # おんぷおばけ（おんがくしつ）
+    "..........kk....",
+    "..........kyk...",
+    "..........kyyk..",
+    "..........kykyk.",
+    "..........ky.kk.",
+    "..........ky....",
+    "..........ky....",
+    "...kkkkkkkky....",
+    "..kyyyyyyyyyk...",
+    ".kyywwyyywwyyk..",
+    ".kyywkyyywkyyk..",
+    ".kyyyyyyyyyyyk..",
+    ".kyyyyppppyyyk..",
+    "..kyyyyyyyyyk...",
+    "...kkkkkkkkk....",
+    "................",
+]
+FLASK = [    # フラスコおばけ（りかしつ）
+    ".....kkkkkk.....",
+    "......kwwk......",
+    "......kwwk......",
+    "......kwwk......",
+    ".....kwwwwk.....",
+    "....kwwwwwwk....",
+    "...kggggggggk...",
+    "..kggwwggwwggk..",
+    "..kggwkggwkggk..",
+    ".kgggggggggggGk.",
+    ".kgggggppgggGGk.",
+    ".kggggggggggGGk.",
+    "..kGGGGGGGGGGk..",
+    "...kkkkkkkkkk...",
+    "...l...l...l....",
+    "................",
+]
+TAIKO = [    # たいこ（3面の障害物）
+    "................",
+    "................",
+    "................",
+    "...kkkkkkkkkk...",
+    "..kwwwwwwwwwwk..",
+    "..kkkkkkkkkkkk..",
+    "..krrrrrrrrrrk..",
+    "..kryrrrrrryrk..",
+    "..krrrrrrrrrrk..",
+    "..kryrrrrrryrk..",
+    "..krrrrrrrrrrk..",
+    "..kkkkkkkkkkkk..",
+    "..kwwwwwwwwwwk..",
+    "...kkkkkkkkkk...",
+    "................",
+    "................",
+]
+CONE = [     # そうじちゅうの コーン（2面の障害物）
+    "................",
+    ".......kk.......",
+    "......kook......",
+    "......kook......",
+    ".....kwwwwk.....",
+    ".....kwwwwk.....",
+    "....kooooook....",
+    "....kooooook....",
+    "...kwwwwwwwwk...",
+    "...kooooooook...",
+    "..kooooooooook..",
+    ".kkkkkkkkkkkkkk.",
+    ".kOOOOOOOOOOOOk.",
+    ".kkkkkkkkkkkkkk.",
+    "................",
+    "................",
+]
+LOCKER = [   # ロッカー（ろうかの景色、16x24。右の とびらから 目が のぞく）
+    "kkkkkkkkkkkkkkkk",
+    "knnnnnnkknnnnnnk",
+    "knkkkknkknkkkknk",
+    "knnnnnnkknnnnnnk",
+    "knkkkknkknkkkknk",
+    "knnnnnnkknnnnnnk",
+    "knnnnnnkkkkkkkkk",
+    "knnnnnnkkkpkpkkk",
+    "knnnnnykkkkkkkkk",
+    "knnnnnykkynnnnnk",
+    "knnnnnnkkynnnnnk",
+    "knnnnnnkknnnnnnk",
+    "knnnnnnkknnnnnnk",
+    "knnnnnnkknnnnnnk",
+    "knnnnnnkknnnnnnk",
+    "knnnnnnkknnnnnnk",
+    "knnnnnnkknnnnnnk",
+    "knnnnnnkknnnnnnk",
+    "knnnnnnkknnnnnnk",
+    "knnnnnnkknnnnnnk",
+    "knnnnnnkknnnnnnk",
+    "kkkkkkkkkkkkkkkk",
+    "kk............kk",
+    "kk............kk",
+]
+MODEL = [    # じんたいもけい（3面の景色、16x24。目が ピンクに光る）
+    "......kkkk......",
+    ".....kwwwwk.....",
+    "....kwwwwwwk....",
+    "....kwpwwpwk....",
+    "....kwwwwwwk....",
+    ".....kwkkwk.....",
+    "......kwwk......",
+    "....kkkwwkkk....",
+    "...kwwwwwwwwk...",
+    "..kwk.kwwk.kwk..",
+    "..kwkwwwwwwkwk..",
+    "..kwk.kwwk.kwk..",
+    "..kwkwwwwwwkwk..",
+    "..kk..kwwk..kk..",
+    "......kwwk......",
+    ".....kwwwwk.....",
+    "....kwk..kwk....",
+    "....kwk..kwk....",
+    "....kwk..kwk....",
+    "....kwk..kwk....",
+    "......kddk......",
+    "......kddk......",
+    "....kkkkkkkk....",
+    "....kddddddk....",
+]
+TOBIBAKO = [  # とびばこ（4面の景色）
+    "................",
+    "................",
+    "...kkkkkkkkkk...",
+    "...kwwwwwwwwk...",
+    "..kkkkkkkkkkkk..",
+    "..kOOOOOOOOOOk..",
+    "..kkkkkkkkkkkk..",
+    ".kOOOOOOOOOOOOk.",
+    ".kkkkkkkkkkkkkk.",
+    ".kOOOOkkkkOOOOk.",
+    ".kkkkkkkkkkkkkk.",
+    "kOOOOOOOOOOOOOOk",
+    "kOOOOOOOOOOOOOOk",
+    "kkkkkkkkkkkkkkkk",
+    "................",
+    "................",
+]
+
+# 全部の おばけの絵の場所（ENEMY_SPR の4体＋2面より先の3体）・体力
+ALL_SPR = dict(ENEMY_SPR, bucket=(176, 0), onpu=(192, 0), flask=(208, 0))
+ALL_HP = dict(ENEMY_HP, bucket=3, onpu=2, flask=2)
+OBST_SPR = {"tire": (128, 0), "taiko": (224, 0), "cone": (240, 0)}           # よける障害物
+SCEN_SPR = {"tree": (96, 0, 16, 16, 34), "locker": (32, 16, 16, 24, 40),      # 景色（u, v, w, h, 大きさ）
+            "model": (48, 16, 16, 24, 34), "tobibako": (64, 16, 16, 16, 24)}
+
+# ---- 面（ステージ）。1面は今までの校庭そのまま（数値は上の定数と同じ） ----
+#  pats：進み具合（はじめ25%・60%まで・のこり）ごとの 隊列の種類
+STAGES = [
+    dict(name="こうてい", goal="こうしゃまで", tm=0, music=0, length=STAGE_LEN, mid_at=MID_AT,
+         pats=(("single", "pair", "line"), ("line", "v", "circle", "dive", "tire", "pair"),
+               ("line", "v", "circle", "dive", "dive", "tire", "mix")),
+         single=tuple(ENEMY_SPR), pair=("randoseru", "isu"), line=("randoseru", "isu", "ball"),
+         v="randoseru", circle="ball", dive="uwabaki", obst="tire", obst_with=("randoseru", "ball"),
+         mid=("randoseru", "ランドセルだいおう", MID_HP), scen=("tree", "lamp"),
+         boss=dict(name="おばけこうしゃ", hp=BOSS_HP, src=(0, 0), angry=(0, 64), minions=None)),
+    dict(name="ろうか", goal="ろうかの おくへ", tm=1, music=2, length=60 * 70, mid_at=60 * 35,
+         pats=(("single", "pair", "line"), ("line", "dive", "pair", "v", "tire"),
+               ("line", "v", "dive", "dive", "tire", "mix", "circle")),
+         single=("bucket", "uwabaki", "isu", "randoseru"), pair=("bucket", "isu"),
+         line=("bucket", "isu", "randoseru"), v="bucket", circle="ball", dive="uwabaki",
+         obst="cone", obst_with=("bucket", "randoseru"),
+         mid=("bucket", "バケツだいおう", 20), scen=("locker", "lamp"),
+         boss=dict(name="おばけロッカー", hp=60, src=(96, 0), angry=None, eyes=((18, 24), (78, 24)),
+                   minions=("bucket", "uwabaki", "isu"))),
+    dict(name="おんがくしつ・りかしつ", goal="りかしつの おくへ", tm=2, music=3, length=60 * 70, mid_at=60 * 35,
+         pats=(("single", "pair", "line"), ("line", "circle", "pair", "v", "tire"),
+               ("line", "v", "circle", "circle", "dive", "tire", "mix")),
+         single=("onpu", "flask", "ball", "isu"), pair=("onpu", "flask"), line=("onpu", "flask", "isu"),
+         v="onpu", circle="onpu", dive="uwabaki", obst="taiko", obst_with=("flask", "onpu"),
+         mid=("flask", "フラスコだいおう", 20), scen=("model", "lamp"),
+         boss=dict(name="おばけピアノ", hp=65, src=(96, 64), angry=None, eyes=((32, 31), (64, 31)),
+                   minions=("onpu", "onpu", "flask"))),
+    dict(name="たいいくかん", goal="ぶたいまで", tm=3, music=4, length=60 * 70, mid_at=60 * 35,
+         pats=(("single", "pair", "line", "circle"), ("line", "v", "circle", "dive", "tire", "pair"),
+               ("line", "v", "circle", "dive", "dive", "tire", "mix")),
+         single=("randoseru", "isu", "ball", "uwabaki", "bucket", "onpu", "flask"), pair=("ball", "randoseru"),
+         line=("ball", "bucket", "onpu", "randoseru"), v="randoseru", circle="ball", dive="uwabaki",
+         obst="tire", obst_with=("ball", "onpu"),
+         mid=("ball", "ボールだいおう", 22), scen=("tobibako", "lamp"),
+         boss=dict(name="おばけとびばこ", hp=80, src=(96, 128), angry=None, eyes=((34, 27), (62, 27)),
+                   minions=("ball", "randoseru", "onpu", "bucket"))),
+]
+
 
 def build_images():
     img = pyxel.images[1]
@@ -454,6 +672,153 @@ def fix_tilemap():
             tm.pset(tx, ty, base[ty % 64][tx])
 
 
+def build_stage_images():
+    # 2面より先の絵。バンク1：x176〜255,y0〜15（おばけ3体＋障害物2つ）と y16〜39 の x32〜79（景色）
+    img = pyxel.images[1]
+    art2(img, 176, 0, BUCKET)
+    art2(img, 192, 0, ONPU)
+    art2(img, 208, 0, FLASK)
+    art2(img, 224, 0, TAIKO)
+    art2(img, 240, 0, CONE)
+    art2(img, 32, 16, LOCKER)
+    art2(img, 48, 16, MODEL)
+    art2(img, 64, 16, TOBIBAKO)
+    # ボス（バンク2の x96〜191）：ろうか・おんがくしつ・たいいくかん
+    b = pyxel.images[2]
+    draw_locker_boss(b, 96, 0)
+    draw_piano_boss(b, 96, 64)
+    draw_tobibako_boss(b, 96, 128)
+    # 床のタイル（バンク0 の y8〜31。1面のタイルは y0〜7）
+    g = pyxel.images[0]
+    # ろうか（y=8）：木の床（板の継ぎ目）・かべぎわ
+    g.rect(0, 8, 8, 8, SD); g.line(7, 8, 7, 15, GD); g.pset(3, 10, GY); g.pset(2, 14, GD)
+    g.rect(8, 8, 8, 8, SD); g.line(15, 8, 15, 15, GD); g.line(8, 12, 14, 12, GD)
+    g.rect(16, 8, 8, 8, DK); g.pset(18, 10, D1); g.pset(21, 13, D1)
+    g.rect(24, 8, 8, 8, D1); g.line(24, 8, 31, 8, GD)
+    # おんがくしつ・りかしつ（y=16）：むらさきの市松もよう
+    g.rect(0, 16, 8, 8, PU); g.pset(2, 18, VI)
+    g.rect(8, 16, 8, 8, DK); g.pset(12, 21, D1)
+    g.rect(16, 16, 8, 8, D1); g.pset(19, 19, DK)
+    # たいいくかん（y=24）：明るい木の床とコートの線
+    g.rect(0, 24, 8, 8, OD); g.line(7, 24, 7, 31, GD)
+    g.rect(8, 24, 8, 8, OD); g.rect(11, 24, 2, 8, GO)
+    g.rect(16, 24, 8, 8, OD); g.rect(16, 27, 8, 2, GO)
+    g.rect(24, 24, 8, 8, DK); g.pset(26, 26, D1)
+    g.rect(32, 24, 8, 8, OD); g.rect(35, 24, 2, 8, WH)
+    g.rect(40, 24, 8, 8, OD); g.line(47, 24, 47, 31, GD); g.pset(43, 27, OR)
+    for n in (1, 2, 3):
+        tm = pyxel.tilemaps[n]
+        tm.imgsrc = 0
+        # 32行（256ドット）ごとのくり返し（ずらす量1024の約数）。1行を文字列にして まとめて書く
+        rows = [" ".join("%02x%02x" % stage_tile(n, tx - 128, ty) for tx in range(256)) for ty in range(32)]
+        for y in range(0, 256, 32):
+            tm.set(0, y, rows)
+
+
+def stage_tile(n, dx, ty):
+    if n == 1:      # ろうか
+        if abs(dx) > 17:
+            return (2, 1)
+        if abs(dx) == 17:
+            return (3, 1)
+        return (1, 1) if (ty + (dx % 5) * 7) % 12 == 0 else (0, 1)
+    if n == 2:      # おんがくしつ・りかしつ
+        if abs(dx) > 17:
+            return (2, 2)
+        return (0, 2) if ((dx // 2) + (ty // 2)) % 2 == 0 else (1, 2)
+    # たいいくかん
+    if abs(dx) > 17:
+        return (3, 3)
+    if dx in (-14, 13):
+        return (1, 3)
+    if ty % 32 == 0 and abs(dx) < 14:
+        return (2, 3)
+    if dx == 0 and ty % 8 < 4:
+        return (4, 3)
+    return (5, 3) if (ty + dx * 3) % 9 == 0 else (0, 3)
+
+
+def boss_eye(img, cx, cy):
+    # ボスの目（弱点）。ピンクのひとみ。おこると えがく時に赤へ置きかえる
+    img.rect(cx - 5, cy - 5, 10, 10, WH)
+    img.rect(cx - 2, cy - 3, 5, 6, PK)
+    img.rectb(cx - 5, cy - 5, 10, 10, D1)
+    img.line(cx - 7, cy - 8, cx + 6, cy - 7 + (1 if cx < 48 else -1), D1)
+
+
+def boss_teeth(img, x, y, n, down=True):
+    for t in range(n):
+        if down:
+            img.tri(x + t * 4, y, x + 4 + t * 4, y, x + 2 + t * 4, y + 5, WH)
+        else:
+            img.tri(x + t * 4, y, x + 4 + t * 4, y, x + 2 + t * 4, y - 5, WH)
+
+
+def draw_locker_boss(img, ox, oy):
+    img.rect(ox, oy, 96, 64, 0)
+    img.rect(ox + 2, oy + 1, 92, 4, D1)
+    for i in range(3):
+        x = ox + 4 + i * 30
+        img.rect(x, oy + 4, 28, 58, RN)
+        img.rectb(x, oy + 4, 28, 58, D1)
+        img.line(x + 1, oy + 5, x + 26, oy + 5, GY)
+        if i != 1:
+            for v in range(3):
+                img.line(x + 6, oy + 38 + v * 3, x + 21, oy + 38 + v * 3, D1)
+            img.rect(x + (2 if i == 2 else 23), oy + 48, 2, 6, GO)
+    # まん中の とびらが あいて 口に（中は まっくら、歯つき）
+    img.rect(ox + 36, oy + 12, 24, 48, D1)
+    boss_teeth(img, ox + 38, oy + 12, 5)
+    boss_teeth(img, ox + 38, oy + 59, 5, down=False)
+    img.rect(ox + 44, oy + 44, 8, 8, PK)
+    img.rect(ox + 60, oy + 10, 3, 52, GY)     # ひらいた とびら
+    boss_eye(img, ox + 18, oy + 24)
+    boss_eye(img, ox + 78, oy + 24)
+
+
+def draw_piano_boss(img, ox, oy):
+    img.rect(ox, oy, 96, 64, 0)
+    img.tri(ox + 8, oy + 20, ox + 86, oy + 20, ox + 70, oy + 1, DK)      # ふた
+    img.line(ox + 8, oy + 20, ox + 70, oy + 1, PU)
+    img.line(ox + 70, oy + 1, ox + 86, oy + 20, D1)
+    img.line(ox + 70, oy + 1, ox + 60, oy + 20, D1)                      # つっかえ棒
+    img.rect(ox + 6, oy + 20, 84, 22, DK)
+    img.rectb(ox + 6, oy + 20, 84, 22, D1)
+    img.line(ox + 7, oy + 21, ox + 88, oy + 21, PU)
+    # けんばん＝口（白けんが歯）
+    img.rect(ox + 8, oy + 40, 80, 11, WH)
+    img.rectb(ox + 7, oy + 39, 82, 13, D1)
+    for k in range(20):
+        img.line(ox + 8 + k * 4, oy + 40, ox + 8 + k * 4, oy + 50, GY)
+        if k % 7 not in (2, 6) and k < 19:
+            img.rect(ox + 10 + k * 4, oy + 40, 2, 6, D1)
+    img.rect(ox + 12, oy + 52, 4, 11, DK)
+    img.rect(ox + 80, oy + 52, 4, 11, DK)
+    img.rect(ox + 44, oy + 58, 8, 3, GO)                                 # ペダル
+    img.circ(ox + 24, oy + 16, 2, OR)                                    # ふたの上の ろうそく
+    img.pset(ox + 24, oy + 13, OY)
+    boss_eye(img, ox + 32, oy + 31)
+    boss_eye(img, ox + 64, oy + 31)
+
+
+def draw_tobibako_boss(img, ox, oy):
+    img.rect(ox, oy, 96, 64, 0)
+    img.rect(ox + 26, oy + 6, 44, 9, WH)                                 # 上の白い クッション
+    img.rectb(ox + 26, oy + 6, 44, 9, D1)
+    img.line(ox + 28, oy + 8, ox + 67, oy + 8, GY)
+    for i in range(5):
+        y = oy + 14 + i * 10
+        x0, w = ox + 22 - i * 4, 52 + i * 8
+        img.rect(x0, y, w, 10, OD)
+        img.rectb(x0, y, w, 10, D1)
+        img.line(x0 + 1, y + 1, x0 + w - 2, y + 1, OR)
+    # 手をかける あな＝口
+    img.rect(ox + 32, oy + 44, 32, 9, D1)
+    boss_teeth(img, ox + 32, oy + 44, 8)
+    boss_eye(img, ox + 34, oy + 27)
+    boss_eye(img, ox + 62, oy + 27)
+
+
 def setup_sound():
     # ホラーふう：こわれたオルゴール（ゆれる音）＋半音でせまる低音＋心臓の音。ボス戦は 不協和音で はげしく
     s = pyxel.sounds
@@ -481,8 +846,17 @@ def setup_sound():
     s[13].set(sp(stab * 2), "p", "3", "f", 9)
     s[14].set(sp(beat * 4), "n", "6", "f", 9)
     s[15].set("c1c1c1c1c1c1", "n", "776543", "nnffff", 26)   # かみなり
+    # 2面より先の曲：低音と心臓の音は同じで、旋律だけ かえる（たいいくかんは 少し速い）
+    s[16].set(sp("a3rrr c4rrr e4rrr d#4rrr d4rrr c4rrr b3rrr rrrr"), "t", "5", "v", 22)
+    s[17].set(sp("e4rd#4r e4rrr b3rc4r a3rrr f4re4r d#4rrr e4rb3r a3rrr"), "p", "4", "v", 22)
+    s[18].set(sp("a3ra3r c4ra3r e4rd#4r d4rc4r a3ra3r c4ra3r f4re4r d#4rrr"), "t", "5", "v", 18)
+    s[19].set(sp(bas), "t", "6", "n", 18)
+    s[20].set(sp(drm), "n", "3", "f", 18)
     pyxel.musics[0].set([0], [1], [2])
     pyxel.musics[1].set([12], [13], [14])
+    pyxel.musics[2].set([16], [1], [2])
+    pyxel.musics[3].set([17], [1], [2])
+    pyxel.musics[4].set([18], [19], [20])
 
 
 class Obj:
@@ -497,6 +871,7 @@ class Game:
         self.font = pyxel.Font(os.path.join(here, "font.bdf"))
         build_images()
         fix_tilemap()
+        build_stage_images()
         setup_sound()
         pyxel.mouse(False)
         self.best = 0
@@ -510,6 +885,7 @@ class Game:
     def title(self):
         self.state = "title"
         self.t = 0
+        self.set_stage(0)
         self.cx, self.cy = X0, 1900.0
         self.px = X0
         self.objs = []
@@ -519,17 +895,47 @@ class Game:
         pyxel.colors[:] = NIGHT
         pyxel.stop()
 
+    def set_stage(self, n):
+        # n面（0から）の数値と見た目をえらぶ。1面は今までの定数と同じ値
+        self.stage = n
+        self.look = n          # 地面・景色の見た目（エンディングは校庭にもどる）
+        self.st = STAGES[n]
+        self.slen = self.st["length"]
+        self.mid_at = self.st["mid_at"]
+        self.mid_hp = self.st["mid"][2]
+        self.boss_hp = self.st["boss"]["hp"]
+        self.phase = "road"
+
     def start(self):
+        # はじめから。OBAKE_STAGE=2 などで その面から始める（動作確認用）
+        self.score = 0
+        self.pw = 1           # みずでっぽうのレベル（1〜3）
+        self.conts = 0        # つづけた回数
+        try:
+            n = int(os.environ.get("OBAKE_STAGE", "1")) - 1
+        except ValueError:
+            n = 0
+        self.begin_stage(max(0, min(len(STAGES) - 1, n)))
+
+    def continue_stage(self):
+        # ゲームオーバーのあと、その面の はじめから（スコアと パワーは 面の はじめに もどす）
+        self.conts += 1
+        self.score = self.score0
+        self.pw = self.pw0
+        self.begin_stage(self.stage)
+
+    def begin_stage(self, n):
+        self.set_stage(n)
+        self.score0 = self.score
+        self.pw0 = self.pw
         self.state = "play"
         self.t = 0
-        self.score = 0
         self.hearts = 5
         self.ammo = float(AMMO_MAX)
         self.kills = 0
         self.run = 0          # 進んだ道のり（中ボス中は止まる）
         self.phase = "road"   # road → mid → road2 → boss
         self.mid = None
-        self.pw = 1           # みずでっぽうのレベル（1〜3）
         self.gold_next = 14   # 何体たおしたら光るおばけが出るか
         self.dda = 0.0        # やられたら上がる「やさしさ」（ボスと弾がゆるくなる）
         self.form_t = 120
@@ -542,7 +948,7 @@ class Game:
         self.rest = 0
         self.shake = 0
         self.flash = 0
-        self.msg = ("こうていステージ", 120)
+        self.msg = None       # 面の名前は 大きな帯で出す（draw_banner）
         self.boss = None
         self.enemies = []
         self.shots = []
@@ -552,7 +958,9 @@ class Game:
         self.cx, self.cy, self.px = X0, 1900.0, X0
         self.reset_scenery()
         pyxel.colors[:] = NIGHT
-        pyxel.playm(0, loop=True)
+        pyxel.playm(self.st["music"], loop=True)
+        if self.auto:
+            print("STAGE", n + 1, self.st["name"], "score", self.score, flush=True)
 
     def reset_scenery(self):
         self.scenery = []
@@ -561,7 +969,7 @@ class Game:
                 o = Obj()
                 o.x = X0 + side * random.uniform(150, 175)
                 o.y = self.cy - i * 48 - (24 if side > 0 else 0)
-                o.kind = "lamp" if (i + (side > 0)) % 3 == 0 else "tree"
+                o.kind = STAGES[self.look]["scen"][1 if (i + (side > 0)) % 3 == 0 else 0]
                 o.ph = random.uniform(0, 6)
                 self.scenery.append(o)
         self.rain = [[random.uniform(0, W), random.uniform(0, H), random.uniform(5, 8), random.randint(5, 9)] for _ in range(150)]
@@ -594,8 +1002,15 @@ class Game:
             self.update_ending()
             return
         if self.state == "over":
-            if self.t > 60 and self.pressed():
-                self.title()
+            if self.t > (120 if self.auto else 60):   # 自動プレイは 画面を確かめられるよう少し待つ
+                if (pyxel.btnp(pyxel.KEY_X) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_B)
+                        or (pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT) and self.in_title_btn())):
+                    self.title()
+                elif self.pressed():
+                    self.continue_stage()
+            return
+        if self.state == "clear":
+            self.update_clear()
             return
         self.update_play()
 
@@ -720,14 +1135,14 @@ class Game:
             return
         if self.phase in ("road", "road2"):
             self.run += 1
-            if self.phase == "road" and self.run >= MID_AT:
+            if self.phase == "road" and self.run >= self.mid_at:
                 self.start_mid()
                 return
-            if self.run >= STAGE_LEN:
+            if self.run >= self.slen:
                 if not [e for e in self.enemies if e.mode != "tire"]:
                     self.start_boss()
                 return
-            prog = self.run / STAGE_LEN
+            prog = self.run / self.slen
             self.form_t -= 1
             alive = len([e for e in self.enemies if e.mode != "tire"])
             if self.form_t <= 0 and alive < 5:   # 隊列は最大6体なので、同時に10体前後までにおさえる
@@ -744,47 +1159,43 @@ class Game:
         r = random.random()
         cx = self.px + random.uniform(-40, 40)
         far = self.cy - 300
-        if prog < 0.25:
-            pats = ("single", "pair", "line")
-        elif prog < 0.6:
-            pats = ("line", "v", "circle", "dive", "tire", "pair")
-        else:
-            pats = ("line", "v", "circle", "dive", "dive", "tire", "mix")
+        st = self.st          # 面ごとの 隊列と おばけの種類（1面は今までと同じ）
+        pats = st["pats"][0 if prog < 0.25 else 1 if prog < 0.6 else 2]
         pat = random.choice(pats)
         if pat == "single":
-            self.spawn(random.choice(list(ENEMY_SPR)), cx, far)
+            self.spawn(random.choice(st["single"]), cx, far)
         elif pat == "pair":
             for dx in (-30, 30):
-                self.spawn(random.choice(("randoseru", "isu")), cx + dx, far)
+                self.spawn(random.choice(st["pair"]), cx + dx, far)
         elif pat == "line":
             n = 4 if prog < 0.5 else 5
-            k = random.choice(("randoseru", "isu", "ball"))
+            k = random.choice(st["line"])
             for i in range(n):
                 self.spawn(k, cx + (i - (n - 1) / 2) * 26, far, mode="line")
         elif pat == "v":
             for i in range(5):
                 d = abs(i - 2)
-                self.spawn("randoseru", cx + (i - 2) * 24, far - d * 30, mode="line")
+                self.spawn(st["v"], cx + (i - 2) * 24, far - d * 30, mode="line")
         elif pat == "circle":
             for i in range(6):
-                e = self.spawn("ball", cx, far, mode="circle")
+                e = self.spawn(st["circle"], cx, far, mode="circle")
                 e.ang = i * math.pi / 3
         elif pat == "dive":
             for dx in (-50, 50):
-                self.spawn("uwabaki", cx + dx, far, mode="dive")
+                self.spawn(st["dive"], cx + dx, far, mode="dive")
         elif pat == "tire":
             for i in range(random.randint(2, 3)):
-                self.spawn("tire", self.px + random.uniform(-70, 70), far - i * 50, mode="tire")
-            self.spawn(random.choice(("randoseru", "ball")), cx, far - 40)
+                self.spawn(st["obst"], self.px + random.uniform(-70, 70), far - i * 50, mode="tire")
+            self.spawn(random.choice(st["obst_with"]), cx, far - 40)
         else:
             self.formation(0.4)
-            self.spawn("uwabaki", cx, far - 60, mode="dive")
+            self.spawn(st["dive"], cx, far - 60, mode="dive")
 
     def spawn(self, kind=None, x=None, y=None, mode="sway"):
         e = Obj()
         e.kind = kind or random.choices(list(ENEMY_SPR), weights=(4, 2, 3, 3))[0]
         e.mode = mode
-        e.hp = 999 if mode == "tire" else ENEMY_HP.get(e.kind, 1)
+        e.hp = 999 if mode == "tire" else ALL_HP.get(e.kind, 1)
         e.x = self.cx + random.uniform(-90, 90) if x is None else x
         e.y = self.cy - random.uniform(260, 320) if y is None else y
         e.z = 0 if mode == "tire" else random.uniform(4, 26) if mode == "sway" else 14
@@ -843,7 +1254,7 @@ class Game:
             e.throw -= 1
             if e.throw <= 0 and 70 < dist < 270:
                 self.throw(e.x, e.y, e.z + 8)
-                prog = self.run / STAGE_LEN
+                prog = self.run / self.slen
                 e.throw = int(random.randint(110, 200) * (1 + self.dda * 0.8) - prog * 40)
         if dist < PD:
             e.gone = True
@@ -860,10 +1271,11 @@ class Game:
     # ---------- 中ボス：ランドセルだいおう ----------
     def start_mid(self):
         self.phase = "mid"
-        m = self.spawn("randoseru", self.px, self.cy - 260, mode="mid")
+        kind, name, hp = self.st["mid"]
+        m = self.spawn(kind, self.px, self.cy - 260, mode="mid")
         m.big = True
         m.gold = True
-        m.hp = MID_HP
+        m.hp = hp
         m.s = 44
         m.z = 6
         m.vy = 0
@@ -872,15 +1284,15 @@ class Game:
         self.mid = m
         pyxel.playm(1, loop=True)
         pyxel.play(3, 7)
-        self.say("ランドセルだいおう が きた！", 140)
+        self.say("%s が きた！" % name, 140)
 
     def update_mid(self):
         m = self.mid
         if m.gone:
             self.mid = None
             self.phase = "road2"
-            pyxel.playm(0, loop=True)
-            self.say("ランドセルだいおうを たおした！", 120)
+            pyxel.playm(self.st["music"], loop=True)
+            self.say("%sを たおした！" % self.st["mid"][1], 120)
             return
         m.dist = max(140, m.dist - 1.2)
         m.y = self.cy - m.dist
@@ -893,12 +1305,12 @@ class Game:
                     self.throw(m.x + dx, m.y, 24)
             else:
                 for dx in (-36, 36):
-                    self.spawn("randoseru", m.x + dx, m.y + 5)
+                    self.spawn(self.st["mid"][0], m.x + dx, m.y + 5)
             m.atk = int(110 * (1 + self.dda * 0.8))
 
     def throw(self, x, y, z, dur=None):
         if dur is None:
-            dur = 70 - 18 * min(1, self.run / STAGE_LEN)
+            dur = 70 - 18 * min(1, self.run / self.slen)
         dur = int(dur * (1 + self.dda * 0.45))
         b = Obj()
         b.sx, b.sy, b.sz = x, y, z
@@ -1007,6 +1419,8 @@ class Game:
     def hurt(self):
         if self.inv > 0 or self.state != "play":
             return
+        if self.auto and os.environ.get("OBAKE_GOD"):   # 動作確認用：やられない（最後まで通して見る）
+            return
         self.hearts -= 1
         self.dmg_taken += 1
         self.dda = min(1.0, self.dda + 0.34)   # やられたら しばらく やさしく
@@ -1050,7 +1464,7 @@ class Game:
         b.dist = 520.0
         b.y = self.cy - b.dist
         b.x = X0
-        b.hp = BOSS_HP
+        b.hp = self.boss_hp
         b.state = "come"
         b.t = 0
         b.atk = 120
@@ -1058,7 +1472,7 @@ class Game:
         self.boss = b
         pyxel.playm(1, loop=True)
         pyxel.play(3, 7)
-        self.say("おばけこうしゃ が あらわれた！", 150)
+        self.say("%s が あらわれた！" % self.st["boss"]["name"], 150)
 
     def boss_scale(self):
         p = self.proj(self.boss.x, self.boss.y, 0)
@@ -1072,11 +1486,14 @@ class Game:
         bob = math.sin(b.t * 0.05) * 2 * sc
         return p[0] - bw / 2, p[1] - bh + bob, bw, bh
 
+    def boss_eyes(self):
+        return self.st["boss"].get("eyes") or BOSS_EYE_C   # 1面は生成画像に合わせた位置
+
     def boss_eye_pos(self, i):
         bx, by, bw, bh = self.boss_rect()
         sc = bw / 96
-        ex = bx + BOSS_EYE_C[i][0] * sc
-        ey = by + BOSS_EYE_C[i][1] * sc
+        ex = bx + self.boss_eyes()[i][0] * sc
+        ey = by + self.boss_eyes()[i][1] * sc
         return ex, ey, 6 * sc
 
     def update_boss(self):
@@ -1091,7 +1508,7 @@ class Game:
                 pyxel.play(3, 7)
         elif b.state == "fight":
             b.atk -= 1
-            rage = b.hp < BOSS_HP / 2
+            rage = b.hp < self.boss_hp / 2
             if b.atk <= 0:
                 kind = random.choice(("paper", "paper", "minion"))
                 if kind == "paper":
@@ -1099,8 +1516,9 @@ class Game:
                     for i in range(max(1, n)):
                         self.throw(b.x + random.uniform(-40, 40), b.y + 5, 30, dur=90)
                 else:
+                    mk = self.st["boss"]["minions"]
                     for i in range(2):
-                        self.spawn(None, b.x + random.uniform(-50, 50), b.y + 10)
+                        self.spawn(random.choice(mk) if mk else None, b.x + random.uniform(-50, 50), b.y + 10)
                 b.atk = int((70 if rage else 110) * (1 + self.dda * 0.8))
             if rage and b.t % 240 == 0:
                 self.say("おこった！ めが まっかだ！", 90)
@@ -1111,7 +1529,10 @@ class Game:
                 self.fx.append(("pop", bx + random.uniform(0, bw), by + random.uniform(0, bh), 0, 0, 16))
                 pyxel.play(3, 4)
             if b.t > 150:
-                self.start_ending()
+                if self.stage < len(STAGES) - 1:
+                    self.start_clear()
+                else:
+                    self.start_ending()
         b.y = self.cy - b.dist
 
     def hit_boss(self, dmg, x, y):
@@ -1132,18 +1553,44 @@ class Game:
             self.bullets = []
             pyxel.stop()
             pyxel.play(3, 7)
-            self.say("やった！ おばけこうしゃを たいじ！", 150)
+            self.say("やった！ %sを たいじ！" % self.st["boss"]["name"], 150)
 
     def get_rank(self):
+        n = self.stage + 1    # すすんだ面の数だけ 基準を上げる（1面だけなら今までと同じ）
         for th, r in RANKS:
-            if self.score >= th:
+            if self.score >= th * n:
                 return r
         return "C"
+
+    # ---------- 面クリア → 次の面へ ----------
+    def start_clear(self):
+        self.state = "clear"
+        self.t = 0
+        self.boss = None
+        self.enemies = []
+        self.bullets = []
+        self.best = max(self.best, self.score)
+        pyxel.stop()
+        pyxel.play(3, 9)
+
+    def update_clear(self):
+        self.cy -= 0.6
+        self.scroll_world()
+        self.update_fx()
+        if self.t > 150 and (self.pressed() or self.t > 600):
+            self.begin_stage(self.stage + 1)
+
+    def in_title_btn(self):
+        x, y, w, h = TITLE_BTN
+        return x <= pyxel.mouse_x <= x + w and y <= pyxel.mouse_y <= y + h
 
     # ---------- エンディング：夜明け→学校がもとにもどる→「あー よかった」 ----------
     def start_ending(self):
         self.state = "ending"
         self.t = 0
+        self.look = 0         # 外（校庭）に出て 夜明けを見る
+        self.cx = self.px = X0
+        self.reset_scenery()
         self.best = max(self.best, self.score)
         self.rank = self.get_rank()
         self.souls = [[random.uniform(40, W - 40), random.uniform(60, 110), random.uniform(0.2, 0.6)] for _ in range(14)]
@@ -1192,10 +1639,12 @@ class Game:
             self.draw_world()
         if self.state == "title":
             self.draw_title()
-        elif self.state in ("play", "over"):
+        elif self.state in ("play", "over", "clear"):
             self.draw_play()
             if self.state == "over":
                 self.draw_over()
+            elif self.state == "clear":
+                self.draw_clear()
         elif self.state == "ending":
             self.draw_ending()
         pyxel.camera()
@@ -1217,6 +1666,17 @@ class Game:
     def draw_world(self):
         pyxel.cls(K)
         hz = H / 2 - math.tan(math.radians(90 - PITCH)) * FOCAL
+        if self.look:
+            self.draw_room(hz)
+        else:
+            self.draw_sky(hz)
+        # 地面（Pyxel 3.0 の bltm3d）。面ごとに別のタイルマップ
+        pyxel.bltm3d(0, 0, W, H, STAGES[self.look]["tm"], (self.cx, self.cy, CAM_Z), (PITCH, 0, 0), fov=FOV, colkey=None)
+        # 遠くを くらく（きりの代わりに 横線を ちらす）
+        for y in range(int(hz), int(hz) + 10, 2):
+            pyxel.line(0, y, W, y, K if self.state != "ending" else GY)
+
+    def draw_sky(self, hz):
         # 空（グラデーションを横線で）
         for i, c in enumerate((K, D1, D1, PU)):
             y0 = int(hz * i / 4)
@@ -1237,11 +1697,113 @@ class Game:
         # 遠くの校舎（ボスが来るまで・タイトル）
         if not getattr(self, "boss", None) and self.state in ("title", "play", "over"):
             pyxel.blt(W / 2 - 48 - (self.cx - X0) * 0.1, hz - 40, 2, 0, 0, 96, 64, 0, scale=0.5)
-        # 地面（Pyxel 3.0 の bltm3d）
-        pyxel.bltm3d(0, 0, W, H, 0, (self.cx, self.cy, CAM_Z), (PITCH, 0, 0), fov=FOV, colkey=None)
-        # 遠くを くらく（きりの代わりに 横線を ちらす）
-        for y in range(int(hz), int(hz) + 10, 2):
-            pyxel.line(0, y, W, y, K if self.state != "ending" else GY)
+
+    def draw_room(self, hz):
+        # 校舎の中：地平線より上を かべ・天井・まど にする（景色は横に少し ずれる）
+        ox = -(self.cx - X0) * 0.3
+        t = self.t
+        lit = self.lflash in (7, 6, 3)
+        if self.look == 1:      # ろうか：天井の蛍光灯・雨の まど・おくの とびら
+            pyxel.rect(0, 0, W, hz, DK)
+            pyxel.rect(0, 0, W, 7, D1)
+            for i in range(-1, 6):
+                x = i * 60 + ox % 60
+                on = (t // 6 + i * 5) % 37 != 0
+                pyxel.rect(x, 2, 28, 3, WH if on else GY)
+            for i in range(-1, 8):
+                x = i * 44 + (ox * 1.4) % 44
+                pyxel.rect(x, 12, 32, 26, GY)
+                pyxel.rect(x + 2, 14, 28, 22, WH if lit else K)
+                for j in range(3):
+                    rx = x + 4 + (j * 9 + t * 2) % 24
+                    ry = 15 + (j * 7 + t * 3) % 18
+                    pyxel.line(rx, ry, rx + 1, ry + 3, RN)
+                pyxel.line(x + 16, 14, x + 16, 35, GY)
+                pyxel.line(x + 2, 24, x + 29, 24, GY)
+            pyxel.rect(0, hz - 12, W, 12, GD)
+            pyxel.line(0, hz - 12, W, hz - 12, SD)
+            dx = W / 2 + ox * 0.5
+            pyxel.rect(dx - 16, hz - 34, 32, 34, D1)
+            pyxel.rectb(dx - 16, hz - 34, 32, 34, SD)
+            pyxel.line(dx, hz - 34, dx, hz, SD)
+            pyxel.rect(dx - 9, hz - 42, 18, 6, DG)
+            pyxel.rect(dx - 3, hz - 41, 3, 4, WH)
+            if t % 90 < 45:   # とびらの まどから 目が のぞく
+                pyxel.pset(dx - 8, hz - 26, PK)
+                pyxel.pset(dx - 5, hz - 26, PK)
+        elif self.look == 2:    # おんがくしつ（中ボスまで）→ りかしつ
+            music = self.phase in ("road", "mid")
+            pyxel.rect(0, 0, W, hz, D1)
+            pyxel.rect(0, hz - 9, W, 9, GD)
+            bx = W / 2 - 60 + ox * 0.5
+            pyxel.rect(bx, 8, 120, 34, DG)
+            pyxel.rectb(bx - 1, 7, 122, 36, OD)
+            pyxel.rect(bx + 10, 42, 100, 2, OD)
+            if music:
+                for j in range(5):
+                    pyxel.line(bx + 6, 14 + j * 5, bx + 113, 14 + j * 5, GY)
+                for k in range(7):
+                    nx = bx + 16 + k * 14
+                    ny = 14 + ((k * 3 + t // 30) % 5) * 5
+                    pyxel.circ(nx, ny, 2, WH)
+                    pyxel.line(nx + 2, ny, nx + 2, ny - 8, WH)
+                for side in (-1, 1):   # 音楽家の しょうぞう画（目が ピンクに光る）
+                    px = W / 2 + side * 100 - 11 + ox * 0.6
+                    pyxel.rect(px, 10, 22, 28, OD)
+                    pyxel.rect(px + 2, 12, 18, 24, DK)
+                    pyxel.circ(px + 11, 22, 6, SD)
+                    pyxel.rect(px + 4, 28, 14, 8, D1)
+                    c = PK if (t + side * 40) % 120 < 60 else D1
+                    pyxel.pset(px + 9, 21, c)
+                    pyxel.pset(px + 13, 21, c)
+            else:
+                pyxel.text(bx + 10, 14, "H2O + ?", WH)
+                pyxel.text(bx + 10, 26, "O O O ->", GY)
+                pyxel.circb(bx + 90, 24, 9, WH)
+                for side in (-1, 1):   # くすりの たな（フラスコが ぶくぶく）
+                    sx = W / 2 + side * 104 - 18 + ox * 0.6
+                    for j in range(3):
+                        y = 14 + j * 13
+                        pyxel.rect(sx, y + 9, 36, 2, OD)
+                        for k in range(4):
+                            fx = sx + 3 + k * 9
+                            col = (CY_, GR, PK, GO)[(j + k) % 4]
+                            pyxel.rect(fx + 1, y, 2, 4, GY)
+                            pyxel.circ(fx + 2, y + 6, 3, col)
+                            if (t // 8 + j + k * 3) % 11 == 0:
+                                pyxel.pset(fx + 2, y - 2, WH)
+        else:                   # たいいくかん：高い まど・木のかべ・ぶたいの 赤いまく
+            pyxel.rect(0, 0, W, hz, DK)
+            for i in range(-1, 26):   # 天井の はり
+                x = i * 12 + (ox * 1.6) % 12
+                pyxel.line(x, 0, x + 3, 12, D1)
+            pyxel.line(0, 12, W, 12, D1)
+            for i in range(-1, 10):
+                x = i * 34 + (ox * 1.2) % 34
+                pyxel.rect(x, 15, 26, 10, GY)
+                pyxel.rect(x + 1, 16, 24, 8, WH if lit else K)
+                pyxel.line(x + 6 + (t * 2 + i * 5) % 14, 17, x + 7 + (t * 2 + i * 5) % 14, 21, RN)
+            pyxel.rect(0, 27, W, hz - 27, OD)
+            for i in range(-1, 26):
+                x = i * 12 + (ox * 1.2) % 12
+                pyxel.line(x, 27, x, hz, GD)
+            sx = W / 2 + ox * 0.5
+            pyxel.rect(sx - 54, hz - 36, 108, 36, K)
+            pyxel.rect(sx - 54, hz - 40, 108, 7, RD)
+            pyxel.rect(sx - 54, hz - 36, 20, 30, RD)
+            pyxel.rect(sx + 34, hz - 36, 20, 30, RD)
+            for k in range(4):
+                pyxel.line(sx - 50 + k * 5, hz - 33, sx - 50 + k * 5, hz - 7, PK)
+                pyxel.line(sx + 38 + k * 5, hz - 33, sx + 38 + k * 5, hz - 7, PK)
+            pyxel.rect(sx - 56, hz - 6, 112, 6, GD)
+            for side in (-1, 1):   # バスケットゴール
+                gx = sx + side * 100
+                pyxel.rect(gx - 10, 22, 20, 13, WH)
+                pyxel.rectb(gx - 10, 22, 20, 13, GY)
+                pyxel.rectb(gx - 4, 27, 8, 6, RD)
+                pyxel.line(gx - 5, 35, gx + 5, 35, OR)
+                pyxel.line(gx - 4, 36, gx - 2, 41, WH)
+                pyxel.line(gx + 4, 36, gx + 2, 41, WH)
 
     def sprites(self):
         items = []
@@ -1279,14 +1841,18 @@ class Game:
             b = self.boss
             bx, by, bw, bh = self.boss_rect()
             sc = bw / 96
-            row = 64 if b.hp < BOSS_HP / 2 else 0
+            bs = self.st["boss"]
+            rage = b.hp < self.boss_hp / 2
+            u, v = bs["angry"] if rage and bs["angry"] else bs["src"]
+            if rage and not bs["angry"]:
+                pyxel.pal(PK, RD)        # おこると 目が まっか
             if b.state == "die" and b.t % 8 < 4:
                 for c in range(1, len(NIGHT)):
                     pyxel.pal(c, WH)
             if b.hit and b.hit % 2:
                 for c in range(1, len(NIGHT)):
                     pyxel.pal(c, PK)
-            pyxel.blt(bx + bw / 2 - 48, by + bh / 2 - 32, 2, 0, row, 96, 64, 0, scale=sc)
+            pyxel.blt(bx + bw / 2 - 48, by + bh / 2 - 32, 2, u, v, 96, 64, 0, scale=sc)
             pyxel.pal()
             if b.state == "fight":
                 for i in (0, 1):
@@ -1295,15 +1861,17 @@ class Game:
                         pyxel.circb(ex, ey, er + 3, GO)
         # 木・おばけ・紙くず（奥から順に）
         for zc, kind, o, p in self.sprites():
-            if kind == "tree":
-                self.draw_sprite(96, 0, 16, 16, p[0], p[1], 34, zc)
+            if kind in SCEN_SPR:
+                u, v, w, h, size = SCEN_SPR[kind]
+                self.draw_sprite(u, v, w, h, p[0], p[1], size, zc)
             elif kind == "lamp":
                 self.draw_lamp(o, p, zc)
             elif kind == "enemy":
                 if o.mode == "tire":
-                    self.draw_sprite(128, 0, 16, 16, p[0], p[1] + FOCAL * 4 / zc, 16, zc)
+                    u, v = OBST_SPR[o.kind]
+                    self.draw_sprite(u, v, 16, 16, p[0], p[1] + FOCAL * 4 / zc, 16, zc)
                     continue
-                u, v = ENEMY_SPR[o.kind]
+                u, v = ALL_SPR[o.kind]
                 # かげ
                 g = self.proj(o.x, o.y, 0)
                 if g:
@@ -1393,28 +1961,29 @@ class Game:
             w = 140
             x = W / 2 - w / 2
             pyxel.rect(x, 4, w, 6, K)
-            pyxel.rect(x + 1, 5, int((w - 2) * max(0, self.boss.hp) / BOSS_HP), 4, RD)
+            pyxel.rect(x + 1, 5, int((w - 2) * max(0, self.boss.hp) / self.boss_hp), 4, RD)
             pyxel.rectb(x, 4, w, 6, GO)
-            self.otext(W / 2 - self.font.text_width("おばけこうしゃ") / 2, 12, "おばけこうしゃ", GO, K)
+            s = self.st["boss"]["name"]
+            self.otext(W / 2 - self.font.text_width(s) / 2, 12, s, GO, K)
         elif self.phase == "mid" and self.mid:
             w = 110
             x = W / 2 - w / 2
             pyxel.rect(x, 4, w, 6, K)
-            pyxel.rect(x + 1, 5, int((w - 2) * max(0, self.mid.hp) / MID_HP), 4, PK)
+            pyxel.rect(x + 1, 5, int((w - 2) * max(0, self.mid.hp) / self.mid_hp), 4, PK)
             pyxel.rectb(x, 4, w, 6, GO)
-            s = "ランドセルだいおう"
+            s = self.st["mid"][1]
             self.otext(W / 2 - self.font.text_width(s) / 2, 12, s, GO, K)
         else:
             # こうしゃまでの道のり（中ボスの位置に しるし）
             w = 120
             x = W / 2 - w / 2
             pyxel.rect(x, 5, w, 4, K)
-            pyxel.rect(x, 5, int(w * min(1, self.run / STAGE_LEN)), 4, LV)
+            pyxel.rect(x, 5, int(w * min(1, self.run / self.slen)), 4, LV)
             pyxel.rectb(x - 1, 4, w + 2, 6, PU)
-            mx = x + w * MID_AT / STAGE_LEN
+            mx = x + w * self.mid_at / self.slen
             pyxel.line(mx, 3, mx, 10, PK)
             pyxel.blt(x + w - 4, 1, 1, 72, 0, 6, 6, 0)
-            s = "こうしゃまで"
+            s = self.st["goal"]
             self.otext(W / 2 - self.font.text_width(s) / 2, 11, s, LV, K)
         # チャイム（左下）
         ready = self.chime >= 100
@@ -1425,6 +1994,8 @@ class Game:
         pyxel.blt(8, H - 22, 1, 112, 0, 14, 11, 0)
         if ready:
             self.otext(4, H - 12, "タップ" if self.touch else "X/タップ", WH, K)
+        if self.state == "play" and self.t < 150:
+            self.draw_banner()
         # メッセージ
         if self.msg and self.msg[1] > 0:
             s, d = self.msg
@@ -1465,10 +2036,10 @@ class Game:
                 pyxel.pset(sp[0], sp[1], OY if sp[4] > 12 else OR)
                 out.append(sp)
         self.sparks = out[-80:]
-        # 雨（エンディングの 夜明けで やむ）
+        # 雨（エンディングの 夜明けで やむ）。校舎の中では まどの中だけ（draw_room）
         if self.state == "ending" and self.t > 120:
             return
-        for d in self.rain:
+        for d in (self.rain if not self.look else ()):
             d[1] += d[2]
             d[0] -= d[2] * 0.3
             if d[1] > H or d[0] < 0:
@@ -1476,7 +2047,7 @@ class Game:
                 d[0] = random.uniform(0, W + 40)
             pyxel.line(d[0], d[1], d[0] + d[3] * 0.3, d[1] - d[3], RN)
         hz = H / 2 - math.tan(math.radians(90 - PITCH)) * FOCAL
-        for _ in range(5):   # 地面の しぶき
+        for _ in range(0 if self.look else 5):   # 地面の しぶき
             x, y = random.uniform(0, W), random.uniform(hz + 8, H)
             pyxel.pset(x - 1, y, RN)
             pyxel.pset(x + 1, y, RN)
@@ -1498,7 +2069,7 @@ class Game:
                 pyxel.dither(0.45)
                 pyxel.rect(0, 0, W, H, WH)
                 pyxel.dither(1)
-            if self.bolt and self.lflash > 3:
+            if self.bolt and self.lflash > 3 and not self.look:
                 for (x1, y1), (x2, y2) in zip(self.bolt, self.bolt[1:]):
                     pyxel.line(x1, y1, x2, y2, WH)
                     pyxel.line(x1 + 1, y1, x2 + 1, y2, LV)
@@ -1537,7 +2108,7 @@ class Game:
             img.text(2 + dx, 202 + dy, s2, PU, self.font)
         img.text(2, 202, s2, GO, self.font)
         pyxel.blt(W / 2 - 60, 44, 2, 0, 200, 120, 14, 0, scale=2)
-        s3 = "こうていステージ ＋ ボス"
+        s3 = "4つの ステージ ＋ ボス"
         self.otext(W / 2 - self.font.text_width(s3) / 2, 67, s3, CY_, K)
         # おばけたち
         for i, (u, v) in enumerate(ENEMY_SPR.values()):
@@ -1575,8 +2146,56 @@ class Game:
         s = "スコア %d   ランク %s" % (self.score, self.rank)
         self.otext(W / 2 - self.font.text_width(s) / 2, 72, s, WH, K)
         if self.t > 60 and self.t % 60 < 40:
-            s = "おして タイトルへ"
-            self.otext(W / 2 - self.font.text_width(s) / 2, 86, s, GY, K)
+            s = "おして つづきから（ステージ%d）" % (self.stage + 1)
+            self.otext(W / 2 - self.font.text_width(s) / 2, 86, s, WH, K)
+        if self.t > 60:
+            x, y, w, h = TITLE_BTN
+            pyxel.rect(x, y, w, h, K)
+            pyxel.rectb(x, y, w, h, GY)
+            s = "タイトルへ" if self.touch else "X：タイトルへ"
+            self.otext(x + w / 2 - self.font.text_width(s) / 2, y + 3, s, GY, K)
+
+    def big_text(self, s, y, col, edge):
+        # 大きな文字：画像バンク2の すみに書いて 2倍で出す（タイトルと同じ やり方。場所は別）
+        tw = min(120, self.font.text_width(s) + 4)
+        img = pyxel.images[2]
+        img.rect(0, 216, 124, 14, 0)
+        for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1), (1, 1)):
+            img.text(2 + dx, 218 + dy, s, edge, self.font)
+        img.text(2, 218, s, col, self.font)
+        pyxel.blt(W / 2 - 62, y, 2, 0, 216, 124, 14, 0, scale=2)
+        return tw
+
+    def draw_banner(self):
+        # 面の はじまり：「ステージ2」と 面の名前を 大きく
+        t = self.t
+        y = 34 if t > 12 else 34 - (12 - t) * 4
+        pyxel.dither(0.7)
+        pyxel.rect(0, y, W, 44, K)
+        pyxel.dither(1)
+        pyxel.line(0, y, W, y, VI)
+        pyxel.line(0, y + 44, W, y + 44, VI)
+        last = self.stage == len(STAGES) - 1
+        s = "さいごの ステージ" if last else "ステージ %d / %d" % (self.stage + 1, len(STAGES))
+        self.otext(W / 2 - self.font.text_width(s) / 2, y + 4, s, PK if last else LV, K)
+        self.big_text(self.st["name"], y + 16, GO, PU)
+
+    def draw_clear(self):
+        t = self.t
+        pyxel.dither(min(0.75, t / 40))
+        pyxel.rect(0, 36, W, 64, K)
+        pyxel.dither(1)
+        pyxel.line(0, 36, W, 36, GO)
+        pyxel.line(0, 100, W, 100, GO)
+        self.big_text("ステージクリア！", 42, GO, PU)
+        s = "スコア %d" % self.score
+        self.otext(W / 2 - self.font.text_width(s) / 2, 72, s, WH, K)
+        if t > 60:
+            s = "つぎは %s" % STAGES[self.stage + 1]["name"]
+            self.otext(W / 2 - self.font.text_width(s) / 2, 85, s, CY_, K)
+        if t > 150 and t % 60 < 40:
+            s = "おして つぎの ステージへ"
+            self.otext(W / 2 - self.font.text_width(s) / 2, 106, s, WH, K)
 
     def draw_ending(self):
         t = self.t
@@ -1602,9 +2221,11 @@ class Game:
             pyxel.tri(W / 2 - 3, by + 14, W / 2 + 3, by + 14, W / 2, by + 19, WH)
             pyxel.text(bx + 6, by + 3, s, K + 1, self.font)
         if t > 240:
-            s = "がっこうが もとに もどった！"
+            s = "ぜんぶ クリア！ がっこうが もとに もどった！"
             self.otext(W / 2 - self.font.text_width(s) / 2, 12, s, K + 1, WH)
             s = "スコア %d   ランク %s" % (self.score, self.rank)
+            if self.conts:
+                s += "   つづき %dかい" % self.conts
             self.otext(W / 2 - self.font.text_width(s) / 2, 26, s, K + 1, WH)
         if t > 320 and t % 60 < 40:
             s = "おして タイトルへ"
