@@ -494,6 +494,7 @@ class Game:
         elif firing and self.ammo < 1 and self.cool <= 0:
             self.cool = 20
             self.say("みずぎれ！ ちょっと まってね", 40)
+        self.ammo = min(30, self.ammo + 0.09)   # うちながらでも少しずつたまる
         if not firing:
             self.rest += 1
             if self.rest > 12:
