@@ -74,6 +74,9 @@ button:disabled{opacity:.5;cursor:wait}
 .tvcode{font:400 clamp(40px,7vw,64px)/1 var(--display);letter-spacing:.12em;color:var(--gold);margin:6px 0}
 .tvurl{font:500 12px/1.4 var(--body);color:#bda9f0;word-break:break-all}
 #tvStat{color:var(--cyan)}
+#rCur{position:fixed;left:0;top:0;z-index:70;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;border:5px solid var(--cyan);box-shadow:0 0 0 4px rgba(0,0,0,.7),0 0 18px var(--cyan);pointer-events:none}
+#rCur::after{content:"";position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-4px;border-radius:50%;background:#fff}
+#rCur.off{border-color:#ff5f5f;box-shadow:0 0 0 4px rgba(0,0,0,.7),0 0 18px #ff5f5f}
 #calT{position:fixed;inset:0;z-index:60;display:grid;place-items:center;pointer-events:none;background:rgba(8,4,20,.7)}
 #calT .ring{width:min(26vh,200px);aspect-ratio:1;border-radius:50%;border:8px solid var(--gold);box-shadow:0 0 0 6px rgba(0,0,0,.6),0 0 40px var(--gold);display:grid;place-items:center;animation:calp 1s ease-in-out infinite}
 #calT .ring::after{content:"";width:18%;aspect-ratio:1;border-radius:50%;background:var(--gold)}
@@ -164,6 +167,7 @@ button:disabled{opacity:.5;cursor:wait}
   </div>
 </section>
 
+<div id="rCur" hidden aria-hidden="true"></div>
 <div id="calT" hidden><div class="ring"></div><p>ここに iPhoneの あたまを むけて<br>「ここ！」を おしてね</p></div>
 
 <section class="screen" id="tv" hidden>
@@ -273,7 +277,7 @@ const ROOMS={
   classroom:{zb:.85,spawn:.8,halfW:2.7,ceil:2.9,xs:1},
   boss:{zb:.85,spawn:.8,halfW:2.7,ceil:2.9,xs:1},
   hallway:{zb:3,spawn:1.15,halfW:1.7,ceil:2.7,xs:.72,mode:'rail',spd:1.7,per:11.2},
-  getabako:{zb:.7,spawn:.45,halfW:12,ceil:2.9,xs:1,mode:'side',spd:1.25,per:3.2},
+  getabako:{zb:.7,spawn:.55,halfW:12,ceil:2.9,xs:1,mode:'side',spd:1.25,per:3.2},
   yard:{zb:3,spawn:1.2,halfW:20,ceil:20,xs:1.1,mode:'rail',spd:7,per:10,harrier:1},
   bossyard:{zb:3,spawn:1.2,halfW:20,ceil:20,xs:1.1},
   science:{zb:.9,spawn:.85,halfW:2.7,ceil:2.9,xs:1},
@@ -1219,7 +1223,7 @@ function remoteGo(){initAudio();
   else if(state==='opening')endOpening();
   else if(state==='ending'){if(G.end.t<END_T-1)G.end.t=END_T-1;}}
 function remoteData(d){if(!d||typeof d!=='object')return;
-  if(d.t==='a'){const x=+d.x||0,y=+d.y||0;GYRO.tx=clamp(W/2+x*W/2,W*.04,W*.96);GYRO.ty=clamp(H/2-y*H/2,H*.1,H*.9);}
+  if(d.t==='a'){const x=+d.x||0,y=+d.y||0;GYRO.rx=x;GYRO.ry=y;GYRO.tx=clamp(W/2+x*W/2,W*.04,W*.96);GYRO.ty=clamp(H/2-y*H/2,H*.1,H*.9);}
   else if(d.t==='calmode'){$('calT').hidden=!d.on;}
   else if(d.t==='r'){if(state==='play'&&G.ammo<maxAmmo())startReload();}
   else if(d.t==='m'){const y=+d.y||0,p=+d.p||0;GYRO.tx=clamp(GYRO.tx+y*(W/2)/24,W*.04,W*.96);GYRO.ty=clamp(GYRO.ty-p*(H/2)/16,H*.1,H*.9);}
@@ -1597,9 +1601,24 @@ function drawHUD(){
   if(G.pow&&G.pow.kind==='rapid'&&G.pow.t>0){txt('むげん',ax+aw-14*u,ay+ah/2-8*u,22*u,'#ffd23f',FD,'right');txt('みずでっぽう',ax+aw-14*u,ay+ah/2+17*u,12*u,'#cfe9ff',FB,'right');}
   else{txt(`${G.ammo}/${maxAmmo()}`,ax+aw-14*u,ay+ah/2-8*u,26*u,G.ammo<6?'#ff8fd0':'#fff',FD,'right');txt('みずでっぽう',ax+aw-14*u,ay+ah/2+17*u,12*u,'#cfe9ff',FB,'right');}
 }
+function aimOff(){ // 照準が画面の外を向いているか（向きの操作のとき）
+  if(GYRO.remote)return Math.abs(GYRO.rx||0)>1.02||Math.abs(GYRO.ry||0)>1.02;
+  if(GYRO.on)return GYRO.tx<=W*.01||GYRO.tx>=W*.99||GYRO.ty<=H*.01||GYRO.ty>=H*.99;
+  return false;}
+function drawOffHint(x,y,r){ // 画面の外を向いているとき：画面のはしに大きな矢印と、まんなかに ひとこと
+  const dx=x-W/2,dy=y-H/2,a=Math.atan2(dy,dx),blink=performance.now()%500<300,R=Math.max(26,r*1.3);
+  const ax=clamp(x,R*1.6,W-R*1.6),ay=clamp(y,R*1.6,H-R*1.6);
+  ctx.save();ctx.translate(ax,ay);ctx.rotate(a);ctx.fillStyle=blink?'#ff5f5f':'#ffd23f';ctx.strokeStyle='#000';ctx.lineWidth=4;
+  ctx.beginPath();ctx.moveTo(R*1.4,0);ctx.lineTo(R*.2,-R*.8);ctx.lineTo(R*.2,-R*.3);ctx.lineTo(-R*.8,-R*.3);ctx.lineTo(-R*.8,R*.3);ctx.lineTo(R*.2,R*.3);ctx.lineTo(R*.2,R*.8);ctx.closePath();ctx.stroke();ctx.fill();ctx.restore();
+  const fs=Math.max(17,Math.round(28*U)),ff=getComputedStyle(document.body).fontFamily;
+  ctx.save();ctx.textAlign='center';ctx.lineJoin='round';ctx.strokeStyle='#000';ctx.fillStyle='#fff';
+  const m=GYRO.remote?'テレビの そとを むいてるよ':'がめんの そとを むいてるよ',m2=GYRO.remote?'やじるしの はんたいへ むけるか「◎ あわせる」':'やじるしの はんたいへ かたむけるか ◎ で まんなかへ';
+  ctx.font=`900 ${fs}px ${ff}`;ctx.lineWidth=6;ctx.strokeText(m,W/2,H*.3);ctx.fillText(m,W/2,H*.3);
+  ctx.font=`700 ${Math.round(fs*.62)}px ${ff}`;ctx.lineWidth=4;ctx.strokeText(m2,W/2,H*.3+fs*.95);ctx.fillText(m2,W/2,H*.3+fs*.95);ctx.restore();}
 function drawReticle(){
-  const x=ptr.x,y=ptr.y,r=26*U*(GYRO.remote?1.6:1);
-  if(GYRO.remote){ctx.save();ctx.strokeStyle='rgba(0,0,0,.65)';ctx.lineWidth=9*U;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.stroke();ctx.beginPath();ctx.arc(x,y,r*.45,0,7);ctx.stroke();ctx.restore();}let over=false;for(const e of G.enemies)if(!e.dead&&Math.hypot(e.sx-x,e.sy-y)<e.sr)over=true;
+  const x=ptr.x,y=ptr.y,r=26*U*(GYRO.remote?1.6:GYRO.on?1.35:1);
+  if(GYRO.on&&aimOff())drawOffHint(x,y,r);
+  if(GYRO.on){ctx.save();ctx.strokeStyle='rgba(0,0,0,.65)';ctx.lineWidth=9*U;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.stroke();ctx.beginPath();ctx.arc(x,y,r*.45,0,7);ctx.stroke();ctx.restore();}let over=false;for(const e of G.enemies)if(!e.dead&&Math.hypot(e.sx-x,e.sy-y)<e.sr)over=true;
   const c=over?'#ff5fb8':'#5fe3ff';ctx.save();ctx.shadowColor=c;ctx.shadowBlur=12*U;ctx.strokeStyle=c;ctx.lineWidth=3*U;
   ctx.beginPath();ctx.arc(x,y,r*(over?.85:1),0,7);ctx.stroke();ctx.beginPath();ctx.arc(x,y,r*.45,0,7);ctx.stroke();
   for(let i=0;i<4;i++){const a=i*Math.PI/2+G.t*.6;ctx.beginPath();ctx.moveTo(x+Math.cos(a)*r*.7,y+Math.sin(a)*r*.7);ctx.lineTo(x+Math.cos(a)*r*1.35,y+Math.sin(a)*r*1.35);ctx.stroke();}
@@ -1732,6 +1751,7 @@ fontsReady.then(()=>{makeTextures();buildGun();buildKid();buildRoom(G.place);$('
 let last=performance.now();
 function loop(t){const dt=Math.min(.05,(t-last)/1000);last=t;
   if(innerWidth!==W||innerHeight!==H)resize();
+  {const rc=$('rCur'),show=GYRO.remote&&((state!=='play'&&state!=='intro')||!$('calT').hidden);rc.hidden=!show;if(show){rc.style.transform=`translate(${GYRO.tx}px,${GYRO.ty}px)`;rc.classList.toggle('off',aimOff());}}
   try{gyroAim(dt);remoteTick(dt);update(dt);if(TEX.bump){sync3D(dt);update3D(dt);render3D();}renderOverlay();}catch(err){console.error(err);}
   if(Q.auto&&TEX.bump&&!document.hidden){Q.grace-=dt;if(Q.grace<=0){Q.frames++;Q.t+=dt;if(Q.t>=2.5){const fps=Q.frames/Q.t;Q.frames=0;Q.t=0;if(fps<45&&Q.level<2){Q.level++;applyQuality();toast(`画質を「${QL[Q.level].name}」にしました`);}}}}
   requestAnimationFrame(loop);}
