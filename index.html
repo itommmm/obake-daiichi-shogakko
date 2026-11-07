@@ -52,6 +52,8 @@ button:disabled{opacity:.5;cursor:wait}
 .tb.q{font-size:11px}
 
 .screen{position:fixed;inset:0;z-index:10;display:grid;place-items:center;padding:calc(env(safe-area-inset-top,0px) + 10px) max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 10px) max(16px,env(safe-area-inset-left,0px));background:radial-gradient(ellipse at 50% 40%,rgba(40,16,80,.25),rgba(6,3,16,.78));overflow:auto}
+/* 生成画像：タイトル背景（上は空、下へ行くほど暗くして文字を読みやすく）。画像が無いときは色だけ */
+#title{background:linear-gradient(180deg,rgba(6,3,16,.10) 0%,rgba(6,3,16,.35) 30%,rgba(6,3,16,.72) 62%,rgba(6,3,16,.90) 100%),url(assets/title_bg.webp) center 30%/cover no-repeat,#0b0820}
 .card{width:min(820px,100%);display:grid;grid-template-columns:1.1fr 1fr;gap:clamp(12px,3vw,32px);align-items:center}
 .logo{text-align:center}
 .logo .ruby{font:900 clamp(12px,1.8vw,18px)/1 var(--body);letter-spacing:.6em;color:#d8c6ff;margin-left:.6em}
@@ -565,6 +567,15 @@ function woodPlanks(g,w,h,pal,n,joint){const pw=w/n;for(let i=0;i<n;i++){let y=-
   if(Math.random()<.25){g.fillStyle='rgba(40,18,6,.35)';g.beginPath();g.ellipse(i*pw+pw*rnd(.3,.7),y+L*rnd(.2,.8),rnd(3,7),rnd(8,16),0,0,7);g.fill();}
   g.fillStyle=`rgba(0,0,0,${joint})`;g.fillRect(i*pw,y+L-2,pw,3);y+=L;}
   g.fillStyle=`rgba(0,0,0,${joint+.1})`;g.fillRect(i*pw,0,2,h);g.fillStyle='rgba(255,225,190,.07)';g.fillRect(i*pw+2,0,1,h);}}
+/* 生成画像：黒板のチョークの顔。緑の黒板面から「チョークの線」だけを取り出し、
+   今の canvas 版テクスチャ（加算合成で明滅）に差し替える。読み込みや処理に失敗したら canvas 版のまま */
+function loadBoardFace(){const t=TEX.boardFace,img=new Image();img.decoding='async';
+  img.onload=()=>{try{const w=512,h=256,c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.drawImage(img,0,0,w,h);
+    const d=g.getImageData(0,0,w,h),a=d.data;let sum=0;for(let i=0;i<a.length;i+=64)sum+=a[i]*.3+a[i+1]*.59+a[i+2]*.11;const base=sum/(a.length/64);
+    for(let i=0;i<a.length;i+=4){const l=a[i]*.3+a[i+1]*.59+a[i+2]*.11,v=Math.max(0,Math.min(255,(l-base-18)*2.2));a[i]=a[i+1]=a[i+2]=v;a[i+3]=255;}
+    g.putImageData(d,0,0);t.image=c;t.needsUpdate=true;}catch(e){console.info('黒板の画像は使わず canvas 版のまま',e.message);}};
+  img.onerror=()=>console.info('assets/board_face.webp が読めないので canvas 版の黒板を使います');
+  img.src='assets/board_face.webp';}
 function makeTextures(){
   TEX.bump=ctex(256,256,(g,w,h)=>{g.fillStyle='#808080';g.fillRect(0,0,w,h);for(let i=0;i<2600;i++){const v=100+Math.random()*60|0;g.fillStyle=`rgba(${v},${v},${v},.5)`;g.beginPath();g.arc(Math.random()*w,Math.random()*h,Math.random()*2.2+.5,0,7);g.fill();}},{rep:1,linear:1});TEX.bump.repeat.set(2,2);
   TEX.brush=ctex(256,256,(g,w,h)=>{g.fillStyle='#808080';g.fillRect(0,0,w,h);for(let i=0;i<500;i++){const v=90+Math.random()*80|0;g.strokeStyle=`rgba(${v},${v},${v},.5)`;g.beginPath();const y=Math.random()*h;g.moveTo(0,y);g.lineTo(w,y+rnd(-2,2));g.stroke();}},{rep:1,linear:1});
@@ -586,6 +597,7 @@ function makeTextures(){
   TEX.boardFace=ctex(512,256,(g,w,h)=>{g.shadowColor='#ff4fb0';g.shadowBlur=20;g.fillStyle='#ff6fc0';
     for(const sd of[-1,1]){g.beginPath();g.moveTo(w/2+sd*30,h*.42);g.lineTo(w/2+sd*190,h*.18);g.lineTo(w/2+sd*160,h*.52);g.closePath();g.fill();}
     g.strokeStyle='#ff6fc0';g.lineWidth=12;g.lineJoin='round';g.beginPath();for(let i=0;i<=10;i++){const x=w*.22+i*w*.056,y=h*.74+(i%2?-h*.08:h*.08);i?g.lineTo(x,y):g.moveTo(x,y);}g.stroke();});
+  loadBoardFace();
   TEX.poster=(l1,l2,bg)=>ctex(512,320,(g,w,h)=>{g.fillStyle=bg||'#ebe5d2';g.fillRect(0,0,w,h);noiseFill(g,w,h,.05,2);g.fillStyle='#3a2a20';g.font=`900 54px ${FB}`;g.textAlign='center';g.fillText(l1,w/2,h*.42);g.fillText(l2,w/2,h*.78);g.fillStyle='#d33';g.beginPath();g.arc(30,26,10,0,7);g.arc(w-30,26,10,0,7);g.fill();});
   TEX.clock=ctex(256,256,(g,w,h)=>{g.fillStyle='#f2f0ea';g.beginPath();g.arc(128,128,126,0,7);g.fill();g.fillStyle='#222';g.font=`700 26px ${FB}`;g.textAlign='center';g.textBaseline='middle';for(let i=1;i<=12;i++){const a=i/12*Math.PI*2-Math.PI/2;g.fillText(i,128+Math.cos(a)*98,128+Math.sin(a)*98);}
     g.strokeStyle='#222';g.lineCap='round';g.lineWidth=8;g.beginPath();g.moveTo(128,128);g.lineTo(128,58);g.stroke();g.lineWidth=6;g.beginPath();g.moveTo(128,128);g.lineTo(186,140);g.stroke();g.strokeStyle='#c22';g.lineWidth=2;g.beginPath();g.moveTo(128,128);g.lineTo(80,190);g.stroke();});

@@ -310,6 +310,7 @@ def build_images():
     # 校舎（バンク2）：0,0 = おばけ校舎、0,64 = いかり、0,128 = もとに戻った校舎
     for i, mode in enumerate(("obake", "angry", "normal")):
         draw_school(pyxel.images[2], 0, i * 64, mode)
+    load_boss_image(pyxel.images[2])
     # 地面のタイル（バンク0）
     g = pyxel.images[0]
     g.cls(0)
@@ -339,6 +340,33 @@ def build_images():
             else:
                 t = (4, 0) if rnd.random() < 0.3 else (0, 0)
             tm.pset(tx, ty, t)
+
+
+# 生成画像のボス（96x64、NIGHT パレットに減色ずみ）。"obake" と "angry" をこれで置きかえる。
+# 目（弱点）は生成画像の白い窓：左 x19-27・右 x68-76、y36-44（中心は BOSS_EYE_C）。
+# "angry" は目の中のピンクを赤に置きかえる。画像が無いときは draw_school の絵と目の位置のまま。
+BOSS_PNG = "boss_school.png"
+BOSS_EYES = ((19, 36, 9, 9), (68, 36, 9, 9))
+BOSS_EYE_C = [(25, 34), (73, 34)]   # 当たり判定の中心（96x64 の絵の上の座標）。draw_school の絵の位置
+
+
+def load_boss_image(img):
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), BOSS_PNG)
+    if not os.path.exists(path):
+        return
+    try:
+        img.load(0, 0, path)
+        img.load(0, 64, path)
+    except Exception:
+        for i, mode in enumerate(("obake", "angry")):
+            draw_school(img, 0, i * 64, mode)
+        return
+    BOSS_EYE_C[:] = [(ex + ew / 2, ey + eh / 2) for ex, ey, ew, eh in BOSS_EYES]
+    for ex, ey, ew, eh in BOSS_EYES:
+        for y in range(ey, ey + eh):
+            for x in range(ex, ex + ew):
+                if img.pget(x, 64 + y) == PK:
+                    img.pset(x, 64 + y, RD)
 
 
 def draw_school(img, ox, oy, mode):
@@ -1009,8 +1037,8 @@ class Game:
     def boss_eye_pos(self, i):
         bx, by, bw, bh = self.boss_rect()
         sc = bw / 96
-        ex = bx + (25 if i == 0 else 73) * sc
-        ey = by + 34 * sc
+        ex = bx + BOSS_EYE_C[i][0] * sc
+        ey = by + BOSS_EYE_C[i][1] * sc
         return ex, ey, 6 * sc
 
     def update_boss(self):
@@ -1214,10 +1242,10 @@ class Game:
             sc = bw / 96
             row = 64 if b.hp < BOSS_HP / 2 else 0
             if b.state == "die" and b.t % 8 < 4:
-                for c in range(1, 16):
+                for c in range(1, len(NIGHT)):
                     pyxel.pal(c, WH)
             if b.hit and b.hit % 2:
-                for c in range(1, 16):
+                for c in range(1, len(NIGHT)):
                     pyxel.pal(c, PK)
             pyxel.blt(bx + bw / 2 - 48, by + bh / 2 - 32, 2, 0, row, 96, 64, 0, scale=sc)
             pyxel.pal()
