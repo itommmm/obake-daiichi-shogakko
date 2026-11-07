@@ -260,8 +260,8 @@ def pixel_sprite(path, cells=16):
         for i in range(nx):
             x0, x1 = ox + (gx0 + i) * cx, ox + (gx0 + i + 1) * cx
             y0, y1 = oy + (gy0 + j) * cy, oy + (gy0 + j + 1) * cy
-            xs = slice(max(0, int(x0 + cx * .25)), min(W, int(x1 - cx * .25) + 1))
-            ys = slice(max(0, int(y0 + cy * .25)), min(H, int(y1 - cy * .25) + 1))
+            xs = slice(max(0, int(x0 + cx * .25)), max(0, min(W, int(x1 - cx * .25) + 1)))   # 負の添字にならないよう 0 で止める
+            ys = slice(max(0, int(y0 + cy * .25)), max(0, min(H, int(y1 - cy * .25) + 1)))
             blk = idx[ys, xs].ravel()
             if blk.size and (blk > 0).sum() * 2 >= blk.size:
                 v = np.bincount(blk[blk > 0])
@@ -283,14 +283,18 @@ def pixel_sprite(path, cells=16):
 
 
 def retro_enemies():
-    """レトロ版の敵4体（assets/enemy_*.png）→ retro/enemies.png（64x16、NIGHT パレット、とうめい=色0）"""
+    """レトロ版の敵4体（assets/enemy_*.png）→ retro/enemies.png（64x16、NIGHT パレット、とうめい=色0）
+    画像が無い敵のマスは空けておく（ゲーム側が今までの文字のドット絵を描く）"""
     paths = [os.path.join(A, "enemy_%s.png" % n) for n in ENEMIES]
-    if not all(os.path.exists(p) for p in paths):
-        print("（なし）", [p for p in paths if not os.path.exists(p)])
+    if not any(os.path.exists(p) for p in paths):
+        print("（なし）")
         return
     sheet = Image.new("RGB", (16 * len(ENEMIES), 16), RGB[0])
     big = Image.new("RGB", (16 * len(ENEMIES) * 8 + 8 * (len(ENEMIES) - 1), 16 * 8), (40, 40, 60))
     for i, p in enumerate(paths):
+        if not os.path.exists(p):
+            print("  %s：なし（今までの絵のまま）" % os.path.basename(p))
+            continue
         grid = pixel_sprite(p)
         for y in range(16):
             for x in range(16):
