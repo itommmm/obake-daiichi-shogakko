@@ -349,7 +349,7 @@ function piano(f,delay,v,detC){v=v||.05;const w=cents(detC==null?Math.random()*5
 /* 教会の鐘のような、少しくもった鐘 */
 function bell(f,delay,v){v=v||.16;tone(f,2.2,'sine',v,0,delay,{bus:'sfx'});tone(f*2.76,1,'sine',v*.25,0,delay);tone(f*2.02,1.3,'sine',v*.3,0,delay);tone(f*.5,2.6,'sine',v*.25,0,delay);tone(f*1.06,1.8,'sine',v*.08,0,delay);}
 /* 低い心臓の音 */
-function heart(delay,v){tone(60,.18,'sine',v,.6,delay,{bus:'amb'});tone(52,.2,'sine',v*.8,.6,(delay||0)+.17,{bus:'amb'});}
+function hbeat(delay,v){tone(60,.18,'sine',v,.6,delay,{bus:'amb'});tone(52,.2,'sine',v*.8,.6,(delay||0)+.17,{bus:'amb'});}
 /* ささやき：声の高さあたりを通したノイズが ふわっと動く */
 function whisper(delay,v){noise(.9,v||.03,delay,900,{ft:'bandpass',q:6,to:2200,att:.25,bus:'amb'});noise(.7,(v||.03)*.7,(delay||0)+.3,1600,{ft:'bandpass',q:8,to:700,att:.2,bus:'amb'});}
 /* きしみ：木の床や とびらが ぎぃ〜 */
@@ -380,6 +380,7 @@ const SFX={
   // ステージの はじまり：低音＋不協和音の一撃（オーケストラヒットふう）と、さかさまの シャーン
   sting(){noise(1.1,.09,0,400,{to:7000,att:1})
     ;[110,116.5,155.6,164.8].forEach(f=>tone(f,1.4,'sawtooth',.05,.98,1.05,{lp:1800,lpTo:400}));tone(55,1.6,'sine',.2,.9,1.05);noise(.5,.12,1.05,2500,{to:400})},
+  thunder(d){d=d||0;noise(2.8,.3,d,300,{to:80,att:.04,bus:'amb'});noise(1.3,.14,d+.08,1100,{to:200,bus:'amb'});tone(40,2.2,'sine',.22,.7,d,{bus:'amb',att:.05});},
   // 突進の「！」：するどい 2音
   alert(){tone(1245,.09,'square',.04,1,0,{lp:3000});tone(1318,.12,'square',.035,1,.07,{lp:3000})},
 };
@@ -417,6 +418,10 @@ function ambStart(place){
   const ns=add(AC.createBufferSource());ns.buffer=noiseBuf;ns.loop=true;const bp=AC.createBiquadFilter();bp.type='bandpass';bp.Q.value=2.5;bp.frequency.value=500;
   const l2=add(AC.createOscillator()),l2g=AC.createGain();l2.frequency.value=.045;l2g.gain.value=350;l2.connect(l2g);l2g.connect(bp.frequency);l2.start(t);
   const wg=AC.createGain();wg.gain.setValueAtTime(.0001,t);wg.gain.linearRampToValueAtTime(S.wind,t+4);ns.connect(bp);bp.connect(wg);wg.connect(BUS.amb);ns.start(t);AMB.gains.push(wg);
+  // 雨の音：外は ザーッ、部屋の中は まどごしに こもった音
+  {const out=place==='yard'||place==='bossyard';const rn=add(AC.createBufferSource());rn.buffer=noiseBuf;rn.loop=true;rn.playbackRate.value=.9;
+   const rf=AC.createBiquadFilter();rf.type=out?'highpass':'bandpass';rf.frequency.value=out?1400:900;rf.Q.value=out?.5:.7;
+   const rg2=AC.createGain();rg2.gain.setValueAtTime(.0001,t);rg2.gain.linearRampToValueAtTime(out?.05:.016,t+3);rn.connect(rf);rf.connect(rg2);rg2.connect(BUS.amb);rn.start(t,Math.random());AMB.gains.push(rg2);}
   // ろうかの 蛍光灯の ジー音
   if(S.hum){const h=add(AC.createOscillator());h.type='square';h.frequency.value=100;const hl=AC.createBiquadFilter();hl.type='lowpass';hl.frequency.value=400;const hg=AC.createGain();hg.gain.value=.006;h.connect(hl);hl.connect(hg);hg.connect(BUS.amb);h.start(t);AMB.gains.push(hg);}
 }
@@ -455,7 +460,7 @@ function bgm(dt){
   // 環境音のできごと（きしみ・ささやき 等）
   AMB.evT-=dt;if(AMB.evT<=0){AMB.evT=rnd(3.5,8);ambEvent(AMBSET[G.place]||AMBSET.classroom);}
   // ハートが のこり1つ：心臓の音
-  if(state==='play'&&G.hearts===1){G.hbT=(G.hbT||0)-dt;if(G.hbT<=0){G.hbT=.85;heart(0,.18);}}
+  if(state==='play'&&G.hearts===1){G.hbT=(G.hbT||0)-dt;if(G.hbT<=0){G.hbT=.85;hbeat(0,.18);}}
   const boss=G.wave&&G.wave.boss;
   if(G.place==='gym'){
     const st=.24;G.bgmAcc+=dt;while(G.bgmAcc>=st){G.bgmAcc-=st;const i=G.bgmStep++%48,bar=(i/6|0)%8,beat=i%6;
@@ -480,7 +485,7 @@ function bgm(dt){
     const b=CREEP[i%16];if(b){tone(N(b-12),.7,'sawtooth',.06,1,0,{bus:'mus',lp:260,q:6});tone(N(b-24),.6,'sine',.12,.95,0,{bus:'mus'});}
     if(i%32===24)noise(1.2,.035,0,200,{to:2500,att:.9,bus:'mus'});
     // てきが 近いほど 心臓のような 低音が まざる
-    if(state==='play'&&i%4===2){let near=0;for(const e of G.enemies)if(!e.dead&&!e.T.boss&&e.z<.3)near++;if(near)heart(0,.05+Math.min(.1,near*.03));}
+    if(state==='play'&&i%4===2){let near=0;for(const e of G.enemies)if(!e.dead&&!e.T.boss&&e.z<.3)near++;if(near)hbeat(0,.05+Math.min(.1,near*.03));}
   }
 }
 
@@ -509,6 +514,7 @@ const GradeShader={
     float l=dot(c,vec3(.2126,.7152,.0722));
     c*=mix(vec3(1.),uTint,.6);
     c+=vec3(.010,.004,.024)*(1.-smoothstep(0.,.2,l));
+    c*=mix(vec3(.86,.95,1.16),vec3(1.2,1.,.8),smoothstep(.18,.9,l)*.85);
     c=aces(c);
     float g=dot(c,vec3(.299,.587,.114));c=mix(vec3(g),c,1.12);
     vec2 d=vUv-.5;float v=1.-dot(d,d)*uVig;c*=clamp(v,0.,1.);
@@ -612,7 +618,7 @@ function makeTextures(){
   TEX.periodic=ctex(512,320,(g,w,h)=>{g.fillStyle='#ece8da';g.fillRect(0,0,w,h);const cs=['#f2a3a3','#a3c8f2','#b6e3a1','#f2dba3','#d3b3f2'];for(let i=0;i<18;i++)for(let j=0;j<7;j++){if(j<3&&i>1&&i<12)continue;g.fillStyle=cs[(i+j)%5];g.fillRect(14+i*27,40+j*36,24,32);}g.fillStyle='#333';g.font=`900 28px ${FB}`;g.fillText('げんそ の ひょう',150,30);});
   TEX.yard=ctex(1024,1024,(g,w,h)=>{g.fillStyle='#6a5846';g.fillRect(0,0,w,h);noiseFill(g,w,h,.18,3);for(let i=0;i<40;i++){g.fillStyle=`rgba(${Math.random()<.5?'40,30,20':'150,130,100'},.18)`;g.beginPath();g.ellipse(rnd(0,w),rnd(0,h),rnd(10,60),rnd(4,20),rnd(0,3),0,7);g.fill();}
     g.fillStyle='rgba(255,255,255,.75)';for(const x of[.12,.38,.62,.88])g.fillRect(x*w-5,0,10,h);for(let x=0;x<w;x+=80)g.fillRect(x,h*.5-5,44,10);});
-  TEX.schoolWin=ctex(1024,256,(g,w,h)=>{g.fillStyle='#14142a';g.fillRect(0,0,w,h);for(let r=0;r<3;r++)for(let c=0;c<20;c++){const lit=(c*7+r*5)%9===0;g.fillStyle=lit?'#ffd88a':'#22284a';g.fillRect(14+c*50,20+r*80,34,50);}});
+  TEX.schoolWin=ctex(1024,256,(g,w,h)=>{g.fillStyle='#14142a';g.fillRect(0,0,w,h);for(let r=0;r<3;r++)for(let c=0;c<20;c++){const lit=(c*7+r*5)%5===0;g.fillStyle=lit?((c+r)%2?'#ffc060':'#ffe0a0'):'#22284a';g.fillRect(14+c*50,20+r*80,34,50);}});
   TEX.morning=ctex(1024,512,(g,w,h)=>{const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#5aa8f0');gr.addColorStop(.62,'#a8d8ff');gr.addColorStop(.85,'#ffe2b8');gr.addColorStop(1,'#ffd09a');g.fillStyle=gr;g.fillRect(0,0,w,h);
     g.fillStyle='rgba(255,255,255,.85)';for(let i=0;i<10;i++){const x=rnd(0,w),y=rnd(h*.12,h*.5);for(let k=0;k<5;k++){g.beginPath();g.ellipse(x+k*rnd(14,26),y+rnd(-6,6),rnd(26,50),rnd(12,20),0,0,7);g.fill();}}
     g.fillStyle='#3d6a3a';for(let x=-20;x<w+40;x+=rnd(30,70)){g.beginPath();g.arc(x,h-rnd(20,60),rnd(30,70),0,7);g.fill();}g.fillStyle='#2e5530';g.fillRect(0,h-40,w,40);});
@@ -781,7 +787,7 @@ function buildRoom(place){
     const sk=new THREE.Mesh(new THREE.CylinderGeometry(70,70,40,40,1,true),rb(fin?.75:.5,fin?.32:.5,fin?.6:.65,{map:TEX.sky,side:THREE.BackSide,fog:false}));SKYMAT=sk.material;sk.position.y=14;STATIC.add(sk);
     moonSprite(new THREE.Vector3(-22,24,-58),STATIC,4);
     if(!fin){const sch=rm('#1c1c30',.9,0);const SB=new Batch();SB.box(sch,56,9,8,0,4.5,-62);SB.box(sch,6,14,6,0,7,-58);SB.build(STATIC);
-    const win=new THREE.Mesh(PLANE,rb(.7,.7,.7,{map:TEX.schoolWin}));win.position.set(0,4.2,-57.9);win.scale.set(50,7,1);STATIC.add(win);
+    const win=new THREE.Mesh(PLANE,rb(1.7,1.45,1.2,{map:TEX.schoolWin}));win.position.set(0,4.2,-57.9);win.scale.set(50,7,1);STATIC.add(win);
     const ck=new THREE.Mesh(CYL,rb(1.6,1.6,1.4,{map:TEX.clock}));ck.rotation.x=Math.PI/2;ck.position.set(0,11.5,-54.9);ck.scale.set(1.4,.1,1.4);STATIC.add(ck);}
     const trunk=rm('#3a2a1e',.9,0),leaf=rm('#16301e',.85,0),tireCols=['#d22a3c','#ffd23f','#2a5ad8','#22aa55'].map(c=>rm(c,.6,0)),bar=rm('#b9c0cc',.3,1);
     for(let z=front+R.per;z>-70;z-=R.per){
@@ -836,6 +842,7 @@ function buildRoom(place){
   Bt.build(ROOM);
   hemi.color.set(hemiC[0]);hemi.groundColor.set(hemiC[1]);hemi.userData.base=hemiC[2];
   fl1.position.set(...flPos[0]);fl2.position.set(...flPos[1]);fl1.userData.p=flPos[0];fl2.userData.p=flPos[1];fl1.color.set(place==='gym'?0xb070ff:0xe8efff);fl2.color.set(place==='gym'?0x60ffb8:0xe8efff);fl1.userData.base=fl2.userData.base=flI;fl1.distance=fl2.distance=place==='gym'?14:9;
+  buildWX(place,hw,back,ch);
   const zc=(front+back)/2;moon.target.position.set(0,0,zc-.5);moon.position.copy(moon.target.position).addScaledVector(L,-16);moon.userData.base=moonI;moon.color.set(place==='boss'?0xb0a0ff:0x9db2ff);
   const sc=moon.shadow.camera,ext=Math.max(hw,(front-back)/2)+2;sc.left=-ext;sc.right=ext;sc.top=ext;sc.bottom=-ext;sc.near=1;sc.far=40;sc.updateProjectionMatrix();
   scene.fog.color.set(fog[0]);scene.fog.density=fog[1];scene.background.set(fog[0]).multiplyScalar(.5);
@@ -1653,6 +1660,109 @@ function updFx(dt){
   G.shake=Math.max(0,G.shake-dt*1.6);G.recoil=Math.max(0,G.recoil-dt*8);G.hurt=Math.max(0,G.hurt-dt*1.5);G.flash=Math.max(0,G.flash-dt*1.5);G.bellFx=Math.max(0,(G.bellFx||0)-dt*1.4);
 }
 
+/* ===== 雨・稲妻・あたたかい光だまり（ジャック・オ・ランタン）・火の粉・けむり =====
+   寒い（青い）夜に、暖かい（オレンジの）光のポケットが ういて見えるようにする。
+   ・部屋の中：まどの外で 雨と稲妻、床の すみに かぼちゃランタン（ゆらぐ火・火の粉・けむり）。1つは本物の暖色ライト
+   ・校庭／最終ボス：画面いっぱいの 雨と 地面の しぶき、外灯の ランタン
+   画質「低」では 雨つぶ・火の粉の数を へらす */
+let WX=null;
+function pumpkinTex(){
+  if(TEX.pumpkin)return TEX.pumpkin;
+  const c=document.createElement('canvas');c.width=256;c.height=128;const g=c.getContext('2d');
+  // うすい 皮（暗いオレンジ）。顔の 穴だけ 明るく（発光マップとして使う）
+  g.fillStyle='#3a1606';g.fillRect(0,0,256,128);
+  for(let i=0;i<8;i++){g.fillStyle=i%2?'#4a1c08':'#341204';g.fillRect(i*32,0,16,128);}
+  const fx=64,fy=64; // 顔は u=0.25 の位置（＝+Z 方向、カメラの方）
+  g.fillStyle='#ffd25a';
+  const tri=(x,y,s,up)=>{g.beginPath();g.moveTo(x-s,y+(up?s*.6:-s*.6));g.lineTo(x+s,y+(up?s*.6:-s*.6));g.lineTo(x,y+(up?-s*.8:s*.8));g.closePath();g.fill();};
+  tri(fx-17,fy-14,10,true);tri(fx+17,fy-14,10,true);tri(fx,fy+2,6,true);
+  g.beginPath();g.moveTo(fx-26,fy+14);for(let i=0;i<=8;i++){const x=fx-26+i*6.5;g.lineTo(x,fy+14+(i%2?10:0));}g.lineTo(fx+26,fy+30);g.lineTo(fx-26,fy+30);g.closePath();g.fill();
+  const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;TEX.pumpkin=t;return t;
+}
+function buildWX(place,hw,back,ch){
+  const outdoor=place==='yard'||place==='bossyard';
+  const q=Q.level||0,lowQ=q>=2;
+  WX={place,outdoor,lan:[],t:0,thunderT:rnd(5,10),sparks:null,smoke:[],rain:null,splash:[]};
+  // ランタンの 置き場所
+  let spots;
+  if(outdoor)spots=[[-4.2,0,-7],[4.2,0,-9],[-4.6,0,-15],[4.4,0,-17]];
+  else if(place==='gym')spots=[[-1.9,0,-2.6],[2.1,0,-3.8],[-2.6,0,-5.2]];
+  else if(place==='hallway')spots=[[-hw+.3,0,-3.2],[hw-.3,0,-6.5]];
+  else if(place==='science')spots=[[-1.25,.92,-2.9],[1.3,.92,-4.2],[-1.3,.92,-5.6]];
+  else spots=[[-Math.min(hw-.4,1.75),0,-2.3],[Math.min(hw-.4,2.05),0,-3.5],[-(hw-.5),0,back+1.3]];
+  const skin=new THREE.MeshStandardMaterial({color:new THREE.Color('#e8701a'),roughness:.6,metalness:0,emissive:new THREE.Color(1,.62,.25),emissiveMap:pumpkinTex(),emissiveIntensity:2.2,envMapIntensity:.05});
+  roomMats.push(skin);
+  for(const [x,y,z] of spots){
+    const grp=new THREE.Group();grp.position.set(x,y,z);
+    if(outdoor){ // 外灯：細い柱の上に ランタン
+      const pole=new THREE.Mesh(CYL,rm('#2a2630',.6,.5));pole.scale.set(.06,2.2,.06);pole.position.y=1.1;grp.add(pole);
+      const cap=new THREE.Mesh(BOX,rm('#1c1a22',.5,.6));cap.scale.set(.32,.08,.32);cap.position.y=2.42;grp.add(cap);
+    }
+    const p=new THREE.Mesh(SPH,skin);p.scale.set(.2,.16,.2);p.position.y=outdoor?2.2:.16;p.rotation.y=Math.atan2(-x,-z)*.9;p.castShadow=false;grp.add(p);
+    const stem=new THREE.Mesh(CYL,rm('#3a5a20',.8,0));stem.scale.set(.025,.06,.025);stem.position.y=p.position.y+.17;grp.add(stem);
+    const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:TEX.glow,color:new THREE.Color(2.4,1.1,.35),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:.55}));
+    roomMats.push(glow.material);glow.scale.setScalar(outdoor?2.2:1.3);glow.position.y=p.position.y;grp.add(glow);
+    ROOM.add(grp);WX.lan.push({grp,glow,p,ph:rnd(0,9)});
+  }
+  // 1つめの ランタンに 本物の 暖色ライト（fl2）を 置く。体育館は 色つき照明のまま
+  if(place!=='gym'&&WX.lan[0]){const L0=WX.lan[0].grp.position,py=WX.lan[0].p.position.y+.15;
+    fl2.userData.p=[L0.x,py,L0.z];fl2.color.set(0xff8a3a);fl2.userData.base=outdoor?2.6:1.6;fl2.distance=outdoor?9:6;fl2.userData.fire=true;
+    if(outdoor){fl1.userData.p=[WX.lan[1].grp.position.x,2.35,WX.lan[1].grp.position.z];fl1.color.set(0xff9a4a);fl1.userData.base=2.2;fl1.distance=9;fl1.userData.fire=true;}
+    else fl1.userData.fire=false;}
+  else{fl1.userData.fire=fl2.userData.fire=false;}
+  // 火の粉
+  const ns=lowQ?40:90,sp=new Float32Array(ns*3);WX.sp=[];
+  for(let i=0;i<ns;i++){WX.sp.push({k:i%WX.lan.length,y:rnd(0,1),x:rnd(-.06,.06),z:rnd(-.06,.06),v:rnd(.25,.6),w:rnd(0,6)});}
+  const sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.BufferAttribute(sp,3));
+  const sm=new THREE.PointsMaterial({color:new THREE.Color(3,1.4,.4),size:outdoor?.05:.03,map:TEX.glow,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending});
+  roomMats.push(sm);WX.sparks=new THREE.Points(sg,sm);WX.sparks.frustumCulled=false;ROOM.add(WX.sparks);
+  // けむり
+  for(let i=0;i<(lowQ?4:8);i++){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:TEX.blob||TEX.glow,color:new THREE.Color(.55,.5,.7),transparent:true,depthWrite:false,opacity:0}));
+    roomMats.push(s.material);ROOM.add(s);WX.smoke.push({s,k:i%WX.lan.length,t:rnd(0,3),dur:rnd(2.5,4)});}
+  // 雨（外のステージだけ。カメラの まわりの箱の中を ふりつづける）
+  if(outdoor){
+    const nr=lowQ?260:q===1?550:900,pos=new Float32Array(nr*6);WX.rd=[];
+    for(let i=0;i<nr;i++)WX.rd.push({x:rnd(-9,9),y:rnd(0,8),z:rnd(-18,.5),v:rnd(9,13)});
+    const rg=new THREE.BufferGeometry();rg.setAttribute('position',new THREE.BufferAttribute(pos,3));
+    const rmat=new THREE.LineBasicMaterial({color:new THREE.Color(.55,.65,1),transparent:true,opacity:.42,depthWrite:false,blending:THREE.AdditiveBlending});
+    roomMats.push(rmat);WX.rain=new THREE.LineSegments(rg,rmat);WX.rain.frustumCulled=false;STATIC.add(WX.rain);
+  }
+}
+function updateWX(dt){
+  if(!WX)return;const t=(WX.t+=dt);
+  // ランタンの 火の ゆらぎ（ふたつの 波＋ときどき ふっと 弱まる）
+  let fire=1;
+  for(const L of WX.lan){const f=.75+.18*Math.sin(t*9+L.ph)+.12*Math.sin(t*23+L.ph*2)+(Math.random()<.02?-.35:0);L.glow.material.opacity=.42*f+.1;L.glow.scale.setScalar((WX.outdoor?2.2:1.3)*(.92+.1*f));L.p.material.emissiveIntensity=2.2*f;fire=f;}
+  for(const l of[fl1,fl2])if(l.userData.fire)l.intensity=(l.userData.base||1)*(.7+.35*fire)*(G.black>0&&state==='play'?.6:1);
+  // 火の粉
+  if(WX.sparks&&WX.lan.length){const a=WX.sparks.geometry.attributes.position;
+    for(let i=0;i<WX.sp.length;i++){const s=WX.sp[i],L=WX.lan[s.k];s.y+=s.v*dt;s.w+=dt*3;if(s.y>1.1){s.y=0;s.x=rnd(-.06,.06);s.z=rnd(-.06,.06);}
+      const P=L.grp.position,by=L.p.position.y+.12;a.setXYZ(i,P.x+s.x+Math.sin(s.w)*.05*s.y,by+s.y*(WX.outdoor?1.4:.9),P.z+s.z+Math.cos(s.w*.7)*.04*s.y);}
+    a.needsUpdate=true;}
+  // けむり：ふわっと のぼって ひろがって 消える
+  for(const m of WX.smoke){m.t+=dt;if(m.t>m.dur){m.t=0;m.dur=rnd(2.5,4);}const L=WX.lan[m.k];if(!L)continue;const k=m.t/m.dur,P=L.grp.position;
+    m.s.position.set(P.x+Math.sin(m.t*1.3+m.k)*.12*k,L.p.position.y+.25+k*(WX.outdoor?1.6:1.1),P.z);m.s.scale.setScalar(.25+k*.8);m.s.material.opacity=Math.sin(k*Math.PI)*.16;}
+  // 雨：少し 風に ながされて ななめに ふる。地面に ついたら 上へもどる（しぶきは 2D で えがく）
+  if(WX.rain){const a=WX.rain.geometry.attributes.position,cx=camera.position.x,cz=camera.position.z,wind=-1.6;
+    for(let i=0;i<WX.rd.length;i++){const d=WX.rd[i];d.y-=d.v*dt;d.x+=wind*dt;if(d.y<0){if(Math.random()<.25&&WX.splash.length<40)WX.splash.push({x:cx+d.x,z:cz+d.z,t:0});d.y=rnd(6,8);d.x=rnd(-9,9);d.z=rnd(-18,.5);}
+      const x=cx+d.x,z=cz+d.z;a.setXYZ(i*2,x,d.y,z);a.setXYZ(i*2+1,x-wind*.035,d.y+.32,z);}
+    a.needsUpdate=true;}
+  for(const s of WX.splash)s.t+=dt;WX.splash=WX.splash.filter(s=>s.t<.25);
+  // 稲妻：どの ステージでも ときどき。光ってから 少しして ゴロゴロ
+  if(state==='play'||state==='intro'||state==='title'){WX.thunderT-=dt;if(WX.thunderT<=0){WX.thunderT=rnd(WX.outdoor?7:11,WX.outdoor?14:22);G.lightning=WX.outdoor?.55:.4;WX.bolt={t:0,x:rnd(.15,.85),seed:Math.random()*1000};if(SFX.thunder)SFX.thunder(rnd(.3,1.1));}}
+  if(WX.bolt){WX.bolt.t+=dt;if(WX.bolt.t>.35)WX.bolt=null;}
+}
+/* 2D：雨の しぶき と、空の 稲妻の すじ */
+function drawWX(){
+  if(!WX)return;
+  if(WX.splash.length){ctx.save();ctx.strokeStyle='rgba(170,190,255,.55)';ctx.lineWidth=1.2*U;
+    for(const s of WX.splash){const dz=camera.position.z-s.z;if(dz<.6)continue;const p=proj(s.x,.01,s.z);if(p[1]<0||p[1]>H)continue;const r=(2+s.t*40)*U*Math.min(2.5,5/dz);ctx.globalAlpha=1-s.t/.25;ctx.beginPath();ctx.ellipse(p[0],p[1],r,r*.3,0,0,7);ctx.stroke();}
+    ctx.restore();}
+  if(WX.bolt&&WX.outdoor&&WX.bolt.t<.18){const b=WX.bolt;let x=b.x*W,y=0;const seg=12,r=n=>{const v=Math.sin(b.seed+n*12.9898)*43758.5453;return v-Math.floor(v);};
+    ctx.save();ctx.strokeStyle='rgba(235,235,255,.95)';ctx.shadowColor='#a8b8ff';ctx.shadowBlur=18*U;ctx.lineWidth=3*U;ctx.beginPath();ctx.moveTo(x,y);
+    for(let i=1;i<=seg;i++){x+=(r(i)-.5)*60*U;y=H*.42*i/seg;ctx.lineTo(x,y);}ctx.stroke();ctx.restore();}
+}
+
 /* ===== 3Dの光と演出の更新 ===== */
 function update3D(dt){
   const t=G.t;const black=G.black>0&&state==='play';
@@ -1664,6 +1774,7 @@ function update3D(dt){
   const fk=black?0:flick?.35:1;
   fl1.intensity=(fl1.userData.base||1)*fk;fl2.intensity=(fl2.userData.base||1)*fk;
   FLUOR.forEach(m=>{const k=black?.03:flick?.4:1;m.color.setRGB(3.2*k,3.4*k,3.9*k);});
+  updateWX(dt);if(WX&&WX.rain)WX.rain.visible=state!=='ending'&&!(G.dawn>.3);
   hemi.intensity=(hemi.userData.base||.2)*(black?.18:1)+(G.bellFx||0)*.6+(G.spT>0?G.spT*.5:0);
   moon.intensity=(moon.userData.base||1.3)*(black?.7:1);
   RAYS.forEach(r=>r.visible=Q.level<2);
@@ -1683,9 +1794,10 @@ function update3D(dt){
     const want=(G.lightT>0||black)&&gun.visible?1:0;lampK+=(want-lampK)*Math.min(1,dt*8);
     lamp.position.set(-.16,-.16-(1-lampK)*.25,-.36);lamp.lookAt(aimPoint(6));lamp.visible=lampK>.02;}
   boomL.intensity=Math.max(0,boomL.intensity-dt*14);
+  // 稲妻の光：空と月明かりが 一瞬 強くなり、まどの影が くっきり出る
+  G.lightning=Math.max(0,(G.lightning||0)-dt);if(G.lightning>0){const k=Math.random()<.5?1:.35;hemi.intensity+=G.lightning*6*k;moon.intensity+=G.lightning*7*k;}
   if(G.place==='bossyard'){
-    if(state==='play'&&G.boss&&!G.boss.dead&&Math.random()<dt*.25)G.lightning=.35;
-    G.lightning=Math.max(0,(G.lightning||0)-dt);hemi.intensity+=G.lightning*(Math.random()<.5?6:2);
+    if(state==='play'&&G.boss&&!G.boss.dead&&Math.random()<dt*.25){G.lightning=.35;if(SFX.thunder)SFX.thunder(rnd(.2,.6));}
     if(G.bossDie>0||G.dawn>0){G.dawn=Math.min(1,(G.dawn||0)+dt*.3);const d=G.dawn;hemi.intensity+=d*.9;hemi.color.setRGB(.55+.4*d,.3+.35*d,.6-.1*d);moon.color.setRGB(1,.75+.1*d,.55+.2*d);if(SKYMAT)SKYMAT.color.setRGB(.75+.6*d,.32+.5*d,.6+.1*d);scene.fog.color.setRGB(.1+.35*d,.04+.2*d,.14+.12*d);}
   }
   grade.uniforms.uTime.value=t;grade.uniforms.uHurt.value=G.hurt;
@@ -1797,6 +1909,7 @@ function renderOverlay(){
     if(b.mode==='tongueWarn'){const q=wp.mouth;ctx.strokeStyle=`rgba(255,95,184,${.6+.4*Math.sin(G.t*14)})`;ctx.lineWidth=5*U;ctx.beginPath();ctx.arc(q[0],q[1],wp.mr*1.3,0,7);ctx.stroke();txt('くちを うて! あと '+Math.max(0,b.tongueHP),q[0],q[1]+wp.mr*1.8,22*U,'#ff8fd0',FD,'center',5*U);}
     ctx.restore();}
   if(G.shockFx>0){G.shockFx=Math.max(0,G.shockFx-1/60);const k=1-G.shockFx,b=G.boss;if(b){ctx.save();ctx.strokeStyle=`rgba(255,210,63,${G.shockFx})`;ctx.lineWidth=14*U*G.shockFx+2;for(let i=0;i<3;i++){const r=(k*1.4-i*.15)*W;if(r<=0)continue;ctx.beginPath();ctx.ellipse(b.sx,b.sy+b.u,r,r*.28,0,0,7);ctx.stroke();}ctx.restore();}}
+  drawWX();
   if(G.lightning>.2){ctx.fillStyle=`rgba(230,220,255,${(G.lightning-.2)*1.2})`;ctx.fillRect(0,0,W,H);}
   if(state==='play'||state==='intro')drawReticle();if(GYRO.on&&!GYRO.remote&&state==='play')drawGyroZones();
   if(G.flash>0){ctx.fillStyle=`rgba(255,240,255,${G.flash*.6})`;ctx.fillRect(0,0,W,H);}

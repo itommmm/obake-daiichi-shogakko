@@ -36,10 +36,13 @@ RANKS = ((175000, "S"), (150000, "A"), (65000, "B"), (0, "C"))
 
 # ---- パレット（16色）。夜と朝の2組を用意し、エンディングで夜→朝へ移り変わる ----
 NIGHT = [0x0B0820, 0x1D1440, 0x3A2370, 0x6B3FB0, 0xA65CFF, 0x5FE3FF, 0xF4F1FF, 0xFFD23F,
-         0xFF5FB8, 0xE8433A, 0x173A2A, 0x2F6A44, 0x3B2C3E, 0x5E4A5A, 0x8A8AA0, 0x2A2448]
+         0xFF5FB8, 0xE8433A, 0x173A2A, 0x2F6A44, 0x3B2C3E, 0x5E4A5A, 0x8A8AA0, 0x2A2448,
+         0xFF8A2A, 0xFFD27A, 0x7A3010, 0x6A78B8]   # 追加：あたたかい火の色3つ＋雨の色
 DAY = [0x2A3A6A, 0x3A3A55, 0x6E7FD0, 0x8FA8FF, 0xC9D6FF, 0x8FE8FF, 0xFFFFFF, 0xFFD23F,
-       0xFF8FC8, 0xE8433A, 0x3E8A4E, 0x6CC46A, 0xB98A5A, 0xE2C08C, 0xB8B8C8, 0x9FC8FF]
+       0xFF8FC8, 0xE8433A, 0x3E8A4E, 0x6CC46A, 0xB98A5A, 0xE2C08C, 0xB8B8C8, 0x9FC8FF,
+       0xFFA050, 0xFFE8B0, 0xA05020, 0x9FB0E0]
 K, D1, PU, VI, LV, CY_, WH, GO, PK, RD, DG, GR, GD, SD, GY, DK = range(16)
+OR, OY, OD, RN = 16, 17, 18, 19   # 火（オレンジ）・火（黄）・こげ茶・雨
 
 # ---- ドット絵（1文字=1ドット）。'.' は とうめい ----
 CMAP = {".": 0, "k": 1, "u": 2, "v": 3, "l": 4, "c": 5, "w": 6, "y": 7, "p": 8, "r": 9,
@@ -254,6 +257,34 @@ TIRE = [
     "................",
     "................",
 ]
+PUMPKIN = [
+    "................",
+    "........gg......",
+    ".......gg.......",
+    "....kkkkkkkk....",
+    "..kkOOooooOOkk..",
+    ".kOoooOooOoooOk.",
+    ".kooYYoooYYooOk.",
+    "kOooYYoooYYoooOk",
+    "kOooooooooooooOk",
+    "kOoYoYoYoYoYooOk",
+    "kOooYYYYYYYooOk.",
+    ".kOooooOooooOk..",
+    "..kkOOooooOOkk..",
+    "....kkkkkkkk....",
+    "................",
+    "................",
+]
+POST = ["..kddk.."] * 22 + ["kkddddkk", "kddddddk"]
+XMAP = {".": 0, "k": 1, "g": 11, "o": 16, "Y": 17, "O": 18, "d": 15}
+
+
+def art_any(img, x, y, rows, w):
+    for j, r in enumerate(rows):
+        for i, ch in enumerate(r.ljust(w, ".")[:w]):
+            img.pset(x + i, y + j, XMAP.get(ch, 0))
+
+
 ENEMY_SPR = {"randoseru": (0, 0), "isu": (16, 0), "ball": (32, 0), "uwabaki": (48, 0)}
 ENEMY_HP = {"randoseru": 3, "isu": 4, "ball": 2, "uwabaki": 2}
 ENEMY_NAME = {"randoseru": "ランドセロ", "isu": "いすわらし", "ball": "ボールおばけ", "uwabaki": "うわばきゅん"}
@@ -272,6 +303,8 @@ def build_images():
     art(img, 96, 0, TREE)
     art(img, 112, 0, BELL, 14)
     art(img, 128, 0, TIRE)
+    art_any(img, 144, 0, PUMPKIN, 16)
+    art_any(img, 160, 0, POST, 8)
     art(img, 0, 16, KID_BACK)
     art(img, 16, 16, KID_FRONT)
     # 校舎（バンク2）：0,0 = おばけ校舎、0,64 = いかり、0,128 = もとに戻った校舎
@@ -328,7 +361,7 @@ def draw_school(img, ox, oy, mode):
             if col in (3, 4) and row == 1:
                 continue
             wx, wy = ox + 7 + col * 11, oy + 30 + row * 14
-            img.rect(wx, wy, 7, 8, CY_ if mode == "normal" else D1)
+            img.rect(wx, wy, 7, 8, CY_ if mode == "normal" else (OY if (col * 3 + row) % 4 == 0 else D1))
             img.rectb(wx, wy, 7, 8, K + 1)
     if mode != "normal":
         eye = PK if mode == "obake" else RD
@@ -381,6 +414,7 @@ def setup_sound():
     s[12].set(sp(riff * 2), "s", "5", "n", 9)
     s[13].set(sp(stab * 2), "p", "3", "f", 9)
     s[14].set(sp(beat * 4), "n", "6", "f", 9)
+    s[15].set("c1c1c1c1c1c1", "n", "776543", "nnffff", 26)   # かみなり
     pyxel.musics[0].set([0], [1], [2])
     pyxel.musics[1].set([12], [13], [14])
 
@@ -461,8 +495,14 @@ class Game:
                 o = Obj()
                 o.x = X0 + side * random.uniform(150, 175)
                 o.y = self.cy - i * 48 - (24 if side > 0 else 0)
-                o.kind = "tree"
+                o.kind = "lamp" if (i + (side > 0)) % 3 == 0 else "tree"
+                o.ph = random.uniform(0, 6)
                 self.scenery.append(o)
+        self.rain = [[random.uniform(0, W), random.uniform(0, H), random.uniform(5, 8), random.randint(5, 9)] for _ in range(150)]
+        self.sparks = []
+        self.thunder_t = random.randint(300, 600)
+        self.bolt = None
+        self.lflash = 0
 
     # ---------- 投影（bltm3d と同じ計算。テストで一致を確認済み） ----------
     def proj(self, x, y, z):
@@ -1141,7 +1181,7 @@ class Game:
         for o in self.scenery:
             p = self.proj(o.x, o.y, 0)
             if p:
-                items.append((p[2], "tree", o, p))
+                items.append((p[2], o.kind, o, p))
         for e in getattr(self, "enemies", []):
             p = self.proj(e.x, e.y, e.z)
             if p:
@@ -1190,6 +1230,8 @@ class Game:
         for zc, kind, o, p in self.sprites():
             if kind == "tree":
                 self.draw_sprite(96, 0, 16, 16, p[0], p[1], 34, zc)
+            elif kind == "lamp":
+                self.draw_lamp(o, p, zc)
             elif kind == "enemy":
                 if o.mode == "tire":
                     self.draw_sprite(128, 0, 16, 16, p[0], p[1] + FOCAL * 4 / zc, 16, zc)
@@ -1257,6 +1299,7 @@ class Game:
                 pyxel.dither(0.5)
                 pyxel.rect(0, 0, W, H, WH)
                 pyxel.dither(1)
+        self.draw_weather()
         self.draw_hud()
 
     def draw_hud(self):
@@ -1325,8 +1368,77 @@ class Game:
             pyxel.rectb(W / 2 - tw / 2 - 6, my, tw + 12, 16, VI)
             self.otext(W / 2 - tw / 2, my + 3, s, WH, K)
 
+    def draw_lamp(self, o, p, zc):
+        # 外灯の柱＋かぼちゃランタン。まわりに あたたかい光のまる（ディザで半とうめい）と火の粉
+        sc = FOCAL * 30 / zc / 24
+        if sc < 0.08:
+            return
+        top = p[1] - 24 * sc
+        f = 0.8 + 0.15 * math.sin(self.t * 0.31 + o.ph) + 0.08 * math.sin(self.t * 0.83 + o.ph * 2)
+        r = 26 * sc * f
+        pyxel.dither(0.18)
+        pyxel.elli(p[0] - r * 1.4, p[1] - r * 0.25, r * 2.8, r * 0.5, OD)   # 地面の 光だまり
+        pyxel.circ(p[0], top, r * 1.25, OD)
+        pyxel.dither(0.35)
+        pyxel.circ(p[0], top, r * 0.75, OR)
+        pyxel.dither(1)
+        pyxel.blt(p[0] - 4, p[1] - 24 * sc / 2 - 12, 1, 160, 0, 8, 24, 0, scale=sc)
+        pyxel.blt(p[0] - 8, top - 10, 1, 144, 0, 16, 16, 0, scale=sc * 0.9)
+        if zc < 220 and random.random() < 0.25:
+            self.sparks.append([p[0] + random.uniform(-3, 3) * sc, top - 4 * sc, random.uniform(-0.3, 0.3), random.uniform(-1.0, -0.5), random.randint(20, 40)])
+
+    def draw_weather(self):
+        # 火の粉
+        out = []
+        for sp in self.sparks:
+            sp[0] += sp[2] + math.sin(sp[4] * 0.3) * 0.2
+            sp[1] += sp[3]
+            sp[4] -= 1
+            if sp[4] > 0:
+                pyxel.pset(sp[0], sp[1], OY if sp[4] > 12 else OR)
+                out.append(sp)
+        self.sparks = out[-80:]
+        # 雨（エンディングの 夜明けで やむ）
+        if self.state == "ending" and self.t > 120:
+            return
+        for d in self.rain:
+            d[1] += d[2]
+            d[0] -= d[2] * 0.3
+            if d[1] > H or d[0] < 0:
+                d[1] = random.uniform(-20, 0)
+                d[0] = random.uniform(0, W + 40)
+            pyxel.line(d[0], d[1], d[0] + d[3] * 0.3, d[1] - d[3], RN)
+        hz = H / 2 - math.tan(math.radians(90 - PITCH)) * FOCAL
+        for _ in range(5):   # 地面の しぶき
+            x, y = random.uniform(0, W), random.uniform(hz + 8, H)
+            pyxel.pset(x - 1, y, RN)
+            pyxel.pset(x + 1, y, RN)
+        # 稲妻
+        if self.state in ("play", "title"):
+            self.thunder_t -= 1
+            if self.thunder_t <= 0:
+                self.thunder_t = random.randint(420, 900)
+                self.lflash = 8
+                x = random.uniform(40, W - 40)
+                self.bolt = [(x, 0)]
+                for i in range(1, 8):
+                    x += random.uniform(-14, 14)
+                    self.bolt.append((x, hz * i / 7))
+                pyxel.play(3, 15)
+        if self.lflash > 0:
+            self.lflash -= 1
+            if self.lflash in (7, 6, 3):
+                pyxel.dither(0.45)
+                pyxel.rect(0, 0, W, H, WH)
+                pyxel.dither(1)
+            if self.bolt and self.lflash > 3:
+                for (x1, y1), (x2, y2) in zip(self.bolt, self.bolt[1:]):
+                    pyxel.line(x1, y1, x2, y2, WH)
+                    pyxel.line(x1 + 1, y1, x2 + 1, y2, LV)
+
     def draw_title(self):
         t = self.t
+        self.draw_weather()
         pyxel.rect(0, 16, W, 66, K)
         pyxel.line(0, 16, W, 16, VI)
         pyxel.line(0, 81, W, 81, VI)
@@ -1377,6 +1489,7 @@ class Game:
 
     def draw_ending(self):
         t = self.t
+        self.draw_weather()
         hz = H / 2 - math.tan(math.radians(90 - PITCH)) * FOCAL
         # もとにもどった校舎
         pyxel.blt(W / 2 - 48, hz - 52, 2, 0, 128, 96, 64, 0, scale=0.9)
