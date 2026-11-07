@@ -11,7 +11,7 @@
 ボスは最近傍で 96x64 に縮小し、retro/main.py の NIGHT パレットへ減色する。
 とうめい部分は色0（blt で抜ける色）、それ以外は色1〜19 だけを使う。
 目（弱点）は retro/main.py の BOSS_EYES と同じ位置に来る必要がある。
---stamp-eyes を付けると、その位置に白目＋ピンクの黒目＋黒ふちを描きこむ。
+目の中の白以外の色はピンクにそろえる。--stamp-eyes を付けると、その位置に白目＋黒目＋黒ふちを描きこむ。
 """
 import argparse
 import os
@@ -27,7 +27,7 @@ NIGHT = [0x0B0820, 0x1D1440, 0x3A2370, 0x6B3FB0, 0xA65CFF, 0x5FE3FF, 0xF4F1FF, 0
          0xFF8A2A, 0xFFD27A, 0x7A3010, 0x6A78B8]
 RGB = [((c >> 16) & 255, (c >> 8) & 255, c & 255) for c in NIGHT]
 D1, WH, PK = 1, 6, 8
-BOSS_EYES = ((20, 29, 10, 10), (68, 29, 10, 10))   # retro/main.py と同じ
+BOSS_EYES = ((19, 36, 9, 9), (68, 36, 9, 9))   # retro/main.py と同じ（生成画像の白い窓の内側）
 
 
 def webp(name, size):
@@ -61,6 +61,12 @@ def boss(stamp_eyes, crop):
         for x in range(96):
             r, g, b, a = small.getpixel((x, y))
             idx[y][x] = nearest((r, g, b)) if a >= 128 else 0
+    # 目の中の黒目（白以外の色）はピンクにそろえる。"angry" ではゲーム側でこれを赤にする
+    for ex, ey, ew, eh in BOSS_EYES:
+        for y in range(ey, ey + eh):
+            for x in range(ex, ex + ew):
+                if idx[y][x] not in (WH, 0):
+                    idx[y][x] = PK
     if stamp_eyes:
         for ex, ey, ew, eh in BOSS_EYES:
             for y in range(ey, ey + eh):
@@ -84,7 +90,7 @@ def boss(stamp_eyes, crop):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stamp-eyes", action="store_true", help="目の位置に白目＋ピンクの黒目を描きこむ")
+    ap.add_argument("--stamp-eyes", action="store_true", help="目の位置に白目＋ピンクの黒目を描きこむ（画像の目がずれているとき用）")
     ap.add_argument("--crop", type=int, nargs=4, metavar=("L", "T", "R", "B"), help="縮小前に切り出す範囲（元画像の座標）")
     ap.add_argument("--only", choices=("title", "board", "boss"))
     a = ap.parse_args()
