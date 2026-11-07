@@ -32,7 +32,7 @@ STAGE_LEN = 60 * 75       # ボスまでの道のり（中ボスの時間はふ�
 MID_AT = 60 * 38          # 中ボス「ランドセルだいおう」が出る地点
 MID_HP = 18
 AMMO_MAX = 30
-RANKS = ((150000, "S"), (110000, "A"), (70000, "B"), (0, "C"))
+RANKS = ((175000, "S"), (150000, "A"), (65000, "B"), (0, "C"))
 
 # ---- パレット（16色）。夜と朝の2組を用意し、エンディングで夜→朝へ移り変わる ----
 NIGHT = [0x0B0820, 0x1D1440, 0x3A2370, 0x6B3FB0, 0xA65CFF, 0x5FE3FF, 0xF4F1FF, 0xFFD23F,
@@ -535,7 +535,7 @@ class Game:
         elif firing and self.ammo < 1 and self.cool <= 0:
             self.cool = 12
             self.say("みずぎれ！ はなすと はやく たまるよ", 50)
-        self.ammo = min(AMMO_MAX, self.ammo + 0.11)   # うちながらでも たまる（おしっぱなしでも 尽きにくい）
+        self.ammo = min(AMMO_MAX, self.ammo + 0.115)   # うちながらでも たまる（おしっぱなしでも 尽きにくい）
         if not firing:
             self.rest += 1
             if self.rest > 10:
@@ -615,11 +615,13 @@ class Game:
             prog = self.run / STAGE_LEN
             self.form_t -= 1
             alive = len([e for e in self.enemies if e.mode != "tire"])
-            if self.form_t <= 0 and alive < 9:
+            if self.form_t <= 0 and alive < 5:   # 隊列は最大6体なので、同時に10体前後までにおさえる
                 self.formation(prog)
                 self.form_t = int(random.uniform(95, 125) - prog * 45)
-            elif alive == 0 and self.form_t > 30:
-                self.form_t = 30          # 画面が からっぽの時間を つくらない
+            elif alive == 0 and self.form_t > 20:
+                self.form_t = 20          # 画面が からっぽの時間を つくらない
+            elif alive <= 2 and self.form_t > 50:
+                self.form_t = 50          # のこりが少なくなったら 次を早めに
         elif self.phase == "mid":
             self.update_mid()
 
