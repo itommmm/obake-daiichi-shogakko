@@ -11,6 +11,7 @@
     assets/chara_*.png 透過  → assets/chara_*.webp（192x192、3D版タイトルのキャラ絵）
     assets/result_win.png・result_lose.png 1920x1080 → .webp（3D版の結果画面）、retro/over_bg.png（レトロ版ゲームオーバー）
     assets/icon_app.png 1024x1024 → assets/icon_512/192/180/32.png（アイコン）
+    assets/enemy_*.png 透過（16x16 マスのドット絵）→ retro/enemies.png（64x16・NIGHT 20色、レトロ版の敵4体）
     （生成なし）title_bg.png＋chara_*.png → assets/og.jpg（リンクのプレビュー画像 1200x630）
 
 ボスは最近傍で 96x64 に縮小し、retro/main.py の NIGHT パレットへ減色する。
@@ -210,11 +211,110 @@ def og():
     print(dst, os.path.getsize(dst) // 1024, "KB")
 
 
+ENEMIES = ("randoseru", "isu", "ball", "uwabaki")   # retro/main.py の ENEMY_SPR の順（16x16 を横にならべる）
+
+
+def _grid_1d(D, lo, hi):
+    """色が変わる位置の強さ D（1次元）から、マスの大きさ c と ずれ o を推定。
+    変わり目のうち マスのさかい目（±1px）に乗る割合が最大のものをえらび、ほぼ同じなら大きい c をとる
+    （c/2 でも全部 乗ってしまうため。2c だと半分しか乗らないので えらばれない）"""
+    import numpy as np
+    total = D.sum() or 1
+    cand = []
+    for c in np.arange(lo, hi, 0.25):
+        for o in np.arange(0, c, 0.5):
+            pos = np.round(np.arange(o, len(D), c)).astype(int)
+            pos = np.unique(pos[pos < len(D)])
+            hit = sum(D[max(0, p - 1):p + 2].sum() for p in pos)   # さかい目の ±1px に乗った変わり目
+            cand.append((min(1.0, hit / total), c, o))
+    best = max(m for m, _, _ in cand)
+    return max(((c, o) for m, c, o in cand if m >= best * 0.92), key=lambda t: t[0])
+
+
+def pixel_sprite(path, cells=16):
+    """ドット絵ふうの生成画像を 16x16 マスに。マスの大きさ・ずれを画像から推定し、
+    各マスの内側で いちばん多い NIGHT の色をとる（とうめいが半分以上なら とうめい）"""
+    import numpy as np
+    im = Image.open(path).convert("RGBA")
+    W, H = im.size
+    a = np.array(im)
+    lut = {}
+    idx = np.zeros((H, W), dtype=np.int16)
+    for y in range(H):
+        for x in range(W):
+            r, g, b, al = a[y, x]
+            if al < 128:
+                continue
+            key = (int(r) >> 3, int(g) >> 3, int(b) >> 3)
+            if key not in lut:
+                lut[key] = nearest((int(r), int(g), int(b)))
+            idx[y, x] = lut[key]
+    cx, ox = _grid_1d((idx[:, 1:] != idx[:, :-1]).sum(0).astype(float), 8, 33)
+    cy, oy = _grid_1d((idx[1:, :] != idx[:-1, :]).sum(1).astype(float), 8, 33)
+    ox, oy = ox + 1, oy + 1          # D[x] は x と x+1 のあいだ
+    gx0 = int(np.floor(-ox / cx))
+    gy0 = int(np.floor(-oy / cy))
+    nx, ny = int(np.ceil((W - ox) / cx)) - gx0, int(np.ceil((H - oy) / cy)) - gy0
+    grid = np.zeros((ny, nx), dtype=np.int16)
+    for j in range(ny):
+        for i in range(nx):
+            x0, x1 = ox + (gx0 + i) * cx, ox + (gx0 + i + 1) * cx
+            y0, y1 = oy + (gy0 + j) * cy, oy + (gy0 + j + 1) * cy
+            xs = slice(max(0, int(x0 + cx * .25)), max(0, min(W, int(x1 - cx * .25) + 1)))   # 負の添字にならないよう 0 で止める
+            ys = slice(max(0, int(y0 + cy * .25)), max(0, min(H, int(y1 - cy * .25) + 1)))
+            blk = idx[ys, xs].ravel()
+            if blk.size and (blk > 0).sum() * 2 >= blk.size:
+                v = np.bincount(blk[blk > 0])
+                grid[j, i] = int(v.argmax())
+    ys_, xs_ = np.nonzero(grid)
+    grid = grid[ys_.min():ys_.max() + 1, xs_.min():xs_.max() + 1]
+    gh, gw = grid.shape
+    if gw > cells or gh > cells:
+        print("  注意：%s は %dx%d マスあったので 16x16 に収まるよう けずった" % (os.path.basename(path), gw, gh))
+        grid = grid[max(0, gh - cells):, max(0, (gw - cells) // 2):max(0, (gw - cells) // 2) + cells]
+        gh, gw = grid.shape
+    out = [[0] * cells for _ in range(cells)]
+    ox2, oy2 = (cells - gw) // 2, cells - gh - (1 if gh < cells else 0)   # 下ぞろえ（いちばん下は1マスあける）
+    for y in range(gh):
+        for x in range(gw):
+            out[oy2 + y][ox2 + x] = int(grid[y, x])
+    print("  %s：マス %.2fx%.2f px、%dx%d マス" % (os.path.basename(path), cx, cy, gw, gh))
+    return out
+
+
+def retro_enemies():
+    """レトロ版の敵4体（assets/enemy_*.png）→ retro/enemies.png（64x16、NIGHT パレット、とうめい=色0）
+    画像が無い敵のマスは空けておく（ゲーム側が今までの文字のドット絵を描く）"""
+    paths = [os.path.join(A, "enemy_%s.png" % n) for n in ENEMIES]
+    if not any(os.path.exists(p) for p in paths):
+        print("（なし）")
+        return
+    sheet = Image.new("RGB", (16 * len(ENEMIES), 16), RGB[0])
+    big = Image.new("RGB", (16 * len(ENEMIES) * 8 + 8 * (len(ENEMIES) - 1), 16 * 8), (40, 40, 60))
+    for i, p in enumerate(paths):
+        if not os.path.exists(p):
+            print("  %s：なし（今までの絵のまま）" % os.path.basename(p))
+            continue
+        grid = pixel_sprite(p)
+        for y in range(16):
+            for x in range(16):
+                c = grid[y][x]
+                sheet.putpixel((i * 16 + x, y), RGB[c])
+                if c:
+                    for dy in range(8):
+                        for dx in range(8):
+                            big.putpixel((i * 136 + x * 8 + dx, y * 8 + dy), RGB[c])
+    dst = os.path.join(ROOT, "retro", "enemies.png")
+    sheet.save(dst, optimize=True)
+    big.save(os.path.join(A, "enemies_preview.png"))
+    print("%s  %d bytes（拡大の見本: assets/enemies_preview.png）" % (dst, os.path.getsize(dst)))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--stamp-eyes", action="store_true", help="目の位置に白目＋ピンクの黒目を描きこむ（画像の目がずれているとき用）")
     ap.add_argument("--crop", type=int, nargs=4, metavar=("L", "T", "R", "B"), help="縮小前に切り出す範囲（元画像の座標）")
-    ap.add_argument("--only", choices=("title", "board", "boss", "retro_title", "chara", "results", "icons", "og"))
+    ap.add_argument("--only", choices=("title", "board", "boss", "retro_title", "chara", "results", "icons", "og", "enemies"))
     a = ap.parse_args()
     if a.only in (None, "title"):
         webp("title_bg", (1920, 1080))
@@ -232,10 +332,12 @@ def main():
         icons()
     if a.only in (None, "og"):
         og()
+    if a.only in (None, "enemies"):
+        retro_enemies()
     total = sum(os.path.getsize(os.path.join(A, f)) for f in ("title_bg.webp", "board_face.webp", "result_win.webp", "result_lose.webp")
                 + tuple("chara_%s.webp" % n for n in CHARAS)
                 if os.path.exists(os.path.join(A, f)))
-    for f in ("boss_school.png", "title_bg.png", "over_bg.png"):
+    for f in ("boss_school.png", "title_bg.png", "over_bg.png", "enemies.png"):
         f = os.path.join(ROOT, "retro", f)
         total += os.path.getsize(f) if os.path.exists(f) else 0
     print("ゲームが読む画像の合計: %d KB（目標 1024 KB 以下）" % (total // 1024))
