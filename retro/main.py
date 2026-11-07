@@ -1148,6 +1148,9 @@ class Game:
     def say(self, s, d=90):
         self.msg = (s, d)
 
+    def showing_msg(self):
+        return bool(self.msg and self.msg[1] > 0)
+
     # ---------- てきの出し方（ディレクター） ----------
     def director(self):
         if self.boss:
@@ -1203,7 +1206,8 @@ class Game:
             group = {"left": len(members), "failed": False}
             for e in members:
                 e.formation = group
-        self.say("ねらって ぜんぶ ポン！", 65)
+        if self.formation_n <= 2:   # 何度も出ると じゃまなので、はじめの2回だけ
+            self.say("ねらって ぜんぶ ポン！", 65)
 
     def spawn_formation(self, prog):
         r = random.random()
@@ -1458,7 +1462,7 @@ class Game:
                 self.score += 1000
                 self.ammo = min(AMMO_MAX, self.ammo + 8)
                 self.chime = min(100, self.chime + (0 if getattr(self, "chiming", False) else 10))
-                self.say("ぜんぶ ポン！ +1000 みず +8", 90)
+                self.fx.append(("txt", W / 2, 26, "ぜんぶ ポン！ +1000", 0, 40))
                 pyxel.play(2, 10)
         self.kills += 1
         self.combo += 1
@@ -2059,7 +2063,8 @@ class Game:
             pyxel.rect(x + 1, 5, int((w - 2) * max(0, self.boss.hp) / self.boss_hp), 4, RD)
             pyxel.rectb(x, 4, w, 6, GO)
             s = self.st["boss"]["name"]
-            self.otext(W / 2 - self.font.text_width(s) / 2, 12, s, GO, K)
+            if not self.showing_msg():
+                self.otext(W / 2 - self.font.text_width(s) / 2, 12, s, GO, K)
         elif self.phase == "mid" and self.mid:
             w = 110
             x = W / 2 - w / 2
@@ -2067,7 +2072,8 @@ class Game:
             pyxel.rect(x + 1, 5, int((w - 2) * max(0, self.mid.hp) / self.mid_hp), 4, PK)
             pyxel.rectb(x, 4, w, 6, GO)
             s = self.st["mid"][1]
-            self.otext(W / 2 - self.font.text_width(s) / 2, 12, s, GO, K)
+            if not self.showing_msg():
+                self.otext(W / 2 - self.font.text_width(s) / 2, 12, s, GO, K)
         else:
             # こうしゃまでの道のり（中ボスの位置に しるし）
             w = 120
@@ -2079,7 +2085,8 @@ class Game:
             pyxel.line(mx, 3, mx, 10, PK)
             pyxel.blt(x + w - 4, 1, 1, 72, 0, 6, 6, 0)
             s = self.st["goal"]
-            self.otext(W / 2 - self.font.text_width(s) / 2, 11, s, LV, K)
+            if not self.showing_msg():
+                self.otext(W / 2 - self.font.text_width(s) / 2, 11, s, LV, K)
         # チャイム（左下）
         ready = self.chime >= 100
         pyxel.rect(3, H - 27, 24, 24, K)
@@ -2089,17 +2096,19 @@ class Game:
         pyxel.blt(8, H - 22, 1, 112, 0, 14, 11, 0)
         if ready:
             self.otext(4, H - 12, "タップ" if self.touch else "X/タップ", WH, K)
-        if self.state == "play" and self.t < 150:
+        if self.state == "play" and self.t < 100:
             self.draw_banner()
         # メッセージ
         if self.msg and self.msg[1] > 0:
             s, d = self.msg
             self.msg = (s, d - 1)
+            # 画面上の「名前・ゴール」の行に出す（おばけが出てくる まん中を かくさない）。地は うすく
             tw = self.font.text_width(s)
-            my = 66 if (self.boss or self.phase == "mid") else 36   # ボスに かぶらない位置
-            pyxel.rect(W / 2 - tw / 2 - 6, my, tw + 12, 16, K)
-            pyxel.rectb(W / 2 - tw / 2 - 6, my, tw + 12, 16, VI)
-            self.otext(W / 2 - tw / 2, my + 3, s, WH, K)
+            my = 11
+            pyxel.dither(0.5)
+            pyxel.rect(W / 2 - tw / 2 - 4, my - 1, tw + 8, 13, K)
+            pyxel.dither(1)
+            self.otext(W / 2 - tw / 2, my, s, WH, K)
 
     def draw_lamp(self, o, p, zc):
         # 外灯の柱＋かぼちゃランタン。まわりに あたたかい光のまる（ディザで半とうめい）と火の粉
