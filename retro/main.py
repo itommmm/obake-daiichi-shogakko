@@ -1125,7 +1125,7 @@ class Game:
             self.aim[0] = max(4, min(W - 4, W / 2 + (safe - self.px) * W / 9))
             # 安全地帯に着いていたら、そこから近いほうのボスの目をねらう（人がするのと同じく、よけながら うつ）
             if self.boss and self.boss.state == "fight" and abs(safe - self.px) < 10:
-                eyes = [self.boss_eye_pos(i) for i in range(2)]
+                eyes = [self.boss_eye_pos(i) for i in range(2) if getattr(self.boss, "shut", None) != i]
                 ex, ey, er = min(eyes, key=lambda e: abs(e[0] - self.aim[0]))
                 self.aim[0], self.aim[1] = ex, ey
             return
@@ -1137,7 +1137,8 @@ class Game:
             if p and (best is None or p[2] < best[2]):
                 best = p
         if self.boss and self.boss.state == "fight":
-            best = self.boss_eye_pos(int(self.t / 90) % 2)
+            open_eyes = [i for i in (0, 1) if getattr(self.boss, "shut", None) != i]
+            best = self.boss_eye_pos(open_eyes[int(self.t / 90) % len(open_eyes)])
         if best:
             self.aim[0] += (best[0] - self.aim[0]) * 0.25
             self.aim[1] += (best[1] - self.aim[1]) * 0.25
@@ -1342,6 +1343,8 @@ class Game:
         m.vy = 0
         m.dist = 260.0
         m.atk = 90
+        m.mt = 0          # 中ボスの時計（ガードの周期）
+        m.max_hp = hp
         self.mid = m
         pyxel.playm(1, loop=True)
         pyxel.play(3, 7)
@@ -1360,9 +1363,17 @@ class Game:
         goal = self.cx + math.sin(self.t * 0.015) * 55   # 画面の中を 左右に ゆれる
         m.base_x += (goal - m.base_x) * 0.03
         m.atk -= 1
+        # ガード：220フレームごとに 70フレーム かたくなる（その前の20フレームは「！」で予告）。ガード中は水が きかない
+        m.mt += 1
+        ph = m.mt % 220
+        m.guard = ph >= 150
+        m.guard_warn = 130 <= ph < 150
+        if ph == 150:
+            self.say("ガード！ いまは きかない", 50)
+        angry = m.hp <= m.max_hp / 2
         if m.atk <= 0:
             if random.random() < 0.5:
-                for dx in (-30, 0, 30):
+                for dx in ((-48, -24, 0, 24, 48) if angry else (-30, 0, 30)):   # おこると 5つ
                     self.throw(m.x + dx, m.y, 24)
             else:
                 for dx in (-36, 36):
@@ -1382,6 +1393,7 @@ class Game:
 
     def fire(self):
         self.ammo -= 1
+        self.fire_t = 6   # 主人公の はんどう・水しぶきの光（見た目だけ）
         pyxel.play(3, 3)
         ax, ay = self.aim
         hx, hy = self.kid_screen()[0] + 11, H - 16
@@ -1427,6 +1439,10 @@ class Game:
                     if near:
                         targets.append(near)
             for e in targets:
+                if e.mode == "mid" and getattr(e, "guard", False):
+                    pyxel.play(3, 8)
+                    self.fx.append(("txt", ax, ay, "カキン", 0, 20))
+                    continue
                 e.hp -= dmg
                 e.hit = 6
                 if e.hp <= 0:
@@ -1436,6 +1452,8 @@ class Game:
             return
         if self.boss and self.boss.state == "fight":
             for i in (0, 1):
+                if getattr(self.boss, "shut", None) == i:   # とじた目は きかない（下の カキン へ）
+                    continue
                 ex, ey, er = self.boss_eye_pos(i)
                 if math.hypot(ex - ax, ey - ay) < er * (1.2 if self.pw < 3 else 1.5) + 4:
                     self.hit_boss(1, ex, ey)   # ボスへは パワーに かかわらず 1
@@ -1547,6 +1565,7 @@ class Game:
         b.hit = 0
         b.pattern = 0
         b.warn = False
+        b.shut = None      # おこったら 片方の目を とじる（とじた目は きかない）
         self.boss = b
         pyxel.playm(1, loop=True)
         pyxel.play(3, 7)
@@ -1601,6 +1620,15 @@ class Game:
                         self.bullets[-1].tx = tx
                 b.atk = int((125 if rage else 155) * (1 + self.dda * 0.8))
                 b.warn = False
+                if rage and random.random() < 0.5:   # おこると ときどき 手下を 2体 よぶ
+                    mk = self.st["boss"].get("minions")
+                    for i in range(2):
+                        self.spawn(random.choice(mk) if mk else None, b.x + random.uniform(-50, 50), b.y + 10)
+            if rage:
+                ns = 0 if (b.t // 150) % 2 == 0 else 1
+                if b.shut != ns:
+                    b.shut = ns
+                    self.say(("ひだりめ", "みぎめ")[1 - ns] + "が あいた！", 50)
             if rage and b.t % 240 == 0:
                 self.say("おこった！ めが まっかだ！", 90)
         elif b.state == "die":
@@ -1705,6 +1733,9 @@ class Game:
                 f[2] -= 0.8
             if f[0] == "txt":
                 f[2] -= 0.4
+            if f[0] == "dust":       # 主人公の 土けむり：うしろへ ながれて 少し上がる
+                f[1] += f[3]
+                f[2] += 0.5
             if f[5] > 0:
                 out.append(tuple(f))
         self.fx = out
@@ -1951,6 +1982,10 @@ class Game:
             if b.state == "fight":
                 for i in (0, 1):
                     ex, ey, er = self.boss_eye_pos(i)
+                    if getattr(b, "shut", None) == i:   # とじた目：まぶた（こげ茶の板と線）
+                        pyxel.rect(ex - er - 1, ey - er - 1, er * 2 + 3, er * 2 + 3, OD)
+                        pyxel.line(ex - er, ey, ex + er, ey, K)
+                        continue
                     if self.t % 30 < 15:
                         pyxel.circb(ex, ey, er + 3, GO)
                     if b.warn and (b.pattern == 2 or i == b.pattern):
@@ -1979,6 +2014,14 @@ class Game:
                     rr = FOCAL * o.s / zc * 0.65 + 2
                     pyxel.circb(p[0], p[1] - FOCAL * o.s / zc / 2, rr, GO)
                 self.draw_sprite(u, v, 16, 16, p[0], p[1], o.s, zc, o.hit > 0)
+                if o.mode == "mid" and (getattr(o, "guard", False) or (getattr(o, "guard_warn", False) and self.t % 6 < 3)):
+                    rr = FOCAL * o.s / zc * 0.62
+                    cy_ = p[1] - FOCAL * o.s / zc / 2
+                    pyxel.circb(p[0], cy_, rr, CY_ if o.guard else GO)
+                    if o.guard:
+                        pyxel.dither(0.3)
+                        pyxel.circ(p[0], cy_, rr, CY_)
+                        pyxel.dither(1)
                 if o.mode == "dive" and 0 < o.dive < 40 and self.t % 8 < 5:
                     self.otext(p[0] - 3, p[1] - FOCAL * o.s / zc - 12, "!", RD, WH)
             else:
@@ -2002,6 +2045,11 @@ class Game:
                 for i in range(6):
                     a = i * 1.05 + life
                     pyxel.pset(x + math.cos(a) * (12 - life), y + math.sin(a) * (12 - life) * 0.6, CY_)
+            elif kind == "dust":
+                _, x, y, _, _, life = f
+                pyxel.dither(life / 20)
+                pyxel.circ(x, y, (14 - life) * 0.35 + 1, GY)
+                pyxel.dither(1)
             elif kind == "pop":
                 _, x, y, _, _, life = f
                 r = (16 - life) * 1.5
@@ -2014,10 +2062,7 @@ class Game:
                 _, x, y, s, _, life = f
                 self.otext(x - self.font.text_width(s) / 2, y, s, GO, K)
         # 主人公（うしろすがた）＋ みずでっぽう
-        kx, ky = self.kid_screen()
-        if not (self.inv and self.t % 6 < 3):
-            pyxel.blt(kx, ky, 1, 0, 16, 16, 24, 0)
-            pyxel.blt(kx + 11, ky + 9, 1, 80, 0, 8, 6, 0)
+        self.draw_kid()
         # 照準
         ax, ay = self.aim
         c = PK if self.t % 20 < 10 else CY_
@@ -2035,6 +2080,72 @@ class Game:
                 pyxel.dither(1)
         self.draw_weather()
         self.draw_hud()
+
+    def draw_kid(self):
+        """主人公（うしろすがた）。走る足ぶみ・上下のゆれ・かたむき・うったときの はんどうと光・
+        土けむり・パワーアップのオーラ。どれも見た目だけで、当たり判定は今までと同じ"""
+        kx, ky = self.kid_screen()
+        t = self.t
+        lpx = getattr(self, "kid_lpx", self.px)
+        vx = self.px - lpx
+        self.kid_lpx = self.px
+        self.kid_lean = getattr(self, "kid_lean", 0.0) * 0.8 + vx * 0.6
+        lean = max(-2, min(2, round(self.kid_lean)))
+        fire_t = getattr(self, "fire_t", 0)
+        if fire_t > 0:
+            self.fire_t = fire_t - 1
+        moving = self.state == "play" and not (self.boss and self.boss.state == "die")
+        win = bool(self.boss and self.boss.state == "die")
+        step = (t // 5) % 2 if moving else 0
+        bob = -abs(math.sin(t * 0.32)) * 2 if moving else 0
+        if win:                                    # ボスを たおしたら ぴょんぴょん
+            bob = -abs(math.sin(t * 0.18)) * 9
+        y = ky + bob
+        # かげ（とんだら小さく）
+        sr = 7 + bob * 0.3
+        pyxel.dither(0.6)
+        pyxel.elli(kx + 8 - sr, ky + 22, sr * 2, 3, K)
+        pyxel.dither(1)
+        # 土けむり（走ると 足もとから うしろへ）
+        if moving and t % 6 == 0:
+            self.fx.append(("dust", kx + 8 + random.uniform(-4, 4), ky + 22, random.uniform(-0.4, 0.4), 0, 14))
+        # パワーアップのオーラ（Lv2：水色の星が まわる、Lv3：金色の光と星）
+        if self.pw >= 2:
+            n = 3 if self.pw == 2 else 5
+            for i in range(n):
+                a = t * 0.12 + i * math.tau / n
+                ox, oy = math.cos(a) * 12, math.sin(a) * 5
+                col = (CY_, WH)[(t // 4 + i) % 2] if self.pw == 2 else (GO, OY, WH)[(t // 3 + i) % 3]
+                pyxel.pset(kx + 8 + ox, y + 12 + oy, col)
+                if (t + i * 7) % 12 < 4:   # ときどき きらっと 十字に光る
+                    pyxel.pset(kx + 8 + ox - 1, y + 12 + oy, col); pyxel.pset(kx + 8 + ox + 1, y + 12 + oy, col)
+                    pyxel.pset(kx + 8 + ox, y + 11 + oy, col); pyxel.pset(kx + 8 + ox, y + 13 + oy, col)
+            if self.pw >= 3:
+                pyxel.dither(0.25 + 0.15 * math.sin(t * 0.3))
+                pyxel.elli(kx - 3, y - 3, 22, 30, GO)
+                pyxel.dither(1)
+        if self.inv and t % 6 < 3:
+            return
+        # からだ（上18行）は かたむき・はんどうで ずらし、足（下6行）は 1歩ずつ 交互に上げる
+        kick = 1 if fire_t > 3 else 0
+        pyxel.blt(kx + lean, y + kick, 1, 0, 16, 16, 18, 0)
+        pyxel.blt(kx + 4, y + 18 - step, 1, 4, 34, 4, 6, 0)          # 左足
+        pyxel.blt(kx + 8, y + 18 - (1 - step if moving else 0), 1, 8, 34, 4, 6, 0)   # 右足
+        # みずでっぽう（うつと 少し下がる）と 先っぽの光
+        gx, gy = kx + 11 + lean, y + 9 + kick * 2
+        pyxel.blt(gx, gy, 1, 80, 0, 8, 6, 0)
+        if fire_t > 2:
+            r = fire_t - 1
+            pyxel.circ(gx + 6, gy, r, WH)
+            pyxel.circb(gx + 6, gy, r + 2, CY_)
+            for i in range(4):
+                a = i * math.pi / 2 + t * 0.5
+                pyxel.pset(gx + 6 + math.cos(a) * (r + 4), gy + math.sin(a) * (r + 4), CY_)
+        # コンボ中は あたまの上に 小さな ほのお
+        if self.combo >= 5 and t % 4 < 3:
+            fx_ = kx + 8 + lean
+            pyxel.tri(fx_ - 3, y - 1, fx_ + 3, y - 1, fx_, y - 7 - (t // 3) % 3, OR)
+            pyxel.tri(fx_ - 1, y - 1, fx_ + 1, y - 1, fx_, y - 4, OY)
 
     def draw_hud(self):
         # ハート

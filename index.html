@@ -1056,9 +1056,9 @@ const ANIM={
   kousha(e,P,t){const m=e.mouthOpen||0;P.body.scale.set(1+Math.sin(t*2)*.01,1+Math.sin(t*2)*.025,1);P.body.rotation.z=Math.sin(t*.9)*.03+(G.rage?Math.sin(t*6)*.015:0);
     P.inner.scale.y=.42*(.2+m*1.2);P.mt.position.y=.06*m;P.mb.position.y=-.08*m;P.tongue.scale.z=Math.max(.001,(e.tongue||0)*4.7);P.tongue.scale.y=1+m*.5;
     const sp=e.mode==='chime'||e.bellFx>0?14:G.rage?4:1.2;P.h1.rotation.z-=.016*sp;P.h2.rotation.z-=.06*sp;P.bell.rotation.z=Math.sin(t*14)*.6*Math.min(1,e.bellFx||0);
-    const wf=e.winFx||0;P.wins.forEach((w,i)=>{const f=.5+.5*Math.sin(t*3+w.userData.k);const k=wf>0?2.4*wf:1;w.color.setRGB((.25+.3*f)*k*(G.rage?1.6:1),(.1+.1*f)*k,(.6+.4*f)*k);});
+    const wf=e.winFx||0;P.wins.forEach((w,i)=>{const f=.5+.5*Math.sin(t*3+w.userData.k);const k=wf>0?2.4*wf:1;if(e.armor>0)w.color.setRGB(.25,.75,1.1);else w.color.setRGB((.25+.3*f)*k*(G.rage?1.6:1),(.1+.1*f)*k,(.6+.4*f)*k);});
     P.eyes.forEach((eg,i)=>{const pu=eg.userData.pu;pu.position.x=clamp((ptr.x/W-.5)*.25,-.12,.12);pu.position.y=clamp(-(ptr.y/H-.5)*.12,-.08,.06);eg.scale.y=Math.sin(t*.7+i)>.97?.15:1;});},
-  locker(e,P,t){const m=(e.mouth>0?1:0)*.5+.5+.15*Math.sin(t*3);P.inner.scale.y=.66*(.6+m*.6);P.top.position.y=.06*m;P.bot.position.y=-.06*m;},
+  locker(e,P,t){const m=e.armor>0?.05:(e.mouth>0?1:0)*.5+.5+.15*Math.sin(t*3);P.inner.scale.y=.66*(.6+m*.6);P.top.position.y=.06*m;P.bot.position.y=-.06*m;},
 };
 
 /* 敵の3D表示を同期 */
@@ -1578,11 +1578,16 @@ function bossAI(e,dt,live){
   e.x=Math.sin(e.t*.5)*.55;e.z=.62;e.h=.04+Math.sin(e.t*2)*.03;
   if(!live||e.stun>0)return;
   e.atk-=dt;const r=e.hp/e.max;
+  // ドアガード：数秒ごとに ドアを しめて かたくなる（0.9びょう前に 予告）
+  if(e.armor>0)e.armor-=dt;
+  e.gT=(e.gT==null?4.5:e.gT)-dt;
+  if(e.gT<.9&&!e.gWarn){e.gWarn=1;addText(W/2,H*.22,'ドアを しめるぞ！ いまの うちに うて！','#9fd8ff',26);}
+  if(e.gT<=0){e.armor=G.rage===2?2:1.6;e.gT=(G.rage?4.6:5.6)/G.diff.spd;e.gWarn=0;SFX.alert();}
   if(e.atk<.9&&!e.attackKind){e.attackKind=Math.random()<.55?'paper':'minion';addText(W/2,H*.28,e.attackKind==='paper'?'テストが くる！ うちおとそう':'なかまを よぶぞ！','#ffd23f',26);}
   if(r<.66&&G.rage<1){G.rage=1;rageUp();}
   if(r<.33&&G.rage<2){G.rage=2;rageUp();}
   if(e.atk<=0){e.atk=(G.rage===2?1.6:G.rage?2.2:3.0)/G.diff.spd*(1+(G.dda||0)*.6);e.mouth=.6;
-    if(e.attackKind==='paper'){const n=G.rage===2?2:1;for(let i=0;i<n;i++){const p=spawn('paper',e.x+rnd(-.25,.25),e.z-.04,.4);p.appear=.6;}addText(e.sx,e.sy-e.u,'テストこうげき!','#fff',20);}
+    if(e.attackKind==='paper'){const n=G.rage===2?3:G.rage?2:1;for(let i=0;i<n;i++){const p=spawn('paper',e.x+(n>1?(i/(n-1)-.5)*.6:0)+rnd(-.08,.08),e.z-.04,.4);p.appear=.6;}addText(e.sx,e.sy-e.u,'テストこうげき!','#fff',20);}
     else if(alive()<G.wave.max)spawn(pickType(G.wave.types),e.x+rnd(-.3,.3),e.z-.03);e.attackKind=null;}
   if(e.mouth>0)e.mouth-=dt;
 }
@@ -1597,6 +1602,10 @@ function kAI(e,dt,live){
   if(r<.5&&G.rage<1){G.rage=1;e.hT=2.4;G.items.push({kind:'candy',x:-.3,z:.6,t:0,sx:0,sy:0,u:10},{kind:'candy',x:.3,z:.6,t:0,sx:0,sy:0,u:10});G.shake=1.4;SFX.boom();setTimeout(()=>SFX.boom(),300);addText(W/2,H*.3,'こうしゃが たちあがった!!','#ff5fb8',44);G.flash=.8;}
   if(r<.22&&G.rage<2){G.rage=2;G.shake=1.4;SFX.boom();addText(W/2,H*.3,'さいごの あがき!!','#ff5fb8',44);G.flash=.8;}
   e.mt-=dt;
+  if(e.armor>0)e.armor-=dt;
+  if(G.rage&&e.mode==='idle'){e.kT=(e.kT==null?5:e.kT)-dt;
+    if(e.kT<1&&!e.kWarn){e.kWarn=1;addText(W/2,H*.22,'こうしゃが かたくなる！','#9fd8ff',28);}
+    if(e.kT<=0){e.armor=2.2;e.kT=G.rage===2?6.5:8;e.kWarn=0;SFX.alert();}}
   if(e.mode==='tongueWarn'){e.mouthOpen=Math.min(1,e.mouthOpen+dt*3);
     if(e.tongueHP<=0){e.mode='idle';e.mt=2.2;e.stun=1.8;e.mouthOpen=0;damage(e,8);SFX.clear();addText(W/2,H*.4,'ベロ ストップ！ +ボーナス','#5fe3ff',40);G.score+=800;return;}
     if(e.mt<=0){e.mode='tongue';e.mt=1;e.tHit=0;SFX.revive();}return;}
@@ -1610,7 +1619,7 @@ function kAI(e,dt,live){
     e.mt=(G.rage===2?2.4:G.rage?3:3.6)/G.diff.spd*(1+(G.dda||0)*.6);
     if(a==='windows'){e.winFx=1;SFX.boom();addText(W/2,H*.3,'まどから つくえ ミサイル!','#ffd23f',32);const n=G.rage?2:1;for(let i=0;i<n;i++){const m=spawn(['tsukue','isu','randoseru'][(i+(e.t|0))%3],rnd(-.85,.85),1.45);m.dropH=2.6+rnd(0,1);m.spdMul=1.2;m.appear=.5;}}
     else if(a==='paper'){addText(W/2,H*.3,'テストようし ふぶき!','#ffffff',32);SFX.revive();for(let i=0;i<(G.rage?4:3);i++){const m=spawn('paper',rnd(-.8,.8),1.5,.4);m.dropH=2+rnd(0,1.5);m.appear=.4;m.spdMul=.7;}}
-    else if(a==='tongue'){e.mode='tongueWarn';e.mt=3.0;e.tongueHP=G.rage?4:3;addText(W/2,H*.3,'ろうかベロが くる！ くちを うて!!','#ff8fd0',34);SFX.revive();}
+    else if(a==='tongue'){e.mode='tongueWarn';e.mt=3.0;e.tongueHP=G.rage===2?5:G.rage?4:3;e.armor=0;addText(W/2,H*.3,'ろうかベロが くる！ くちを うて!!','#ff8fd0',34);SFX.revive();}
     else if(a==='chime'){e.bellFx=2.4;SFX.chime();G.shockFx=1;G.lightning=.5;G.fallen.push('isu','randoseru','tsukue','sheet');startChime();}
   }
 }
@@ -1695,7 +1704,11 @@ const POW={rapid:{name:'れんしゃ',col:'#ffd23f',c3:[3,2.4,.4]},wide:{name:'�
 function maxAmmo(){return (G.wlv||1)>=3?40:30;}
 function startReload(){if(G.reload>0||G.ammo>=maxAmmo())return;G.reload=1.1;[180,210,240].forEach((f,i)=>tone(f,.12,'sine',.07,.7,i*.14));}
 function damage(e,d){
-  if(e.dead)return;e.hp-=d;e.flash=.12;SFX.hit();
+  if(e.dead)return;
+  // ボスの ガード：ロッカーは ドアを しめると きかない、こうしゃは かたくなると 1/4。ロッカーは こうげきの直後（ドアが あいた時）は 2ばい
+  if(e.T.boss&&e.armor>0){d=e.type==='kousha'?d*.25:0;if(!(G.t-(e.kinT||-9)<.5)){e.kinT=G.t;addText(e.sx,e.sy-e.u*.5,'カキン！','#9fd8ff',22);tone(1400,.06,'square',.04,.5);}if(d<=0){spark(e.sx,e.sy,'#9fd8ff',3);return;}}
+  else if(e.type==='locker'&&e.mouth>0){d*=2;if(!(G.t-(e.chT||-9)<.6)){e.chT=G.t;addText(e.sx,e.sy-e.u*.7,'チャンス！ ×2','#ffd23f',24);}}
+  e.hp-=d;e.flash=.12;SFX.hit();
   if(!e.T.boss)e.z=Math.min(e.z+.012,ROOMS[G.place].spawn);
   if(e.type==='kousha'&&e.hp>0&&Math.random()<.3)tone(90,.15,'square',.05,.6);
   spark(e.sx,e.sy,'#fff',5);
