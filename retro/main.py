@@ -356,24 +356,33 @@ def fix_tilemap():
 
 
 def setup_sound():
+    # ホラーふう：こわれたオルゴール（ゆれる音）＋半音でせまる低音＋心臓の音。ボス戦は 不協和音で はげしく
     s = pyxel.sounds
-    # BGM：ぶきみだけど かわいい ハ短調ふう
-    mel = "a2c3e3a3 g3e3c3e3 f3a3c4a3 g#3b3e3r a2c3e3a3 b3c4b3a3 g#3e3f3d3 e3rrr"
-    bas = "a1ra1r a1ra1r f1rf1r e1re1r a1ra1r a1ra1r d2rd2r e1re1r"
-    drm = "c1ra3r c1ra3r c1ra3r c1ra3r c1ra3r c1ra3r c1ra3r c1a3a3a3"
-    s[0].set(mel.replace(" ", ""), "p", "4", "nnnv", 14)
-    s[1].set(bas.replace(" ", ""), "t", "5", "n", 14)
-    s[2].set(drm.replace(" ", ""), "n", "52", "f", 14)
-    s[3].set("a4f4c4", "n", "543", "f", 2)            # うつ（シュッ）
-    s[4].set("c3g3c4", "p", "665", "nnf", 3)          # たおした（ポン）
-    s[5].set("c2a1f1c1", "s", "7654", "f", 6)        # くらった
-    s[6].set("e3c3d3g2rg2d3e3c3", "t", "7", "nnnnnnnnf", 9)  # チャイム
-    s[7].set("c1c1d#1c1", "n", "7776", "sssf", 16)   # ボスのほえ声
-    s[8].set("c4e4", "p", "54", "nf", 2)             # カキン
-    s[9].set("c3e3g3c4e4g4c4r", "p", "6", "nnnnnnfn", 8)  # クリア
-    s[10].set("e4c4", "s", "64", "nf", 3)             # パワー
-    s[11].set("g2c3e3g3", "t", "5", "nnnf", 18)       # エンディング
+    sp = lambda x: x.replace(" ", "")
+    mel = "e4rrr d#4rrr e4rrr a#3rrr a3rrr c4rrr b3rrr rrrr"
+    bas = "a1rrr a#1rrr a1rrr a#1rrr a1rrr a#1rrr a1ra#1r a1a#1a1a#1"
+    drm = "c1c1rr rrrr c1c1rr rrrr c1c1rr rrrr c1c1rr c1c1rr"
+    s[0].set(sp(mel), "t", "5", "v", 22)
+    s[1].set(sp(bas), "t", "6", "n", 22)
+    s[2].set(sp(drm), "n", "3", "f", 22)
+    s[3].set("a4f4c4", "n", "543", "f", 2)              # うつ（シュッ）
+    s[4].set("c2g2c3g3", "s", "5432", "sssf", 4)        # たおした（おばけが すうっと 消える）
+    s[5].set("f2c2f1c1", "s", "7765", "nnsf", 6)        # かまれた
+    s[6].set("e3c3d3g2rg2d3e3c3", "t", "7", "vvvvnvvvf", 12)  # チャイム（ゆれる 鐘）
+    s[7].set("c1c1d#1c1", "n", "7776", "sssf", 16)     # ボスの ほえ声
+    s[8].set("c4c#4", "p", "54", "nf", 2)              # カキン（ぶつかる音）
+    s[9].set("c3e3g3c4e4g4c4r", "t", "6", "nnnnnnfn", 8)  # クリア
+    s[10].set("e4c4", "s", "64", "nf", 3)               # パワー
+    s[11].set("c3e3g3c4 g3e3f3d3 c3e3g3c4 c4rrr".replace(" ", ""), "t", "5", "nnnnnnnnnnnnfnnn", 14)  # 夜明け（長調）
+    # ボス戦の曲
+    riff = "a1a1ra#1 a1rd#2r a1a1ra#1 g#1rd#2d2"
+    stab = "a2a#2rr rrrr d#3e3rr rrrr"
+    beat = "c1rf1r c1c1f1r"
+    s[12].set(sp(riff * 2), "s", "5", "n", 9)
+    s[13].set(sp(stab * 2), "p", "3", "f", 9)
+    s[14].set(sp(beat * 4), "n", "6", "f", 9)
     pyxel.musics[0].set([0], [1], [2])
+    pyxel.musics[1].set([12], [13], [14])
 
 
 class Obj:
@@ -755,6 +764,7 @@ class Game:
         m.dist = 260.0
         m.atk = 90
         self.mid = m
+        pyxel.playm(1, loop=True)
         pyxel.play(3, 7)
         self.say("ランドセルだいおう が きた！", 140)
 
@@ -763,6 +773,7 @@ class Game:
         if m.gone:
             self.mid = None
             self.phase = "road2"
+            pyxel.playm(0, loop=True)
             self.say("ランドセルだいおうを たおした！", 120)
             return
         m.dist = max(140, m.dist - 1.2)
@@ -939,6 +950,7 @@ class Game:
         b.atk = 120
         b.hit = 0
         self.boss = b
+        pyxel.playm(1, loop=True)
         pyxel.play(3, 7)
         self.say("おばけこうしゃ が あらわれた！", 150)
 
