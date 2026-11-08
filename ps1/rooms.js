@@ -138,7 +138,7 @@ function buildClassroom() {
   addDoor(R, { x: 2.95, z: 3.02, label: 'ろうかへ でる', target: 'corridor', spawn: { x: -1.15, z: 3.0, a: Math.PI / 2 } });
   // カメラ
   addCam(R, { pos: [3.9, 2.9, 3.0], look: [-1.2, .65, -2.2], zone: { x0: -9, x1: 9, z0: -9, z1: .4 } });
-  addCam(R, { pos: [-3.6, 2.9, -2.4], look: [1.4, .72, 2.6], zone: { x0: -9, x1: 9, z0: .4, z1: 9 } });
+  addCam(R, { pos: [3.8, 2.95, 3.25], look: [1.3, .72, .75], fov: 80, zone: { x0: -9, x1: 9, z0: .4, z1: 9 } });
   // もの
   addItemDef(R, { id: 'eraser', type: 'eraser', x: 0, z: -2.68, y: .9, label: 'こくばんけしを とる' });
   addItemDef(R, { id: 'key_staff', type: 'key', x: 2.6, z: -1.9, y: .1, hiddenUntil: 'classroom', label: 'かぎを とる' });
@@ -187,9 +187,9 @@ function buildCorridor() {
   box(.03, .05, .1, bm(0x9fe88a), 1.57, 1.26, 5.65, R.scene);
   doorPanel(R, 0, 10.94, Math.PI); addDoor(R, { x: 0, z: 10.55, label: 'げんかんへ', target: 'entrance', spawn: { x: 1.6, z: 2.0, a: Math.PI } });
   // カメラ（3つの 固定アングル）
-  addCam(R, { pos: [0, 2.78, 1.3], look: [0, .55, -6.5], zone: { x0: -9, x1: 9, z0: -99, z1: 0 } });
-  addCam(R, { pos: [0, 2.78, -1.3], look: [0, .55, 6.5], zone: { x0: -9, x1: 9, z0: 0, z1: 7.4 } });
-  addCam(R, { pos: [0, 2.95, 4.2], look: [0, .5, 10.8], zone: { x0: -9, x1: 9, z0: 7.4, z1: 99 } });
+  addCam(R, { pos: [0, 2.78, 3.2], look: [0, .55, -4.6], zone: { x0: -9, x1: 9, z0: -99, z1: 0 } });
+  addCam(R, { pos: [0, 2.78, 9.8], look: [0, .55, 3.1], zone: { x0: -9, x1: 9, z0: 0, z1: 7.4 } });
+  addCam(R, { pos: [0, 2.95, 10.95], look: [0, .5, 8.7], fov: 70, zone: { x0: -9, x1: 9, z0: 7.4, z1: 99 } });
   // もの
   addItemDef(R, { id: 'battery', type: 'battery', x: 1.1, z: -8.4, y: .05, label: 'でんちを とる' });
   addItemDef(R, { id: 'herb_corridor', type: 'herb', x: -1.1, z: 8.2, y: .05, label: 'おまもりの はっぱを とる' });

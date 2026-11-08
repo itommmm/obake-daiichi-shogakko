@@ -278,11 +278,9 @@ window.runPS1Tests = function () {
   check('fixed view up moves player', Math.hypot(G.p.x - px0, G.p.z - pz0) > .2);
   check('fixed camera does not follow player', P.camera().position.distanceTo(fixedCam) < .0001);
   const px1 = G.p.x, pz1 = G.p.z;
-  const viewForward = P.camera().getWorldDirection(new THREE.Vector3());
   G.keys.right = true; step(0.25); G.keys.right = false; step(0.02);
   const keyRightX = G.p.x - px1, keyRightZ = G.p.z - pz1;
-  check('right direction uses corrected fixed-camera axis',
-    keyRightX * viewForward.z - keyRightZ * viewForward.x > .08,
+  check('right moves east no matter camera angle', keyRightX > .2 && Math.abs(keyRightZ) < .03,
     { x: keyRightX, z: keyRightZ });
   place('classroom', px1, pz1, Math.PI);
   P.modernControls.stick(28, 0, 100);
@@ -294,21 +292,28 @@ window.runPS1Tests = function () {
   P.modernControls.zeroStick(); step(0.02);
   place('classroom', px1, pz1, Math.PI);
   G.keys.left = true; step(0.25); G.keys.left = false; step(0.02);
-  check('left direction is opposite to corrected right',
+  check('left direction is opposite to world-right',
     keyRightX * (G.p.x - px1) + keyRightZ * (G.p.z - pz1) < -.015);
   const stick = P.modernControls.stick(28, -35, 100);
   check('virtual stick returns continuous axes', Math.abs(stick.x) > .1 && Math.abs(stick.y) > .1);
   P.modernControls.zeroStick();
   check('virtual stick resets after release', !G.touch.joyX && !G.touch.joyY);
-  // ろうかの区画境界でカメラが反転しても、押し続けている間は逆走しない。
+  // 廊下ではカメラの区画が切り替わっても世界方向は一定。全ての固定アングルも北向き。
   place('corridor', 0, -.32, Math.PI);
-  G.keys.down = true; step(0.48); G.keys.down = false;
-  check('movement stays continuous across fixed-camera cut', G.p.z > .12, G.p);
+  const oldCam = P.camera().position.clone();
+  G.keys.down = true; step(.48); G.keys.down = false;
+  check('held input stays positive Z across camera cut', G.p.z > .35, G.p);
+  check('camera changes at zone cut', P.camera().position.distanceTo(oldCam) > .3);
   step(.05);
   const cutCam = P.camera().position.clone();
+  const zBeforeUp = G.p.z;
   G.keys.up = true; step(.22); G.keys.up = false;
-  check('new input uses current fixed camera', G.p.z > .30, G.p);
-  check('corridor uses authored camera angles', P.camera().position.distanceTo(cutCam) < .0001);
+  check('up keeps moving north after camera cut', G.p.z < zBeforeUp - .2, G.p);
+  check('corridor uses authored fixed angle', P.camera().position.distanceTo(cutCam) < .0001);
+  for (const R of Object.values(P.ROOMS)) {
+    for (const c of [...R.cams, ...(R.bossCam ? [R.bossCam] : [])])
+      check('fixed camera looks north in ' + R.id, c.look[2] < c.pos[2]);
+  }
   P.setMode('tank');
   check('legacy fixed camera and tank controls still work', G.mode === 'tank');
   P.setMode('modern');

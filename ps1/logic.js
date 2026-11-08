@@ -6,7 +6,6 @@
 
 let gameCam = null;
 let lastCamDef = null;
-let moveBasis = null; // カメラの切替中も、スティックを離すまで移動方向を固定
 let fadeEl = null, flashEl = null, pauseVeil = null;
 let titleShown = true;
 
@@ -145,7 +144,6 @@ function enterRoom(id, spawn, silent) {
   G.room = R.id;
   activeRoom = R;
   G.p.x = spawn.x; G.p.z = spawn.z; G.p.a = spawn.a == null ? Math.PI : spawn.a;
-  moveBasis = null;
   G.p.walk = 0; G.p.moving = 0;
   G.projectiles = []; G.fx3 = []; G.sparks = [];
   G.prompt = '';
@@ -163,7 +161,6 @@ function enterRoom(id, spawn, silent) {
 }
 function changeRoom(door) {
   if (G.state !== 'play' || G.trans) return;
-  moveBasis = null;
   G.trans = { t: 0, door, switched: false };
   G.state = 'transition';
   fadeEl.style.opacity = '1';
@@ -213,7 +210,6 @@ function updatePlayer(dt) {
   let moving = 0;
   if (G.mode === 'tank') {
     // クラシック：左右で向きを変え、前後で移動。
-    moveBasis = null;
     if (left) p.a += 2.25 * dt;
     if (right) p.a -= 2.25 * dt;
     const f = (up ? 1 : 0) - (down ? 1 : 0);
@@ -226,28 +222,22 @@ function updatePlayer(dt) {
   } else {
     // スティック／WASD：画面の上下左右に合わせて直接移動。
     // 一度倒したらカメラが切り替わっても「離すまで」同じ世界方向を維持する。
-    // 子どもの実プレイ結果に合わせ、固定カメラ画面の左右操作を反転。
-    // 上下とクラシック（タンク）操作は変えない。
-    let ix = (left ? 1 : 0) - (right ? 1 : 0) - joyX;
+    // カメラのアングルに依存させず、画面内の左右は常にX軸の左右に固定する。
+    // 全固定カメラは北向きに統一してあるので、部屋の移動でも方向が反転しない。
+    let ix = (right ? 1 : 0) - (left ? 1 : 0) + joyX;
     let iz = (up ? 1 : 0) - (down ? 1 : 0) - joyY;
     const length = Math.hypot(ix, iz);
     if (length > .12) {
-      if (!moveBasis) {
-        activeCam.getWorldDirection(V3); V3.y = 0;
-        if (V3.lengthSq() < .000001) V3.set(Math.sin(p.a), 0, Math.cos(p.a));
-        else V3.normalize();
-        moveBasis = { fx: V3.x, fz: V3.z, rx: -V3.z, rz: V3.x };
-      }
       const strength = Math.min(1, length);
-      ix /= length; iz /= length;
-      const mx = moveBasis.fx * iz + moveBasis.rx * ix;
-      const mz = moveBasis.fz * iz + moveBasis.rz * ix;
+      // カメラ切り替えに無関係な世界座標。右が +X、上が -Z。
+      const mx = ix / length;
+      const mz = -iz / length;
       const beforeX = p.x, beforeZ = p.z;
       const speed = (run ? 2.8 : 1.9) * strength;
       tryMove(mx * speed * dt, mz * speed * dt);
       moving = Math.hypot(p.x - beforeX, p.z - beforeZ) > .0005 ? 1 : 0;
       if (moving) p.a = Math.atan2(mx, mz);
-    } else moveBasis = null;
+    }
   }
   p.moving = moving;
   if (moving) p.walk += dt * (run ? 10 : 7); else p.walk *= Math.max(0, 1 - dt * 8);
@@ -894,7 +884,6 @@ function keyName(code) {
 function openInventory() {
   if (G.state !== 'play') return;
   ModernControls.release();
-  moveBasis = null;
   G.state = 'inventory'; G.keys = Object.create(null); G.touch = Object.create(null);
   $('inv').hidden = false; pauseVeil.style.opacity = '1';
   updateInvUI();
@@ -931,7 +920,6 @@ function setMode(mode) {
   if (mode !== 'tank' && mode !== 'modern') return;
   ModernControls.release();
   G.keys = Object.create(null); G.touch = Object.create(null);
-  moveBasis = null;
   G.mode = mode;
   lastCamDef = null;
   $('stage').classList.toggle('mode-modern',mode === 'modern');
