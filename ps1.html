@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>おばけ第一小学校 PS1版</title>
+<meta name="description" content="固定カメラとタンク操作で 夜の学校を さまよう、PS1風の サバイバルホラー。">
+<meta name="theme-color" content="#07060a">
+<link rel="icon" href="assets/icon_32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="assets/icon_180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap">
+<link rel="stylesheet" href="ps1/style.css">
+</head>
+<body>
+<div id="viewport">
+  <div id="stage">
+    <canvas id="gl" width="320" height="240" aria-label="ゲーム画面"></canvas>
+    <canvas id="hud" width="320" height="240" aria-hidden="true"></canvas>
+    <div id="crt" aria-hidden="true"></div>
+    <div id="flash" aria-hidden="true"></div>
+    <div id="pauseVeil" aria-hidden="true"></div>
+    <div id="fade" aria-hidden="true"></div>
+
+    <div id="touch" aria-label="タッチ操作">
+      <button class="tbtn" id="tUp" aria-label="すすむ">▲</button>
+      <button class="tbtn" id="tDown" aria-label="さがる">▼</button>
+      <button class="tbtn" id="tLeft" aria-label="ひだりを むく">◀</button>
+      <button class="tbtn" id="tRight" aria-label="みぎを むく">▶</button>
+      <button class="tbtn" id="tAim" aria-label="ねらう">ねらう</button>
+      <button class="tbtn" id="tFire" aria-label="うつ">うつ</button>
+      <button class="tbtn" id="tAct" aria-label="しらべる">しらべる</button>
+      <button class="tbtn" id="tItem" aria-label="もちもの">もちもの</button>
+      <button class="tbtn" id="tMute" aria-label="おとの オンオフ">♪</button>
+    </div>
+
+    <section id="title">
+      <div class="tw">
+        <div class="tag">PlayStation 1996 &nbsp;/&nbsp; Survival Horror</div>
+        <h1 class="logo"><span>おばけ</span><span class="red">第一小学校</span></h1>
+        <div class="sub">〜 夜の 学校で かくれんぼ 〜</div>
+        <div class="menu">
+          <button id="btnNew">はじめから</button>
+          <button id="btnContinue" disabled>つづきから</button>
+          <div class="hint" id="continueHint">セーブデータなし</div>
+          <button id="btnMode">そうさ：タンク</button>
+        </div>
+        <p class="warn">※ びっくりする 演出があります。<br>ヘッドホンで あそぶと こわさが ます。</p>
+        <div class="press">PRESS ANY KEY</div>
+        <div class="titleFoot">
+          <span>© 1996 OBAKE DAIICHI</span>
+          <a href="index.html">3D版へ</a>
+          <a href="retro.html">レトロ版へ</a>
+          <button id="btnTitleSound">おと：オン</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="intro" hidden>
+      <div class="introLine" id="introLine"></div>
+      <div class="skip">ボタンで スキップ</div>
+    </section>
+
+    <section id="inv" class="overlay" hidden>
+      <div class="panel">
+        <h2>もちもの <small>PAUSE</small></h2>
+        <div class="statgrid">
+          <span>たいりょく</span><b id="invHp">♥♥♥♥</b>
+          <span>みず（たま）</span><b id="invAmmo">12</b>
+          <span>やくそう</span><b id="invHerb">0</b>
+          <span>おふだ</span><b id="invCharm">0 / 3</b>
+          <span>いまの ばしょ</span><b id="invRoom">5ねん1くみ</b>
+          <span>あそんだ じかん</span><b id="invTime">00:00</b>
+        </div>
+        <p id="invObjective">3まいの おふだを さがそう。</p>
+        <div class="row">
+          <button id="btnResume" class="primary">つづける</button>
+          <button id="btnHerb">やくそうを つかう</button>
+          <button id="btnInvTitle">タイトルへ</button>
+        </div>
+        <div class="setting"><span>そうさ</span><button id="btnControl">タンク（ホラー風）</button></div>
+        <div class="setting"><span>おと</span><button id="btnSound">オン</button></div>
+        <div class="setting"><span>画面の ゆれ・ノイズ</span><button id="btnFx">オン</button></div>
+        <div class="controls">
+          <b>↑↓</b> すすむ／さがる　<b>←→</b> まわる（タンク）<br>
+          <b>スペース</b> ねらう　<b>J／クリック</b> うつ　<b>E</b> しらべる<br>
+          <b>I／Esc</b> もちもの　<b>H</b> やくそう　<b>M</b> おと
+        </div>
+      </div>
+    </section>
+
+    <section id="over" class="overlay" hidden>
+      <div class="panel">
+        <h2>GAME OVER</h2>
+        <p id="overText">おばけに つかまってしまった…</p>
+        <div class="row">
+          <button id="btnRetry" class="primary">さいごの セーブから</button>
+          <button id="btnOverTitle">タイトルへ</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="ending" class="overlay" hidden>
+      <div class="panel">
+        <h2>ENDING</h2>
+        <div class="big">おばけたちの しずかな 夜</div>
+        <p id="endText">おふだを ぜんぶ はった。校門の かぎが、しずかに ひらく。</p>
+        <div class="statgrid">
+          <span>クリア じかん</span><b id="endTime">00:00</b>
+          <span>うった みず</span><b id="endShots">0</b>
+          <span>たいりょく</span><b id="endHp">4</b>
+          <span>あつめた おふだ</span><b>3 / 3</b>
+        </div>
+        <p style="font-size:10px;color:#8e8798">「また あした、学校で。」</p>
+        <div class="row">
+          <button id="btnEndAgain" class="primary">もういちど</button>
+          <button id="btnEndTitle">タイトルへ</button>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="ps1/engine.js"></script>
+<script src="ps1/rooms.js"></script>
+<script src="ps1/logic.js"></script>
+</body>
+</html>

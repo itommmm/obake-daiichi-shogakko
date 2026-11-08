@@ -106,6 +106,8 @@ button:disabled{opacity:.5;cursor:wait}
 .how{font-size:clamp(11px,1.35vw,13px);line-height:1.65;color:#d9ccff;margin:0;padding-left:1.1em}
 .how b{color:#fff}
 .best{font-size:13px;color:#cdb8ff;text-align:center}
+.altlink{display:block;text-align:center;font:900 13px/1.45 var(--body);color:#cbb6ff;text-decoration:none;border:2px dashed rgba(166,92,255,.55);border-radius:12px;padding:8px;margin-top:2px}
+.altlink:hover{background:rgba(166,92,255,.18);color:#fff}
 /* 生成画像：結果画面の背景（クリア＝夜明けの校舎、ゲームオーバー＝おばけが大よろこびの教室）。無ければ今までの色 */
 #result[data-r=win]{background:radial-gradient(ellipse at 50% 50%,rgba(6,3,16,.55),rgba(6,3,16,.25) 70%),url(assets/result_win.webp) center/cover no-repeat,#0b0820}
 #result[data-r=lose]{background:radial-gradient(ellipse at 50% 50%,rgba(6,3,16,.6),rgba(6,3,16,.3) 70%),url(assets/result_lose.webp) center/cover no-repeat,#0b0820}
@@ -198,6 +200,7 @@ button:disabled{opacity:.5;cursor:wait}
         <li><b>チャイムが なったら</b>：たましいを うって ふっかつを ふせごう</li>
       </ul>
       <button class="zbtn" id="zukanBtn">おばけずかん</button>
+      <a class="altlink" href="ps1.html">PS1版（こていカメラ・タンクそうさ）も あそべる</a>
       <div class="best" id="best"></div>
     </div>
   </div>

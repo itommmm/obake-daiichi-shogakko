@@ -27,9 +27,14 @@ html body div#pyxel-screen{position:fixed;inset:0;width:auto;height:auto;backgro
 #tip{position:fixed;left:50%;bottom:8px;transform:translateX(-50%);z-index:45;max-width:92vw;padding:8px 14px;border-radius:12px;border:2px solid #a65cff;
   background:rgba(11,8,32,.88);color:#f4f1ff;font:700 13px/1.5 "Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif;text-align:center;pointer-events:none;transition:opacity .6s}
 #tip[hidden]{display:none}
+#alt{position:fixed;left:8px;top:8px;z-index:41;padding:7px 11px;border-radius:10px;border:2px solid #a65cff;
+  background:rgba(11,8,32,.72);color:#f4f1ff;font:700 11px/1 "Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif;
+  text-decoration:none;opacity:.72;transition:opacity .3s}
+#alt:hover,#alt:focus-visible{opacity:1}
 </style>
 </head>
 <body>
+<a id="alt" href="ps1.html">PS1版（固定カメラ）も あそべる ▶</a>
 <div id="rot"><div><div class="ph"></div>スマホを よこむきに してね<small>よこむきだと 画面いっぱいで あそべるよ</small></div></div>
 <button id="fs" hidden aria-label="ぜんがめん">⛶</button>
 <div id="tip" hidden>ぜんがめんで あそぶには：共有ボタン（□↑）→「ホーム画面に追加」→ ホーム画面の アイコンから ひらいてね</div>
