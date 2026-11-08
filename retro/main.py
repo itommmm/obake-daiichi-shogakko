@@ -472,14 +472,14 @@ SCEN_SPR = {"tree": (96, 0, 16, 16, 34), "locker": (32, 16, 16, 24, 40),      # 
 # ---- 面（ステージ）。1面は今までの校庭そのまま（数値は上の定数と同じ） ----
 #  pats：進み具合（はじめ25%・60%まで・のこり）ごとの 隊列の種類
 STAGES = [
-    dict(name="こうてい", goal="こうしゃまで", tm=0, music=0, length=STAGE_LEN, mid_at=MID_AT,
+    dict(name="こうてい", back="こうてい", hello="まずは こうていを もどすぞ！", goal="こうしゃまで", tm=0, music=0, length=STAGE_LEN, mid_at=MID_AT,
          pats=(("single", "pair", "line"), ("line", "v", "circle", "dive", "tire", "pair"),
                ("line", "v", "circle", "dive", "dive", "tire", "mix")),
          single=tuple(ENEMY_SPR), pair=("randoseru", "isu"), line=("randoseru", "isu", "ball"),
          v="randoseru", circle="ball", dive="uwabaki", obst="tire", obst_with=("randoseru", "ball"),
          mid=("randoseru", "ランドセルだいおう", MID_HP), scen=("tree", "lamp"),
          boss=dict(name="おばけこうしゃ", hp=BOSS_HP, src=(0, 0), angry=(0, 64), minions=None)),
-    dict(name="ろうか", goal="ろうかの おくへ", tm=1, music=2, length=60 * 70, mid_at=60 * 35,
+    dict(name="ろうか", back="ろうか", hello="つぎは ろうかだ！", goal="ろうかの おくへ", tm=1, music=2, length=60 * 70, mid_at=60 * 35,
          pats=(("single", "pair", "line"), ("line", "dive", "pair", "v", "tire"),
                ("line", "v", "dive", "dive", "tire", "mix", "circle")),
          single=("bucket", "uwabaki", "isu", "randoseru"), pair=("bucket", "isu"),
@@ -488,7 +488,7 @@ STAGES = [
          mid=("bucket", "バケツだいおう", 20), scen=("locker", "lamp"),
          boss=dict(name="おばけロッカー", hp=60, src=(96, 0), angry=None, eyes=((18, 24), (78, 24)),
                    minions=("bucket", "uwabaki", "isu"))),
-    dict(name="おんがくしつ・りかしつ", goal="りかしつの おくへ", tm=2, music=3, length=60 * 70, mid_at=60 * 35,
+    dict(name="おんがくしつ・りかしつ", back="りかしつ", hello="どんどん もどすぞ！", goal="りかしつの おくへ", tm=2, music=3, length=60 * 70, mid_at=60 * 35,
          pats=(("single", "pair", "line"), ("line", "circle", "pair", "v", "tire"),
                ("line", "v", "circle", "circle", "dive", "tire", "mix")),
          single=("onpu", "flask", "ball", "isu"), pair=("onpu", "flask"), line=("onpu", "flask", "isu"),
@@ -496,7 +496,7 @@ STAGES = [
          mid=("flask", "フラスコだいおう", 20), scen=("model", "lamp"),
          boss=dict(name="おばけピアノ", hp=65, src=(96, 64), angry=None, eyes=((32, 31), (64, 31)),
                    minions=("onpu", "onpu", "flask"))),
-    dict(name="たいいくかん", goal="ぶたいまで", tm=3, music=4, length=60 * 70, mid_at=60 * 35,
+    dict(name="たいいくかん", back="たいいくかん", hello="さいごの ばしょだ！ ここを もどせば でられる！", goal="ぶたいまで", tm=3, music=4, length=60 * 70, mid_at=60 * 35,
          pats=(("single", "pair", "line", "circle"), ("line", "v", "circle", "dive", "tire", "pair"),
                ("line", "v", "circle", "dive", "dive", "tire", "mix")),
          single=("randoseru", "isu", "ball", "uwabaki", "bucket", "onpu", "flask"), pair=("ball", "randoseru"),
@@ -919,7 +919,40 @@ class Game:
             n = int(os.environ.get("OBAKE_STAGE", "1")) - 1
         except ValueError:
             n = 0
-        self.begin_stage(max(0, min(len(STAGES) - 1, n)))
+        n = max(0, min(len(STAGES) - 1, n))
+        if os.environ.get("OBAKE_ENDING"):   # 動作確認用：すぐ エンディングへ
+            self.set_stage(len(STAGES) - 1)
+            self.start_ending()
+            return
+        if n == 0:
+            self.start_opening()
+        else:
+            self.begin_stage(n)
+
+    # ---------- オープニング：しゅくだいを とりに きたら とじこめられた ----------
+    OP = (("しゅくだい、とりに きたけど…", 0), ("ドアが しまった！ とじこめられた！？", 1),
+          ("…えっ！？ ランドセルが うごいてる！？", 2), ("がっこうを もとに もどせば でられるかも！", 3))
+
+    def start_opening(self):
+        self.state = "opening"
+        self.t = 0
+        self.op = 0
+        self.op_t = 0
+        self.shake = 0
+        pyxel.colors[:] = NIGHT
+
+    def update_opening(self):
+        self.op_t += 1
+        if self.shake:
+            self.shake -= 1
+        if self.op == 1 and self.op_t == 8:
+            self.shake = 14
+            pyxel.play(3, 9)
+        if (self.op_t > 20 and self.pressed()) or self.op_t > 150:
+            self.op += 1
+            self.op_t = 0
+            if self.op >= len(self.OP):
+                self.begin_stage(0)
 
     def continue_stage(self):
         # ゲームオーバーのあと、その面の はじめから（スコアと パワーは 面の はじめに もどす）
@@ -1008,6 +1041,9 @@ class Game:
         if self.state == "ending":
             self.update_ending()
             return
+        if self.state == "opening":
+            self.update_opening()
+            return
         if self.state == "over":
             if self.t > (120 if self.auto else 60):   # 自動プレイは 画面を確かめられるよう少し待つ
                 if (pyxel.btnp(pyxel.KEY_X) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_B)
@@ -1040,6 +1076,8 @@ class Game:
                 o.y -= 14 * 48
 
     def update_play(self):
+        if self.stage == 1 and self.t == 140:
+            self.say("あ、5ねん1くみ… しゅくだい… あとで あとで！", 120)
         spd = 0.5 if self.boss else 0.9 if self.phase == "mid" else 1.4
         self.cy -= spd
         self.scroll_world()
@@ -1719,9 +1757,13 @@ class Game:
         self.scroll_world()
         for s in self.souls:
             s[1] -= s[2]
+        if self.t >= 420:
+            pyxel.colors[:] = NIGHT if self.t < 600 else DAY   # 夜の つくえ → つぎの あさ
         if self.t == 230:
             pyxel.play(3, 11)
-        if self.t > 320 and self.pressed():
+        if self.t == 700:
+            pyxel.play(3, 9)
+        if self.t > 840 and self.pressed():
             self.title()
 
     def update_fx(self):
@@ -1747,7 +1789,7 @@ class Game:
     def draw(self):
         sx = random.randint(-2, 2) if getattr(self, "shake", 0) else 0
         pyxel.camera(sx, 0)
-        if not (self.state == "title" and TITLE_IMG):   # タイトルは生成画像の背景を使う
+        if not ((self.state == "title" and TITLE_IMG) or self.state == "opening"):   # タイトルは生成画像の背景を使う
             self.draw_world()
         if self.state == "title":
             self.draw_title()
@@ -1759,6 +1801,8 @@ class Game:
                 self.draw_clear()
         elif self.state == "ending":
             self.draw_ending()
+        elif self.state == "opening":
+            self.draw_opening()
         pyxel.camera()
         self.debug_capture()
 
@@ -2375,9 +2419,10 @@ class Game:
         tw = min(120, self.font.text_width(s) + 4)
         img = pyxel.images[2]
         img.rect(0, 216, 124, 14, 0)
+        ox = max(2, (124 - tw) // 2 + 2)   # まんなかに よせる
         for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1), (1, 1)):
-            img.text(2 + dx, 218 + dy, s, edge, self.font)
-        img.text(2, 218, s, col, self.font)
+            img.text(ox + dx, 218 + dy, s, edge, self.font)
+        img.text(ox, 218, s, col, self.font)
         pyxel.blt(W / 2 - 62, y, 2, 0, 216, 124, 14, 0, scale=2)
         return tw
 
@@ -2394,6 +2439,9 @@ class Game:
         s = "さいごの ステージ" if last else "ステージ %d / %d" % (self.stage + 1, len(STAGES))
         self.otext(W / 2 - self.font.text_width(s) / 2, y + 4, s, PK if last else LV, K)
         self.big_text(self.st["name"], y + 16, GO, PU)
+        s = self.st.get("hello", "")
+        if s:
+            self.otext(W / 2 - self.font.text_width(s) / 2, y + 48, s, WH, K)
 
     def draw_clear(self):
         t = self.t
@@ -2402,18 +2450,80 @@ class Game:
         pyxel.dither(1)
         pyxel.line(0, 36, W, 36, GO)
         pyxel.line(0, 100, W, 100, GO)
-        self.big_text("ステージクリア！", 42, GO, PU)
-        s = "スコア %d" % self.score
-        self.otext(W / 2 - self.font.text_width(s) / 2, 72, s, WH, K)
+        s = "%sが" % self.st.get("back", self.st["name"])
+        self.otext(W / 2 - self.font.text_width(s) / 2, 39, s, WH, K)
+        self.big_text("もとに もどった！", 50, GO, PU)
+        left = len(STAGES) - 1 - self.stage
+        s = "のこり %d かしょ   スコア %d" % (left, self.score)
+        self.otext(W / 2 - self.font.text_width(s) / 2, 78, s, WH, K)
         if t > 60:
             s = "つぎは %s" % STAGES[self.stage + 1]["name"]
-            self.otext(W / 2 - self.font.text_width(s) / 2, 85, s, CY_, K)
+            self.otext(W / 2 - self.font.text_width(s) / 2, 89, s, CY_, K)
         if t > 150 and t % 60 < 40:
             s = "おして つぎの ステージへ"
             self.otext(W / 2 - self.font.text_width(s) / 2, 106, s, WH, K)
 
+    def bubble(self, s, cx, by, who=None):
+        # ふきだし（下に しっぽ）。who が あれば 名前を そえる
+        tw = self.font.text_width(s)
+        bx = max(2, min(W - tw - 14, cx - tw / 2 - 6))
+        pyxel.rect(bx, by, tw + 12, 15, WH)
+        pyxel.rectb(bx, by, tw + 12, 15, K + 1)
+        tx = max(bx + 4, min(bx + tw + 6, cx))
+        pyxel.tri(tx - 3, by + 14, tx + 3, by + 14, tx, by + 19, WH)
+        pyxel.text(bx + 6, by + 3, s, K + 1, self.font)
+        if who:
+            pyxel.text(bx + 2, by - 9, who, GO, self.font)
+
+    def draw_notebook(self, x, y):
+        # しゅくだいの ノート（青い表紙＋白い ラベル）
+        pyxel.rect(x, y, 26, 32, VI)
+        pyxel.rect(x, y, 3, 32, PU)
+        pyxel.rect(x + 6, y + 6, 17, 9, WH)
+        pyxel.line(x + 8, y + 9, x + 20, y + 9, GY)
+        pyxel.line(x + 8, y + 12, x + 17, y + 12, GY)
+
+    def draw_opening(self):
+        # 紙芝居ふうの 4まい
+        pyxel.cls(K)
+        n, t = self.op, self.op_t
+        sx = random.randint(-2, 2) if self.shake else 0
+        hz = 108
+        pyxel.rect(0, hz, W, H - hz, D1)
+        if n <= 1:   # 夜の校舎の いりぐち
+            pyxel.rect(70 + sx, 30, 148, 78, DK)
+            for i in range(5):
+                pyxel.rect(82 + i * 26 + sx, 40, 16, 14, GD)
+            pyxel.rect(124 + sx, 70, 40, 38, GD)
+            if n == 1:   # ドアが しまった
+                pyxel.rect(124 + sx, 70, 40, 38, SD)
+                pyxel.line(144 + sx, 70, 144 + sx, 107, K)
+                if t < 40:
+                    self.otext(176, 64, "バタン！", WH, K)
+        else:        # 教室の なか
+            pyxel.rect(40, 26, 208, 52, DG)
+            pyxel.rectb(40, 26, 208, 52, OD)
+            if n == 2:
+                u, v = ENEMY_SPR["randoseru"]
+                y = 80 + abs(math.sin(t * 0.25)) * -8
+                pyxel.blt(180, y, 1, u, v, 16, 16, 0, scale=2)
+                if t > 10:
+                    self.otext(212, 66, "ガタガタッ", PK, K)
+        kx = 120 if n < 2 else 90
+        pyxel.blt(kx + sx, hz - 10, 1, 0 if n == 0 else 16, 16, 16, 24, 0, scale=1.5)
+        if n == 3:
+            self.big_text("もとに もどすぞ！", 34, GO, PU)
+        s = self.OP[n][0][:max(1, t // 2)]
+        pyxel.rect(16, H - 30, W - 32, 22, K)
+        pyxel.rectb(16, H - 30, W - 32, 22, VI)
+        pyxel.text(24, H - 23, s, WH, self.font)
+        pyxel.text(W - 70, 4, "おして すすむ ▶", GY, self.font)
+
     def draw_ending(self):
         t = self.t
+        if t >= 420:
+            self.draw_epilogue(t)
+            return
         self.draw_weather()
         hz = H / 2 - math.tan(math.radians(90 - PITCH)) * FOCAL
         # もとにもどった校舎
@@ -2421,30 +2531,58 @@ class Game:
         for s in self.souls:
             if s[1] > -6:
                 pyxel.blt(s[0], s[1], 1, 72, 0, 6, 6, 0)
-        # 主人公がふりむいて「あー よかった」
+        # 主人公：ふりむいて よろこぶ → ドアが あいて かえっていく
         kx, ky = W / 2 - 8, H - 34
+        if t > 330:
+            kx += (t - 330) * 1.6
         if t < 150:
             pyxel.blt(kx, ky, 1, 0, 16, 16, 24, 0)
         else:
-            pyxel.blt(kx, ky, 1, 16, 16, 16, 24, 0)
-        if t > 170:
-            s = "あー よかった"
-            tw = self.font.text_width(s)
-            bx, by = W / 2 - tw / 2 - 6, ky - 22
-            pyxel.rect(bx, by, tw + 12, 15, WH)
-            pyxel.rectb(bx, by, tw + 12, 15, K + 1)
-            pyxel.tri(W / 2 - 3, by + 14, W / 2 + 3, by + 14, W / 2, by + 19, WH)
-            pyxel.text(bx + 6, by + 3, s, K + 1, self.font)
-        if t > 240:
-            s = "ぜんぶ クリア！ がっこうが もとに もどった！"
-            self.otext(W / 2 - self.font.text_width(s) / 2, 12, s, K + 1, WH)
+            pyxel.blt(kx, ky - (abs(math.sin(t * 0.3)) * 4 if 180 < t < 300 else 0), 1, 16, 16, 16, 24, 0)
+        if 170 < t < 300:
+            self.bubble("ぜんぶ もとに もどった！ やったー！", W / 2, ky - 22)
+        elif 300 <= t < 420:
+            self.bubble("ドアも あいた！ さて、かえろっと！", min(W - 40, kx + 8), ky - 22)
+
+    def draw_epilogue(self, t):
+        if t < 600:   # 夜の 教室：つくえの なかに のこった しゅくだい
+            pyxel.cls(K)
+            pyxel.dither(0.25)
+            pyxel.tri(30, 0, 110, 0, 210, H, LV)
+            pyxel.tri(30, 0, 210, H, 130, H, LV)
+            pyxel.dither(1)
+            pyxel.tri(64, 70, 224, 70, 248, 104, OD)
+            pyxel.tri(64, 70, 248, 104, 40, 104, OD)
+            pyxel.rect(40, 104, 208, 36, GD)
+            pyxel.rect(60, 110, 168, 22, K)
+            self.draw_notebook(132, 100)
+            if t % 40 < 24:
+                pyxel.text(164, 96, "*", OY, self.font)
+            s = "つくえの なかに しゅくだいが のこっていた…"
+            self.otext(W / 2 - self.font.text_width(s) / 2, 24, s, WH, K)
+            return
+        # つぎの あさ
+        pyxel.cls(WH)
+        pyxel.rect(36, 14, 216, 56, GR)
+        pyxel.rectb(36, 14, 216, 56, OD)
+        s = "しゅくだいを だしましょう"
+        pyxel.text(W / 2 - self.font.text_width(s) / 2, 38, s, WH, self.font)
+        pyxel.text(6, 4, "つぎの あさ", OD, self.font)
+        pyxel.blt(W / 2 - 8, H - 46, 1, 16, 16, 16, 24, 0, scale=1.3)
+        if t < 690:
+            self.bubble("しゅくだいは？", 60, 82, "せんせい")
+        else:
+            self.big_text("あっ！！ わすれた！", 84, PK, K)
+        if t > 780:
+            s = "おしまい"
+            self.otext(W / 2 - self.font.text_width(s) / 2, H - 16, s, K + 1, WH)
             s = "スコア %d   ランク %s" % (self.score, self.rank)
             if self.conts:
                 s += "   やりなおし %dかい" % self.conts
-            self.otext(W / 2 - self.font.text_width(s) / 2, 26, s, K + 1, WH)
-        if t > 320 and t % 60 < 40:
+            pyxel.text(6, H - 10, s, K + 1, self.font)
+        if t > 840 and t % 60 < 40:
             s = "おして タイトルへ"
-            self.otext(W / 2 - self.font.text_width(s) / 2, 40, s, K + 1, WH)
+            pyxel.text(W - self.font.text_width(s) - 6, H - 10, s, K + 1, self.font)
 
     def otext(self, x, y, s, col, bcol):
         for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
