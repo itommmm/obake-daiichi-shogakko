@@ -6,6 +6,7 @@
 
 let gameCam = null;
 let lastCamDef = null;
+let moveBasis = null; // カメラの切替中も、スティックを離すまで移動方向を固定
 let fadeEl = null, flashEl = null, pauseVeil = null;
 let titleShown = true;
 
@@ -106,58 +107,34 @@ function resetWorld() {
   ComicHorror.reset();
 }
 
-/* ===== カメラ ===== */
+/* ===== 固定カメラ ===== */
 function makeGameCamera() {
-  if (!gameCam) gameCam = new THREE.PerspectiveCamera(60, 4 / 3, .05, 70);
+  if (!gameCam) gameCam = new THREE.PerspectiveCamera(55, 4 / 3, .05, 70);
 }
 function applyCam(c) {
   if (!c) return;
   gameCam.position.set(c.pos[0], c.pos[1], c.pos[2]);
   gameCam.lookAt(c.look[0], c.look[1], c.look[2]);
-  gameCam.fov = c.fov || 55; gameCam.aspect = 4 / 3; gameCam.near = .05; gameCam.far = 70;
+  gameCam.fov = c.fov || 55; gameCam.aspect = 4 / 3;
+  gameCam.near = .05; gameCam.far = 70;
   gameCam.updateProjectionMatrix();
   activeCam = gameCam;
 }
-// Roblox/Minecraft風：視点角は移動と独立。壁・机の後ろにはカメラを置かない。
-// 横方向を少しずつ試して最初の衝突直前までカメラを寄せる。
-function followCamera(force, dt) {
-  const p = G.p, yaw = G.camYaw, pitch = G.camPitch;
-  const distance = 3.15, horizontal = distance * Math.cos(pitch);
-  const bx = -Math.sin(yaw) * horizontal, bz = -Math.cos(yaw) * horizontal;
-  let free = 1;
-  for (let i = 1; i <= 36; i++) {
-    const t = i / 36;
-    if (blocked(p.x + bx * t, p.z + bz * t)) { free = (i - 1) / 36; break; }
-  }
-  const factor = Math.max(.04, free - .025);
-  const desired = new THREE.Vector3(
-    p.x + bx * factor,
-    clamp(1.10 + distance * Math.sin(pitch) * factor, 1.17, activeRoom.h - .23),
-    p.z + bz * factor
-  );
-  if (force || lastCamDef !== 'follow') {
-    gameCam.position.copy(desired);
-    gameCam.fov = 65;
-    gameCam.updateProjectionMatrix();
-    lastCamDef = 'follow';
-  } else {
-    gameCam.position.lerp(desired, Math.min(1, (dt || 1 / 60) * 13));
-    if (blocked(gameCam.position.x, gameCam.position.z)) gameCam.position.copy(desired);
-  }
-  gameCam.lookAt(p.x, 1.08, p.z);
-  activeCam = gameCam;
-}
-function updateCamera(force, dt) {
+// どちらの操作モードもPS1版本来の固定カメラを使用。
+// 広い廊下では決められた区画の境界でだけカメラを切り替える。
+function updateCamera(force) {
   if (!activeRoom) return;
-  if (G.mode === 'modern') { followCamera(!!force, dt); return; }
-  let c = null;
+  let c;
   if (activeRoom.id === 'gym' && G.bossFight && activeRoom.bossCam) c = activeRoom.bossCam;
   else {
     const p = G.p;
-    c = activeRoom.cams.find(o => p.x >= o.zone.x0 && p.x <= o.zone.x1 && p.z >= o.zone.z0 && p.z <= o.zone.z1) || activeRoom.cams[0];
+    c = activeRoom.cams.find(o =>
+      p.x >= o.zone.x0 && p.x <= o.zone.x1 &&
+      p.z >= o.zone.z0 && p.z <= o.zone.z1) || activeRoom.cams[0];
   }
   if (force || c !== lastCamDef) {
-    lastCamDef = c; applyCam(c);
+    lastCamDef = c;
+    applyCam(c);
     if (!force && G.state === 'play') SFX.camera();
   }
 }
@@ -168,7 +145,7 @@ function enterRoom(id, spawn, silent) {
   G.room = R.id;
   activeRoom = R;
   G.p.x = spawn.x; G.p.z = spawn.z; G.p.a = spawn.a == null ? Math.PI : spawn.a;
-  G.camYaw = G.p.a; G.camPitch = .34;
+  moveBasis = null;
   G.p.walk = 0; G.p.moving = 0;
   G.projectiles = []; G.fx3 = []; G.sparks = [];
   G.prompt = '';
@@ -186,6 +163,7 @@ function enterRoom(id, spawn, silent) {
 }
 function changeRoom(door) {
   if (G.state !== 'play' || G.trans) return;
+  moveBasis = null;
   G.trans = { t: 0, door, switched: false };
   G.state = 'transition';
   fadeEl.style.opacity = '1';
@@ -234,7 +212,8 @@ function updatePlayer(dt) {
     (G.mode === 'modern' && Math.hypot(joyX, joyY) > .92);
   let moving = 0;
   if (G.mode === 'tank') {
-    // 元の固定カメラ／タンク操作。切り替えて遊ぶ場合のみ使う。
+    // クラシック：左右で向きを変え、前後で移動。
+    moveBasis = null;
     if (left) p.a += 2.25 * dt;
     if (right) p.a -= 2.25 * dt;
     const f = (up ? 1 : 0) - (down ? 1 : 0);
@@ -245,21 +224,28 @@ function updatePlayer(dt) {
       moving = Math.hypot(p.x - beforeX, p.z - beforeZ) > .0005 ? 1 : 0;
     }
   } else {
-    // 前後左右はカメラに対する方向。固定カメラの切り替わりには影響されない。
+    // スティック／WASD：画面の上下左右に合わせて直接移動。
+    // 一度倒したらカメラが切り替わっても「離すまで」同じ世界方向を維持する。
     let ix = (right ? 1 : 0) - (left ? 1 : 0) + joyX;
     let iz = (up ? 1 : 0) - (down ? 1 : 0) - joyY;
     const length = Math.hypot(ix, iz);
     if (length > .12) {
-      ix /= Math.max(1, length); iz /= Math.max(1, length);
-      const fx = Math.sin(G.camYaw), fz = Math.cos(G.camYaw);
-      const rx = fz, rz = -fx;
-      const mx = fx * iz + rx * ix, mz = fz * iz + rz * ix;
+      if (!moveBasis) {
+        activeCam.getWorldDirection(V3); V3.y = 0;
+        if (V3.lengthSq() < .000001) V3.set(Math.sin(p.a), 0, Math.cos(p.a));
+        else V3.normalize();
+        moveBasis = { fx: V3.x, fz: V3.z, rx: -V3.z, rz: V3.x };
+      }
+      const strength = Math.min(1, length);
+      ix /= length; iz /= length;
+      const mx = moveBasis.fx * iz + moveBasis.rx * ix;
+      const mz = moveBasis.fz * iz + moveBasis.rz * ix;
       const beforeX = p.x, beforeZ = p.z;
-      const sp = run ? 2.8 : 1.9;
-      tryMove(mx * sp * dt, mz * sp * dt);
+      const speed = (run ? 2.8 : 1.9) * strength;
+      tryMove(mx * speed * dt, mz * speed * dt);
       moving = Math.hypot(p.x - beforeX, p.z - beforeZ) > .0005 ? 1 : 0;
       if (moving) p.a = Math.atan2(mx, mz);
-    }
+    } else moveBasis = null;
   }
   p.moving = moving;
   if (moving) p.walk += dt * (run ? 10 : 7); else p.walk *= Math.max(0, 1 - dt * 8);
@@ -277,7 +263,7 @@ function updatePlayer(dt) {
     G.footT -= dt;
     if (G.footT <= 0) { G.footT = run ? .28 : .42; SFX.step(); }
   } else G.footT = 0;
-  updateCamera(false, dt);
+  updateCamera(false);
 }
 
 /* ===== おばけ ===== */
@@ -906,6 +892,7 @@ function keyName(code) {
 function openInventory() {
   if (G.state !== 'play') return;
   ModernControls.release();
+  moveBasis = null;
   G.state = 'inventory'; G.keys = Object.create(null); G.touch = Object.create(null);
   $('inv').hidden = false; pauseVeil.style.opacity = '1';
   updateInvUI();
@@ -923,11 +910,11 @@ function updateInvUI() {
   $('invRoom').textContent = (ROOMS[G.room] || {}).name || '？';
   $('invTime').textContent = fmtTime(G.time);
   $('invObjective').textContent = objective();
-  $('btnControl').textContent = G.mode === 'modern' ? 'マイクラ風（おすすめ）' : 'クラシック（タンク）';
+  $('btnControl').textContent = G.mode === 'modern' ? 'スティック移動（おすすめ）' : 'クラシック（タンク）';
   $('btnSound').textContent = G.sound ? 'オン' : 'オフ';
   $('btnFx').textContent = G.fx ? 'オン' : 'オフ';
   $('btnHerb').disabled = G.herbs <= 0;
-  $('btnMode').textContent = `そうさ：${G.mode === 'modern' ? 'マイクラ風' : 'クラシック'}`;
+  $('btnMode').textContent = `そうさ：${G.mode === 'modern' ? 'スティック' : 'クラシック'}`;
   $('btnTitleSound').textContent = `おと：${G.sound ? 'オン' : 'オフ'}`;
   $('tMute').textContent = G.sound ? '♪' : '×';
 }
@@ -942,12 +929,11 @@ function setMode(mode) {
   if (mode !== 'tank' && mode !== 'modern') return;
   ModernControls.release();
   G.keys = Object.create(null); G.touch = Object.create(null);
+  moveBasis = null;
   G.mode = mode;
-  G.camYaw = G.p.a;
-  G.camPitch = .34;
   lastCamDef = null;
   $('stage').classList.toggle('mode-modern',mode === 'modern');
-  try { localStorage.setItem('obake-ps1-controls-v3', mode); } catch (_) {}
+  try { localStorage.setItem('obake-ps1-controls-v4', mode); } catch (_) {}
   updateCamera(true);
   updateInvUI();
 }

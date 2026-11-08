@@ -28,8 +28,9 @@ window.runPS1Tests = function () {
   // --- 初期状態：げんかんで とじこめられて はじまる ---
   P.startNewGame(false);
   P.setMode('modern');
-  check('modern controls are the default', G.mode === 'modern' && document.getElementById('stage').classList.contains('mode-modern'));
-  check('joystick and look zone exist', !!document.getElementById('joystick') && !!document.getElementById('lookZone'));
+  check('fixed-view joystick is default', G.mode === 'modern' && document.getElementById('stage').classList.contains('mode-modern'));
+  check('manual camera look disabled', typeof P.modernControls.rotate === 'undefined');
+  check('joystick exists without right swipe zone', !!document.getElementById('joystick') && !document.getElementById('lookZone'));
   check('new game starts in play', G.state === 'play', G.state);
   check('new game starts in entrance', G.room === 'entrance', G.room);
   check('new game full hp', G.hp === 4, G.hp);
@@ -266,30 +267,34 @@ window.runPS1Tests = function () {
     for (const door of R.doors) check(`door ${rid}/${door.label} reachable`, reach(door.x, door.z, 1.4), door.label);
   }
 
-  // --- Roblox／Minecraft風の追従カメラと移動 ---
+  // --- 固定カメラ＋仮想スティック（画面の上下左右） ---
   P.startNewGame(false);
   P.setMode('modern');
   place('classroom', 0, 1.9, Math.PI);
   P.updateCamera(true);
-  const beforeCam = P.camera().position.clone();
+  const fixedCam = P.camera().position.clone();
   const px0 = G.p.x, pz0 = G.p.z;
-  G.keys.up = true; step(0.4); G.keys.up = false;
-  check('modern up moves relative to camera', Math.hypot(G.p.x - px0, G.p.z - pz0) > 0.2);
-  check('camera follows player', P.camera().position.distanceTo(beforeCam) > .15);
-  check('modern camera stays in room bounds', !P.blocked(P.camera().position.x, P.camera().position.z));
-  const yaw0 = G.camYaw, pitch0 = G.camPitch;
-  P.modernControls.rotate(80, -45);
-  check('mouse swipe rotates viewpoint', Math.abs(G.camYaw - yaw0) > .2 && G.camPitch < pitch0);
-  G.keys.right = true;
-  const x0 = G.p.x, zz0 = G.p.z;
-  step(0.3); G.keys.right = false;
-  check('modern strafe works at rotated camera', Math.hypot(G.p.x-x0, G.p.z-zz0) > .18);
-  const stick = P.modernControls.stick(28,-35,100);
+  G.keys.up = true; step(0.30); G.keys.up = false; step(0.02);
+  check('fixed view up moves player', Math.hypot(G.p.x - px0, G.p.z - pz0) > .2);
+  check('fixed camera does not follow player', P.camera().position.distanceTo(fixedCam) < .0001);
+  const px1 = G.p.x, pz1 = G.p.z;
+  G.keys.right = true; step(0.25); G.keys.right = false; step(0.02);
+  check('screen-right movement works', Math.hypot(G.p.x - px1, G.p.z - pz1) > .16);
+  const stick = P.modernControls.stick(28, -35, 100);
   check('virtual stick returns continuous axes', Math.abs(stick.x) > .1 && Math.abs(stick.y) > .1);
   P.modernControls.zeroStick();
   check('virtual stick resets after release', !G.touch.joyX && !G.touch.joyY);
+  // ろうかの区画境界でカメラが反転しても、押し続けている間は逆走しない。
+  place('corridor', 0, -.32, Math.PI);
+  G.keys.down = true; step(0.48); G.keys.down = false;
+  check('movement stays continuous across fixed-camera cut', G.p.z > .12, G.p);
+  step(.05);
+  const cutCam = P.camera().position.clone();
+  G.keys.up = true; step(.22); G.keys.up = false;
+  check('new input uses current fixed camera', G.p.z > .30, G.p);
+  check('corridor uses authored camera angles', P.camera().position.distanceTo(cutCam) < .0001);
   P.setMode('tank');
-  check('legacy fixed camera returned', G.mode === 'tank');
+  check('legacy fixed camera and tank controls still work', G.mode === 'tank');
   P.setMode('modern');
 
   // --- 画面 ---

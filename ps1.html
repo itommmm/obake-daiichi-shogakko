@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>おばけ第一小学校 PS1版</title>
-<meta name="description" content="わすれものを とりに きたら、がっこうが おばけに…！ マイクラ風の追従カメラで夜の学校を探検する、PS1風コミカルホラーのなぞとき脱出。">
+<meta name="description" content="わすれものを とりに きたら、がっこうが おばけに…！ 固定カメラと仮想スティックで夜の学校を探索する、PS1風コミカルホラーのなぞとき脱出。">
 <meta name="theme-color" content="#07060a">
 <link rel="icon" href="assets/icon_32.png" sizes="32x32">
 <link rel="apple-touch-icon" href="assets/icon_180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap">
-<link rel="stylesheet" href="ps1/style.css?v=20261108move">
+<link rel="stylesheet" href="ps1/style.css?v=20261108stick">
 </head>
 <body>
 <div id="viewport">
@@ -31,7 +31,6 @@
     </div>
 
     <div id="touch" aria-label="タッチ操作">
-      <div id="lookZone" aria-label="右側をスワイプして みわたす"></div>
       <div id="joystick" role="group" aria-label="左のスティックで あるく"><div id="joyKnob"></div></div>
       <button class="tbtn" id="tUp" aria-label="すすむ">▲</button>
       <button class="tbtn" id="tDown" aria-label="さがる">▼</button>
@@ -51,9 +50,9 @@
           <button id="btnNew">はじめから</button>
           <button id="btnContinue" disabled>つづきから</button>
           <div class="hint" id="continueHint">セーブデータなし</div>
-          <button id="btnMode">そうさ：マイクラ風</button>
+          <button id="btnMode">そうさ：スティック</button>
         </div>
-        <p class="warn">※ おばけは おどかすだけ。ゲームオーバーなし！<br>PC：WASD＋画面クリック後にマウス操作。スマホ：左で歩き、右で見回す。</p>
+        <p class="warn">※ おばけは おどかすだけ。ゲームオーバーなし！<br>PC：WASD／矢印で移動。スマホ：左のスティックで移動。視点は固定。</p>
         <div class="press">PRESS ANY KEY</div>
         <div class="titleFoot">
           <span>© 1996 OBAKE DAIICHI</span>
@@ -90,12 +89,12 @@
           <button id="btnHint">ヒントを みる</button>
           <button id="btnInvTitle">タイトルへ</button>
         </div>
-        <div class="setting"><span>そうさ</span><button id="btnControl">マイクラ風（おすすめ）</button></div>
+        <div class="setting"><span>そうさ</span><button id="btnControl">スティック移動（おすすめ）</button></div>
         <div class="setting"><span>おと</span><button id="btnSound">オン</button></div>
         <div class="setting"><span>画面の ゆれ・ノイズ</span><button id="btnFx">オン</button></div>
         <div class="controls">
-          <b>WASD／矢印</b> あるく　<b>マウス</b> みわたす<br>
-          <b>スマホ</b> 左スティック／右スワイプ<br>
+          <b>WASD／矢印</b> 画面の上下左右に あるく<br>
+          <b>スマホ</b> 左スティックで あるく（視点は固定）<br>
           <b>E／Enter／スペース</b> しらべる・とる・つかう<br>
           <b>I／Esc</b> もちもの　<b>H</b> はっぱ　<b>M</b> おと
         </div>
@@ -158,10 +157,10 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
-<script src="ps1/engine.js?v=20261108move"></script>
-<script src="ps1/comic-horror.js?v=20261108move"></script>
-<script src="ps1/controls.js?v=20261108move"></script>
-<script src="ps1/rooms.js?v=20261108move"></script>
-<script src="ps1/logic.js?v=20261108move"></script>
+<script src="ps1/engine.js?v=20261108stick"></script>
+<script src="ps1/comic-horror.js?v=20261108stick"></script>
+<script src="ps1/controls.js?v=20261108stick"></script>
+<script src="ps1/rooms.js?v=20261108stick"></script>
+<script src="ps1/logic.js?v=20261108stick"></script>
 </body>
 </html>

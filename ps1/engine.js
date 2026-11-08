@@ -27,12 +27,12 @@ const G = {
   boss: null, bossFight: false,
   trans: null, introT: 0, introStep: -1, deadT: 0, endT: 0,
   taken: [], dead: [], bossDead: false,
-  mode: 'modern', camYaw: Math.PI, camPitch: .34,
+  mode: 'modern',
   sound: true, fx: true, muted: false,
   keys: Object.create(null), touch: Object.create(null),
 };
-// 旧バージョンのタンク設定は自動継承せず、更新後は全員モダン操作で開始する。
-try { const m = localStorage.getItem('obake-ps1-controls-v3'); if (m === 'modern' || m === 'tank') G.mode = m; } catch (_) {}
+// 旧モード設定は引き継がず、固定カメラ＋スティックを標準にする。ゲーム進行セーブは維持。
+try { const m = localStorage.getItem('obake-ps1-controls-v4'); if (m === 'modern' || m === 'tank') G.mode = m; } catch (_) {}
 try { G.fx = localStorage.getItem('obake-ps1-fx') !== '0'; } catch (_) {}
 
 /* ===== Three.js ===== */
