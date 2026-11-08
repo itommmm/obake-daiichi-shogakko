@@ -226,7 +226,9 @@ function updatePlayer(dt) {
   } else {
     // スティック／WASD：画面の上下左右に合わせて直接移動。
     // 一度倒したらカメラが切り替わっても「離すまで」同じ世界方向を維持する。
-    let ix = (right ? 1 : 0) - (left ? 1 : 0) + joyX;
+    // 子どもの実プレイ結果に合わせ、固定カメラ画面の左右操作を反転。
+    // 上下とクラシック（タンク）操作は変えない。
+    let ix = (left ? 1 : 0) - (right ? 1 : 0) - joyX;
     let iz = (up ? 1 : 0) - (down ? 1 : 0) - joyY;
     const length = Math.hypot(ix, iz);
     if (length > .12) {

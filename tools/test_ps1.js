@@ -278,8 +278,24 @@ window.runPS1Tests = function () {
   check('fixed view up moves player', Math.hypot(G.p.x - px0, G.p.z - pz0) > .2);
   check('fixed camera does not follow player', P.camera().position.distanceTo(fixedCam) < .0001);
   const px1 = G.p.x, pz1 = G.p.z;
+  const viewForward = P.camera().getWorldDirection(new THREE.Vector3());
   G.keys.right = true; step(0.25); G.keys.right = false; step(0.02);
-  check('screen-right movement works', Math.hypot(G.p.x - px1, G.p.z - pz1) > .16);
+  const keyRightX = G.p.x - px1, keyRightZ = G.p.z - pz1;
+  check('right direction uses corrected fixed-camera axis',
+    keyRightX * viewForward.z - keyRightZ * viewForward.x > .08,
+    { x: keyRightX, z: keyRightZ });
+  place('classroom', px1, pz1, Math.PI);
+  P.modernControls.stick(28, 0, 100);
+  step(0.25);
+  const stickRightX = G.p.x - px1, stickRightZ = G.p.z - pz1;
+  check('joystick-right and keyboard-right have same direction',
+    keyRightX * stickRightX + keyRightZ * stickRightZ > .015,
+    { keyRightX, keyRightZ, stickRightX, stickRightZ });
+  P.modernControls.zeroStick(); step(0.02);
+  place('classroom', px1, pz1, Math.PI);
+  G.keys.left = true; step(0.25); G.keys.left = false; step(0.02);
+  check('left direction is opposite to corrected right',
+    keyRightX * (G.p.x - px1) + keyRightZ * (G.p.z - pz1) < -.015);
   const stick = P.modernControls.stick(28, -35, 100);
   check('virtual stick returns continuous axes', Math.abs(stick.x) > .1 && Math.abs(stick.y) > .1);
   P.modernControls.zeroStick();
