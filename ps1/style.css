@@ -109,7 +109,7 @@ button:focus-visible{outline:2px solid var(--paper);outline-offset:2px}
 .titleFoot a{color:#9c9485;font-size:9px;text-decoration:none;padding:4px 0;letter-spacing:.06em}
 
 /* ===== intro / ending ===== */
-#intro{z-index:14;background:#000;display:grid;place-items:center;text-align:center}
+#intro{position:absolute;inset:0;z-index:14;background:#000;display:grid;place-items:center;text-align:center}
 .introLine{font-size:clamp(13px,2.8vh,20px);letter-spacing:.14em;line-height:2.2;color:#d8d1c1;white-space:pre-line;text-shadow:0 0 12px #000}
 #intro .skip{position:absolute;right:14px;bottom:12px;font-size:9px;color:#5f5968;letter-spacing:.14em}
 #ending{background:radial-gradient(ellipse at 50% 20%,#2b1f23 0%,#08070b 62%,#000 100%)}
@@ -130,9 +130,7 @@ button:focus-visible{outline:2px solid var(--paper);outline-offset:2px}
 #tDown{left:58px;bottom:18px;width:38px;height:34px}
 #tLeft{left:20px;bottom:42px;width:34px;height:42px}
 #tRight{left:100px;bottom:42px;width:34px;height:42px}
-#tAim{right:92px;bottom:22px;width:48px;height:48px;border-radius:50%}
-#tFire{right:24px;bottom:62px;width:56px;height:56px;border-radius:50%;border-color:rgba(220,90,70,.55)}
-#tAct{right:28px;bottom:14px;width:44px;height:34px}
+#tAct{right:22px;bottom:30px;width:72px;height:56px;border-radius:50%;border-color:rgba(255,215,106,.55)}
 #tItem{right:10px;top:10px;width:42px;height:30px}
 #tMute{right:58px;top:10px;width:30px;height:30px}
 @media (pointer:coarse){#touch{display:block}}
@@ -145,6 +143,18 @@ button:focus-visible{outline:2px solid var(--paper);outline-offset:2px}
   .menu{gap:4px}
   .menu button{padding:6px 10px}
 }
+
+/* ===== ばんごうロック ===== */
+.dials{display:flex;gap:14px;justify-content:center;margin:10px 0 4px}
+.dial{display:flex;flex-direction:column;align-items:center;gap:4px}
+.dial b{display:grid;place-items:center;width:44px;height:52px;font-size:30px;font-weight:400;color:#9fe88a;background:#0b130d;border:1px solid #2f4a34}
+.dial b.on{border-color:#ffd76a;box-shadow:0 0 0 1px #ffd76a}
+.dial button{width:44px;padding:4px 0}
+/* ===== イントロの バタン！ / エンディングの あさ ===== */
+#intro.shake{animation:slam .45s steps(2) 1}
+@keyframes slam{0%{transform:translate(6px,-4px)}25%{transform:translate(-6px,3px)}50%{transform:translate(4px,4px)}75%{transform:translate(-3px,-2px)}100%{transform:none}}
+#intro.morning{background:radial-gradient(ellipse at 50% 30%,#2a2620 0%,#0b0a09 70%,#000 100%)}
+#intro .introLine.punch{font-size:clamp(26px,7vh,52px);color:#ffd76a;letter-spacing:.08em;animation:slam .45s steps(2) 1}
 
 /* 小学2年生向け：じぶんのペースで読める導入 */
 #intro{padding:14px 22px}

@@ -26,6 +26,9 @@ class GameplayTests(unittest.TestCase):
         random.seed(7)
         self.g = game.Game.__new__(game.Game)
         self.g.start()
+        self.opened = self.g.state
+        if self.g.state == "opening":
+            self.g.begin_stage(0)
         self.g.auto = True
         self.g.touch = False
         self.g.best = 0
@@ -99,6 +102,38 @@ class GameplayTests(unittest.TestCase):
             self.assertEqual(self.g.dodge_until, 0)
             self.assertIsNone(self.g.safe_x)
             self.assertFalse(any(e.mode == "tire" for e in self.g.enemies))
+
+    def test_opening_then_stage1(self):
+        # はじめから：オープニング（とじこめられる）→ 1面
+        self.assertEqual(self.opened, "opening")
+        self.g.start_opening()
+        for _ in range(4 * 160):
+            self.g.update_opening()
+            if self.g.state == "opening":
+                self.g.draw_opening()
+            if self.g.state == "play":
+                break
+        self.assertEqual(self.g.state, "play")
+        self.assertEqual(self.g.stage, 0)
+
+    def test_ending_story_runs_to_the_end(self):
+        # エンディング：もどった → かえる → つくえの しゅくだい → つぎの あさ「あっ！！ わすれた！」
+        self.g.score = 1000
+        self.g.conts = 0
+        self.g.start_ending()
+        texts = []
+        game.pyxel.reset_mock()
+        for _ in range(900):
+            self.g.t += 1
+            self.g.update_ending()
+            if self.g.state != "ending":
+                break
+            self.g.draw_ending()
+        for c in game.pyxel.text.call_args_list + game.pyxel.images.__getitem__.return_value.text.call_args_list:
+            texts.append(c.args[2])
+        joined = " ".join(str(x) for x in texts)
+        self.assertIn("しゅくだいは？", joined)
+        self.assertIn("あっ！！ わすれた！", joined)
 
     def test_safe_marker_stays_on_screen(self):
         for world_x in (game.X0 - 100, game.X0 + 100):

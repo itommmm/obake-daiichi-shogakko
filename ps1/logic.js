@@ -1,5 +1,6 @@
 /* ============================================================
-   おばけ第一小学校 PS1版 : ゲームの ルール / 操作 / HUD
+   おばけ第一小学校 PS1版 : なぞとき だっしゅつの ルール / 操作 / HUD
+   ながれ：げんかんで とじこめられる → 3つの へやを もとに もどす → ドアが あく
    ============================================================ */
 'use strict';
 
@@ -9,7 +10,11 @@ let fadeEl = null, flashEl = null, pauseVeil = null;
 let titleShown = true;
 
 const HP_MAX = 4;
-const BOSS_HP = 22;
+const BOSS_HP = 1;
+const FIX_ROOMS = ['classroom', 'staff', 'gym'];
+const GYM_CODE = [5, 1, 7];
+const ITEM_NAMES = { eraser: 'こくばんけし', key_staff: 'しょくいんしつの かぎ', battery: 'でんち', whistle: 'ふえ' };
+const START = { room: 'entrance', x: 0, z: -2.4, a: 0 };
 
 /* ===== もの / おばけの 生成 ===== */
 function enemyMax(type) {
@@ -21,7 +26,7 @@ function spawnEnemyEntity(R, def) {
   group.position.set(def.x, def.y || 0, def.z);
   R.scene.add(group);
   const e = {
-    id: def.id, type: def.type, def, group, boss: !!def.boss,
+    id: def.id, type: def.type, def, group, boss: !!def.boss, roomId: R.id,
     hp: enemyMax(def.type), max: enemyMax(def.type),
     x: def.x, z: def.z, baseY: def.y || 0,
     t: rnd(0, 9), phase: rnd(0, TAU),
@@ -33,7 +38,7 @@ function spawnEnemyEntity(R, def) {
     vx: 0, vz: 0,
   };
   if (e.boss) { e.speed = .62; e.cd = 1.4; }
-  if (G.dead.includes(def.id) || (e.boss && G.bossDead)) { e.dead = true; e.group.visible = false; }
+  if (enemyGone(e)) { e.dead = true; e.group.visible = false; }
   return e;
 }
 function spawnItemEntity(R, def) {
@@ -43,33 +48,53 @@ function spawnItemEntity(R, def) {
   const it = {
     id: def.id, type: def.type, def, group,
     taken: G.taken.includes(def.id),
-    hidden: !!def.hidden,
   };
-  group.visible = !it.taken && !(it.hidden && !G.bossDead);
+  group.visible = itemVisible(it);
   return it;
+}
+// へやが もとに もどると、その へやの おばけは いなくなる。ぜんぶ もどれば 学校じゅう いなくなる
+function enemyGone(e) {
+  return G.dead.includes(e.id) || G.fixed.includes(e.roomId) || G.fixed.length >= FIX_ROOMS.length || (e.boss && G.bossDead);
+}
+function itemVisible(it) {
+  return !it.taken && (!it.def.hiddenUntil || G.fixed.includes(it.def.hiddenUntil));
 }
 function applyWorldFlags() {
   for (const R of Object.values(ROOMS)) {
     for (const it of R.items || []) {
       it.taken = G.taken.includes(it.id);
-      it.group.visible = !it.taken && !(it.hidden && !G.bossDead);
+      it.group.visible = itemVisible(it);
     }
     for (const e of R.enemies || []) {
-      const gone = G.dead.includes(e.id) || (e.boss && G.bossDead);
+      const gone = enemyGone(e);
       e.dead = gone; e.group.visible = !gone;
       if (gone && e.boss) { e.awake = false; }
     }
   }
+  applyRoomLooks();
+}
+// もとに もどった へやの 見た目（こくばん・とけい・明かり）
+function applyRoomLooks() {
+  const C = ROOMS.classroom, S = ROOMS.staff;
+  if (C && C.board) { C.board.material.map = G.fixed.includes('classroom') ? TEX.blackboard : TEX.boardScribble; C.board.material.needsUpdate = true; }
+  for (const R of Object.values(ROOMS)) {
+    if (R.baseLight == null) R.baseLight = R.lights.map(L => L.intensity);
+    const on = G.fixed.includes(R.id) || G.fixed.length >= FIX_ROOMS.length;
+    R.lights.forEach((L, i) => { L.intensity = R.baseLight[i] * (on ? 1.45 : 1); });
+    R.calm = on;
+  }
+  if (S && S.clockHands && !G.fixed.includes('staff')) S.clockHands[0].rotation.z = 0;
 }
 function resetWorld() {
-  G.hp = HP_MAX; G.ammo = 12; G.herbs = 0; G.charms = 0;
-  G.time = 0; G.shots = 0; G.hits = 0; G.damage = 0;
+  G.hp = HP_MAX; G.herbs = 0;
+  G.time = 0; G.damage = 0;
+  G.bag = []; G.fixed = []; G.flags = {}; G.lock = null;
   G.taken = []; G.dead = []; G.bossDead = false; G.bossFight = false; G.boss = null;
   G.msg = ''; G.msgT = 0; G.prompt = ''; G.roomTitle = 0; G.autosave = 0;
-  G.invuln = 0; G.hurt = 0; G.flash = 0; G.aiming = false; G.aimT = 0; G.fireCd = 0;
-  G.projectiles = []; G.fx3 = []; G.sparks = []; G.tracers = [];
+  G.invuln = 0; G.hurt = 0; G.flash = 0;
+  G.projectiles = []; G.fx3 = []; G.sparks = [];
   for (const R of Object.values(ROOMS)) {
-    for (const it of R.items || []) { it.taken = false; it.hidden = !!it.def.hidden; it.group.visible = !it.hidden; }
+    for (const it of R.items || []) { it.taken = false; it.group.visible = itemVisible(it); }
     for (const e of R.enemies || []) {
       e.dead = false; e.hp = e.max; e.awake = false; e.flash = 0; e.windup = 0; e.stagger = 0;
       e.cd = rnd(.4, 1.2); e.atkCd = 0; e.mode = 'idle'; e.timer = 0; e.phase2 = false; e.summoned = false;
@@ -77,6 +102,7 @@ function resetWorld() {
       e.group.visible = true; e.group.position.set(e.x, e.baseY, e.z);
     }
   }
+  applyRoomLooks();
 }
 
 /* ===== カメラ ===== */
@@ -117,10 +143,7 @@ function enterRoom(id, spawn, silent) {
   if (kid) {
     R.scene.add(kid);
     kid.position.set(G.p.x, 0, G.p.z); kid.rotation.y = G.p.a;
-    if (!muzzle) {
-      muzzle = new THREE.Mesh(new THREE.SphereGeometry(.075, 5, 4), bm(0xffe6a0, { transparent: true, opacity: .9, depthWrite: false }));
-      muzzle.visible = false; kid.userData.gun.add(muzzle); kid.userData.gun.userData.muzzle = muzzle;
-    }
+    kid.userData.gun.visible = false; // みずでっぽうは もっていない
     R.scene.add(flash); R.scene.add(flashTarget); flash.target = flashTarget;
   }
   G.bossFight = false; lastCamDef = null;
@@ -175,7 +198,7 @@ function updatePlayer(dt) {
   const up = inputDown('up'), down = inputDown('down'), left = inputDown('left'), right = inputDown('right');
   const run = !!(G.keys.ShiftLeft || G.keys.ShiftRight);
   let moving = 0;
-  if (!G.aiming) {
+  {
     if (G.mode === 'tank') {
       if (left) p.a += 2.25 * dt;
       if (right) p.a -= 2.25 * dt;
@@ -209,27 +232,16 @@ function updatePlayer(dt) {
   const u = kid.userData;
   const sw = moving ? Math.sin(p.walk) * (run ? .62 : .42) : 0;
   u.legL.rotation.x = sw; u.legR.rotation.x = -sw;
-  if (G.aiming) {
-    u.armR.rotation.x = -1.42; u.armL.rotation.x = -1.22;
-    u.gun.rotation.x = .08; u.gun.visible = true;
-  } else {
-    u.armR.rotation.x = -sw * .55; u.armL.rotation.x = sw * .55;
-    u.gun.visible = false;
-  }
+  u.armR.rotation.x = -sw * .55; u.armL.rotation.x = sw * .55;
+  u.gun.visible = false;
   const fx = Math.sin(p.a), fz = Math.cos(p.a);
   flash.position.set(p.x + fx * .12, 1.05, p.z + fz * .12);
   flashTarget.position.set(p.x + fx * 5.2, .38, p.z + fz * 5.2);
-  flash.intensity = G.aiming ? 2.7 : 2.0;
+  flash.intensity = 2.0;
   if (moving) {
     G.footT -= dt;
     if (G.footT <= 0) { G.footT = run ? .28 : .42; SFX.step(); }
   } else G.footT = 0;
-  if (G.recoil > 0) { G.recoil = Math.max(0, G.recoil - dt * 6); u.gun.position.z = .05 - G.recoil * .09; }
-  else u.gun.position.z = .05;
-  if (muzzle) {
-    muzzle.visible = G.recoil > .04;
-    if (muzzle.visible) muzzle.scale.setScalar(.6 + G.recoil * 1.4);
-  }
   updateCamera(false);
 }
 
@@ -264,7 +276,7 @@ function updateGhost(e, dt) {
     setGhostFlash(e, true);
     if (e.windup <= 0) {
       setGhostFlash(e, false);
-      if (d < 1.65) hurtPlayer();
+      if (d < 1.65) { hurtPlayer(); e.stagger = 1.6; } // おどかしたら すこし はなれる
       e.cd = 1.55;
     }
     return;
@@ -280,13 +292,7 @@ function updateGhost(e, dt) {
     e.z = clamp(e.z, b.z0 + .35, b.z1 - .35);
   }
 }
-function spawnProjectile(e, offsetX) {
-  const mesh = new THREE.Mesh(new THREE.SphereGeometry(.18, 6, 5), pm(0x8c4a35));
-  mesh.position.set(e.x + offsetX, 1.45, e.z + .4);
-  activeRoom.scene.add(mesh);
-  const dx = G.p.x - mesh.position.x, dz = G.p.z - mesh.position.z, d = Math.hypot(dx, dz) || 1;
-  G.projectiles.push({ mesh, x: mesh.position.x, z: mesh.position.z, y: 1.45, vx: dx / d * 3.6, vz: dz / d * 3.6, vy: 1.2, t: 0 });
-}
+// ロッカーだいおう：たおせない。ゆっくり おいかけて、ときどき とっしん（よこに よければ かわせる）
 function updateBoss(e, dt) {
   const g = e.group;
   const dx = G.p.x - e.x, dz = G.p.z - e.z, d = Math.hypot(dx, dz) || .001;
@@ -297,40 +303,17 @@ function updateBoss(e, dt) {
   if (!e.awake) {
     if (G.room === 'gym' && G.p.z < 4.2 && !G.bossDead) {
       e.awake = true; G.bossFight = true; G.boss = e;
-      SFX.boss(); say('ロッカーだいおうが おきた！', 2.6);
+      SFX.boss(); say('ロッカーだいおうが おきた！ ステージで なにか できないかな？', 3);
       lastCamDef = null; updateCamera(true);
     }
     return;
   }
   if (e.dead) return;
-  if (!e.phase2 && e.hp <= e.max * .5) {
-    e.phase2 = true; e.speed *= 1.35;
-    SFX.boss(); say('ドアが いっせいに ひらいた！', 2.2);
-    G.flash = .7; e.flash = .45;
-  }
   e.atkCd -= dt;
   if (e.mode === 'wind') {
     e.timer -= dt; g.position.y += .05;
     setGhostFlash(e, Math.sin(e.t * 30) > 0);
-    if (e.timer <= 0) {
-      setGhostFlash(e, false);
-      if (e.attack === 'throw') {
-        spawnProjectile(e, -.5); spawnProjectile(e, 0); spawnProjectile(e, .5);
-        SFX.shoot();
-      } else if (e.attack === 'charge') {
-        e.mode = 'charge'; e.timer = e.phase2 ? .72 : .6; return;
-      } else if (e.attack === 'summon') {
-        const ids = [e.id + '_s1', e.id + '_s2'];
-        ids.forEach((id, i) => {
-          if (!activeRoom.enemies.find(o => o.id === id)) {
-            const ne = spawnEnemyEntity(activeRoom, { id, type: 'uwabaki', x: e.x + (i ? 1.2 : -1.2), z: e.z + 1.0, wake: 99 });
-            if (ne) { ne.awake = true; activeRoom.enemies.push(ne); }
-          }
-        });
-        SFX.boss();
-      }
-      e.mode = 'idle'; e.cd = e.phase2 ? 1.25 : 1.9;
-    }
+    if (e.timer <= 0) { setGhostFlash(e, false); e.mode = 'charge'; e.timer = .6; }
     return;
   }
   if (e.mode === 'charge') {
@@ -338,29 +321,20 @@ function updateBoss(e, dt) {
     e.x += e.vx * dt; e.z += e.vz * dt;
     const b = activeRoom.bounds;
     e.x = clamp(e.x, b.x0 + .7, b.x1 - .7); e.z = clamp(e.z, b.z0 + .7, b.z1 - .7);
-    if (d < 1.15 && e.atkCd <= 0) { hurtPlayer(); e.atkCd = 1.1; }
-    if (e.timer <= 0) { e.mode = 'idle'; e.cd = e.phase2 ? 1.1 : 1.7; }
+    if (d < 1.15 && e.atkCd <= 0) { hurtPlayer(); e.atkCd = 1.6; }
+    if (e.timer <= 0) { e.mode = 'idle'; e.cd = 2.4; }
     return;
   }
-  // idle
   e.cd -= dt;
   if (d > 2.4) {
     const sp = e.speed * (G.state === 'play' ? 1 : 0);
     e.x += dx / d * sp * dt; e.z += dz / d * sp * dt;
   }
-  if (d < 1.2 && e.atkCd <= 0) { hurtPlayer(); e.atkCd = 1.2; }
+  if (d < 1.2 && e.atkCd <= 0) { hurtPlayer(); e.atkCd = 1.6; }
   if (e.cd <= 0) {
-    if (e.phase2 && !e.summoned) {
-      e.summoned = true; e.mode = 'wind'; e.attack = 'summon'; e.timer = .9;
-      say('なかまを よんだ！', 1.6);
-    } else if (Math.random() < .48) {
-      e.mode = 'wind'; e.attack = 'charge'; e.timer = e.phase2 ? .62 : .85;
-      e.vx = dx / d * (e.phase2 ? 6.6 : 5.2); e.vz = dz / d * (e.phase2 ? 6.6 : 5.2);
-      SFX.alert(); say('くるぞ！', 1.1);
-    } else {
-      e.mode = 'wind'; e.attack = 'throw'; e.timer = e.phase2 ? .72 : .95;
-      SFX.alert();
-    }
+    e.mode = 'wind'; e.timer = .95;
+    e.vx = dx / d * 4.6; e.vz = dz / d * 4.6;
+    SFX.alert(); say('くるぞ！ よけろ！', 1.1);
   }
 }
 function updateEnemies(dt) {
@@ -370,45 +344,6 @@ function updateEnemies(dt) {
     e.t += dt;
     if (e.boss) updateBoss(e, dt); else updateGhost(e, dt);
   }
-}
-function updateProjectiles(dt) {
-  for (const p of G.projectiles) {
-    p.t += dt; p.x += p.vx * dt; p.z += p.vz * dt; p.y += p.vy * dt; p.vy -= 5.2 * dt;
-    if (p.y < .18) { p.y = .18; p.vy = Math.abs(p.vy) * .35; }
-    p.mesh.position.set(p.x, p.y, p.z);
-    if (dist2(p.x, p.z, G.p.x, G.p.z) < .4 && p.y < 1.15) { hurtPlayer(); p.t = 99; }
-    if (p.t > 3.6) p.t = 99;
-  }
-  for (const p of G.projectiles) if (p.t > 90) { p.mesh.removeFromParent(); p.mesh.geometry.dispose(); }
-  G.projectiles = G.projectiles.filter(p => p.t <= 90);
-}
-
-/* ===== 攻撃 ===== */
-function findTarget(range, minDot) {
-  if (!activeRoom) return null;
-  const p = G.p, fx = Math.sin(p.a), fz = Math.cos(p.a);
-  let best = null, bestScore = 1e9;
-  for (const e of activeRoom.enemies) {
-    if (e.dead || (!e.awake && !e.boss)) continue;
-    const dx = e.group.position.x - p.x, dz = e.group.position.z - p.z, d = Math.hypot(dx, dz);
-    if (d < .15 || d > range) continue;
-    const dot = (dx * fx + dz * fz) / d;
-    if (dot < minDot) continue;
-    const score = d - dot * 1.8 + (e.boss ? -1.2 : 0);
-    if (score < bestScore) { bestScore = score; best = e; }
-  }
-  return best;
-}
-function spawnTracer(x0, y0, z0, x1, y1, z1) {
-  const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x0, y0, z0), new THREE.Vector3(x1, y1, z1)]);
-  const mat = new THREE.LineBasicMaterial({ color: 0xc8ecff, transparent: true, opacity: .75 });
-  const line = new THREE.Line(geo, mat); activeRoom.scene.add(line);
-  G.tracers = G.tracers || []; G.tracers.push({ line, t: .09 });
-}
-function updateTracers(dt) {
-  for (const t of G.tracers || []) { t.t -= dt; t.line.material.opacity = Math.max(0, t.t / .09) * .75; }
-  for (const t of G.tracers || []) if (t.t <= 0) { t.line.removeFromParent(); t.line.geometry.dispose(); t.line.material.dispose(); }
-  G.tracers = (G.tracers || []).filter(t => t.t > 0);
 }
 function spawnParticles(x, y, z, color, n) {
   if (!activeRoom) return;
@@ -437,65 +372,6 @@ function addSparks(x, y, z, color, n) {
     G.sparks.push({ x: s.x, y: s.y, vx: rnd(-60, 60), vy: rnd(-70, 10), t: 0, life: rnd(.2, .5), c: color });
   }
 }
-function damageEnemy(e, d) {
-  if (!e || e.dead) return;
-  e.hp -= d; e.flash = .16; e.stagger = .16;
-  if (e.boss) {
-    G.flash = Math.max(G.flash, .09);
-    addSparks(e.group.position.x, 1.45, e.group.position.z, '#ffcf6a', 5);
-  } else {
-    addSparks(e.group.position.x, .8, e.group.position.z, '#cfe8ff', 6);
-  }
-  spawnParticles(e.group.position.x, e.boss ? 1.5 : .8, e.group.position.z, e.boss ? 0xffc85a : 0xbfe6ff, e.boss ? 8 : 5);
-  SFX.hit();
-  if (e.hp <= 0) { if (e.boss) killBoss(e); else killGhost(e); }
-}
-function killGhost(e) {
-  if (e.dead) return;
-  e.dead = true; e.group.visible = false;
-  spawnParticles(e.x, .7, e.z, 0xd8d4e8, 12);
-  addSparks(e.x, .8, e.z, '#e8e2ff', 10);
-  if (!G.dead.includes(e.id)) G.dead.push(e.id);
-  SFX.ghost();
-  saveGame();
-}
-function killBoss(e) {
-  if (e.dead) return;
-  e.dead = true; e.awake = false; e.group.visible = false;
-  G.bossDead = true; G.bossFight = false; G.boss = null;
-  G.flash = 1;
-  for (let i = 0; i < 4; i++) setTimeout(() => {
-    if (!activeRoom || activeRoom.id !== 'gym') return;
-    spawnParticles(e.x + rnd(-1, 1), rnd(.4, 2.2), e.z + rnd(-1, 1), [0xffc85a, 0xff7a6a, 0xd8d4ff][i % 3], 10);
-    SFX.boom ? SFX.boom() : SFX.boss();
-  }, i * 130);
-  if (!G.dead.includes(e.id)) G.dead.push(e.id);
-  const charm = activeRoom.items.find(it => it.id === 'charm_gym');
-  if (charm) { charm.hidden = false; charm.group.visible = !charm.taken; }
-  say('ロッカーだいおうは しずまった。おふだが おちている。', 3.2);
-  SFX.win(); saveGame();
-  lastCamDef = null; updateCamera(true);
-}
-function fire() {
-  if (G.state !== 'play' || G.trans || G.fireCd > 0) return;
-  if (G.ammo <= 0) { SFX.empty(); say('みずが でない！ たまを さがそう。', 1.8); G.fireCd = .45; return; }
-  G.ammo--; G.shots++; G.fireCd = .42; G.recoil = 1;
-  SFX.shoot();
-  const p = G.p, fx = Math.sin(p.a), fz = Math.cos(p.a);
-  const mz = { x: p.x + fx * .35, y: 1.02, z: p.z + fz * .35 };
-  const target = findTarget(10.5, G.aiming ? .55 : .72);
-  let tx, ty, tz;
-  if (target) {
-    tx = target.group.position.x; tz = target.group.position.z;
-    ty = target.boss ? 1.45 : .8;
-    damageEnemy(target, 1); G.hits++;
-  } else {
-    tx = p.x + fx * 7; tz = p.z + fz * 7; ty = 1.0;
-    spawnParticles(tx, ty, tz, 0x9fdcff, 4); SFX.splash();
-  }
-  spawnTracer(mz.x, mz.y, mz.z, tx, ty, tz);
-  if (target) addSparks(tx, ty, tz, '#c8ecff', 6);
-}
 
 /* ===== ダメージ ===== */
 function hurtPlayer() {
@@ -508,13 +384,13 @@ function hurtPlayer() {
 function die() {
   if (G.state === 'dead') return;
   G.hp = 0; G.state = 'dead'; G.deadT = 0;
-  G.aiming = false; G.keys = Object.create(null);
+  G.keys = Object.create(null);
   SFX.boss();
   setTimeout(showGameOver, 900);
 }
 function showGameOver() {
   if (G.state !== 'dead') return;
-  $('overText').textContent = G.charms >= 1 ? `おふだを ${G.charms}まい あつめたところで、おばけに つかまった…` : 'おばけに つかまってしまった…';
+  $('overText').textContent = G.fixed.length >= 1 ? `${G.fixed.length}つの へやを もどしたところで、おばけに つかまった…` : 'おばけに つかまってしまった…';
   $('over').hidden = false;
 }
 
@@ -538,6 +414,16 @@ function nearestDoor() {
   }
   return best;
 }
+function nearestSpot() {
+  if (!activeRoom) return null;
+  let best = null, bd = 99;
+  for (const sp of activeRoom.spots || []) {
+    const d = dist2(G.p.x, G.p.z, sp.x, sp.z);
+    if (d < sp.r && d < bd) { bd = d; best = sp; }
+  }
+  return best;
+}
+const has = id => G.bag.includes(id);
 function pickupItem(it) {
   if (!it || it.taken) return;
   if (it.type === 'note') { say(it.def.text, 5); return; }
@@ -545,35 +431,136 @@ function pickupItem(it) {
   if (!G.taken.includes(it.id)) G.taken.push(it.id);
   it.group.visible = false;
   SFX.pickup();
-  if (it.type === 'charm') {
-    G.charms++;
-    say(G.charms >= 3 ? 'おふだ 3まい そろった！ げんかんへ いそごう。' : `おふだを てに いれた（${G.charms}/3）`, 2.6);
-    if (G.charms >= 3) SFX.win();
-  } else if (it.type === 'ammo') {
-    G.ammo += it.def.amount || 6;
-    say(`みずの たま +${it.def.amount || 6}`, 1.5);
-  } else if (it.type === 'herb') {
+  if (it.type === 'herb') {
     G.herbs++;
     say('やくそうを てに いれた。', 1.5);
+  } else {
+    if (!G.bag.includes(it.id)) G.bag.push(it.id);
+    const hint = {
+      eraser: 'こくばんけしを てに いれた。',
+      key_staff: 'しょくいんしつの かぎを てに いれた！',
+      battery: 'でんちを てに いれた。なにかに つかえそう。',
+      whistle: 'ふえを てに いれた。たいいくの せんせいの ふえだ。',
+    }[it.id] || `${ITEM_NAMES[it.id] || it.id}を てに いれた。`;
+    say(hint, 2.4);
   }
-  saveGame();
+  saveGame(); updateInvUI();
+}
+// へやを もとに もどす
+function restoreRoom(id, text) {
+  if (G.fixed.includes(id)) return;
+  G.fixed.push(id);
+  if (id === 'gym') { G.bossDead = true; G.bossFight = false; G.boss = null; }
+  if (activeRoom) {
+    for (const e of activeRoom.enemies) if (!e.dead && enemyGone(e)) {
+      spawnParticles(e.x, .8, e.z, 0xe8e2ff, 10);
+    }
+  }
+  applyWorldFlags();
+  G.flash = .8; SFX.fixed();
+  const n = G.fixed.length;
+  say(n >= FIX_ROOMS.length
+    ? `${text} がっこうが ぜんぶ もとに もどった！ げんかんへ！`
+    : `${text}（もどした ${n}/${FIX_ROOMS.length}）`, 4);
+  lastCamDef = null; updateCamera(true);
+  saveGame(); updateInvUI();
+}
+const SPOTS = {
+  board: {
+    label: () => G.fixed.includes('classroom') ? 'こくばんを よむ' : 'こくばんを しらべる',
+    act() {
+      if (G.fixed.includes('classroom')) return say('こくばん「たいいくかんの ばんごう 1ばんめ＝5」', 3);
+      if (!has('eraser')) return say('こくばんが おばけの らくがきで いっぱいだ。けす ものが あれば…', 3);
+      restoreRoom('classroom', 'らくがきを けした！ 2ねん1くみが もとに もどった！');
+    },
+  },
+  homework: {
+    label: () => 'ぼくの つくえを しらべる',
+    act() {
+      G.flags.homework = true;
+      say('しゅくだいの ノートだ。…いまは それどころじゃない！ あとで あとで！', 3.6);
+    },
+  },
+  clock: {
+    label: () => G.fixed.includes('staff') ? 'とけいを しらべる' : 'とまった とけいを しらべる',
+    act() {
+      if (G.fixed.includes('staff')) return say('とけいの うらに「たいいくかんの ばんごう 2ばんめ＝1」', 3);
+      if (!has('battery')) return say('とけいが とまっている。でんちが ぬかれているみたいだ。', 3);
+      restoreRoom('staff', 'でんちを いれた！ とけいが うごいた！ しょくいんしつが もとに もどった！');
+    },
+  },
+  stage: {
+    label: () => G.fixed.includes('gym') ? 'ステージを しらべる' : (has('whistle') ? 'ふえを ふく' : 'ステージを しらべる'),
+    act() {
+      if (G.fixed.includes('gym')) return say('ステージは しずかだ。', 1.6);
+      if (!has('whistle')) return say('おばけたちが さわいでいる。みんなを しずかに させる ものが あれば…', 3);
+      SFX.whistle();
+      restoreRoom('gym', 'ピーーッ！ おばけたちが せいれつして しずかに なった！');
+    },
+  },
+  gate: {
+    label: () => G.fixed.length >= FIX_ROOMS.length ? 'ドアを あける' : 'ドアを しらべる',
+    act() {
+      if (G.fixed.length >= FIX_ROOMS.length) return finishGame();
+      say(`あかない！ おばけの ちからで とじている。がっこうを もとに もどせば…（${G.fixed.length}/${FIX_ROOMS.length}）`, 3.4);
+    },
+  },
+};
+function tryDoor(door) {
+  if (door.lock === 'key' && !G.flags.staffOpen) {
+    if (!has('key_staff')) { say('しょくいんしつは かぎが かかっている。', 2); return; }
+    G.flags.staffOpen = true; SFX.unlock(); say('かぎで あけた！', 1.6); saveGame();
+  }
+  if (door.lock === 'code' && !G.flags.gymOpen) { openLock(door); return; }
+  changeRoom(door);
 }
 function interact() {
   if (G.state !== 'play' || G.trans) return;
   const it = nearestItem();
   if (it) { pickupItem(it); return; }
+  const sp = nearestSpot();
+  if (sp && SPOTS[sp.id]) { SPOTS[sp.id].act(); return; }
   const door = nearestDoor();
-  if (door) {
-    if (door.locked) { say(door.locked, 2); return; }
-    changeRoom(door); return;
-  }
-  if (activeRoom.gate && activeRoom.gateSpot && dist2(G.p.x, G.p.z, activeRoom.gateSpot.x, activeRoom.gateSpot.z) < 1.5) {
-    if (G.charms >= 3) finishGame();
-    else say('校門は おふだで ふういんされている。おふだを 3まい あつめよう。', 3);
-    return;
-  }
+  if (door) { tryDoor(door); return; }
   say('なにも ない。', 1.2);
 }
+
+/* ===== ばんごうロック ===== */
+function openLock(door) {
+  G.state = 'lock'; G.keys = Object.create(null); G.touch = Object.create(null);
+  G.lock = { door, digits: [0, 0, 0], col: 0 };
+  $('lock').hidden = false; pauseVeil.style.opacity = '1';
+  updateLockUI();
+}
+function closeLock() {
+  if (G.state !== 'lock') return;
+  $('lock').hidden = true; pauseVeil.style.opacity = '0';
+  G.state = 'play'; G.lock = null;
+}
+function lockSpin(col, d) {
+  if (!G.lock) return;
+  G.lock.col = col;
+  G.lock.digits[col] = (G.lock.digits[col] + d + 10) % 10;
+  SFX.camera(); updateLockUI();
+}
+function lockTry() {
+  if (!G.lock) return false;
+  const ok = G.lock.digits.every((v, i) => v === GYM_CODE[i]);
+  if (!ok) { SFX.empty(); $('lockMsg').textContent = 'ちがうみたいだ…'; return false; }
+  const door = G.lock.door;
+  G.flags.gymOpen = true; SFX.unlock();
+  closeLock(); say('カチッ！ ひらいた！', 1.6); saveGame();
+  changeRoom(door);
+  return true;
+}
+function updateLockUI() {
+  if (!G.lock) return;
+  G.lock.digits.forEach((v, i) => {
+    const el = $('lockD' + i); el.textContent = v; el.classList.toggle('on', i === G.lock.col);
+  });
+  $('lockMsg').textContent = 'たいいくかんの ばんごうロック';
+}
+
 function useHerb() {
   if (G.state !== 'play' && G.state !== 'inventory') return;
   if (G.herbs <= 0) { say('やくそうを もっていない。', 1.6); return; }
@@ -588,35 +575,36 @@ function saveGame() {
   if (G.state === 'title' || G.state === 'ending') return;
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
-      v: 1, room: G.room, x: G.p.x, z: G.p.z, a: G.p.a,
-      hp: G.hp, ammo: G.ammo, herbs: G.herbs, charms: G.charms, time: G.time,
-      shots: G.shots, hits: G.hits, damage: G.damage,
-      taken: G.taken, dead: G.dead, bossDead: G.bossDead,
+      v: 2, room: G.room, x: G.p.x, z: G.p.z, a: G.p.a,
+      hp: G.hp, herbs: G.herbs, time: G.time, damage: G.damage,
+      bag: G.bag, fixed: G.fixed, flags: G.flags,
+      taken: G.taken, dead: G.dead,
     }));
     G.autosave = 1.5; SFX.save();
   } catch (_) {}
   updateContinueUI();
 }
 function hasSave() {
-  try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); return !!(s && s.v === 1); } catch (_) { return false; }
+  try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); return !!(s && s.v === 2); } catch (_) { return false; }
 }
 function loadGame() {
   let s = null;
   try { s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch (_) {}
-  if (!s || s.v !== 1) return false;
+  if (!s || s.v !== 2) return false;
   resetWorld();
   G.hp = clamp(s.hp == null ? HP_MAX : s.hp, 1, HP_MAX);
-  G.ammo = s.ammo == null ? 12 : s.ammo;
-  G.herbs = s.herbs || 0; G.charms = s.charms || 0; G.time = s.time || 0;
-  G.shots = s.shots || 0; G.hits = s.hits || 0; G.damage = s.damage || 0;
-  G.taken = Array.isArray(s.taken) ? s.taken.slice() : [];
-  G.dead = Array.isArray(s.dead) ? s.dead.slice() : [];
-  G.bossDead = !!s.bossDead;
+  G.herbs = s.herbs || 0; G.time = s.time || 0; G.damage = s.damage || 0;
+  const arr = v => Array.isArray(v) ? v.slice() : [];
+  G.taken = arr(s.taken); G.dead = arr(s.dead); G.bag = arr(s.bag);
+  G.fixed = arr(s.fixed).filter(id => FIX_ROOMS.includes(id));
+  G.flags = s.flags && typeof s.flags === 'object' ? Object.assign({}, s.flags) : {};
+  G.bossDead = G.fixed.includes('gym');
   applyWorldFlags();
-  const room = ROOMS[s.room] ? s.room : 'classroom';
-  enterRoom(room, { x: s.x == null ? 2.9 : s.x, z: s.z == null ? 2.2 : s.z, a: s.a == null ? Math.PI : s.a }, true);
+  const room = ROOMS[s.room] ? s.room : START.room;
+  enterRoom(room, { x: s.x == null ? START.x : s.x, z: s.z == null ? START.z : s.z, a: s.a == null ? START.a : s.a }, true);
   G.state = 'play'; G.deadT = 0;
-  $('title').hidden = true; $('intro').hidden = true; $('over').hidden = true; $('ending').hidden = true; $('inv').hidden = true;
+  hideAllOverlays();
+  $('title').hidden = true;
   titleShown = false;
   pauseVeil.style.opacity = '0';
   fadeEl.style.opacity = '0';
@@ -634,22 +622,23 @@ function updateContinueUI() {
 }
 
 /* ===== はじめ / おわり ===== */
+// 小学2年生が じぶんの はやさで よめるように、ボタン（つぎへ）で 1まいずつ すすむ
 const INTRO_LINES = [
-  'あめの よる。\nわすれものを とりに きた。',
-  '2ねん1くみで チャイムが！\nだれも いない はずなのに。',
-  'ランドセルが うごいてる！\nがっこうが おばけに なった！？',
-  'おふだを 3まい あつめよう。\nみずでっぽうで すすもう！',
+  'あめの よる。\n「あっ！ しゅくだい、\nつくえに わすれた！」',
+  'あした 出す しゅくだいの ノート。\nとりに いこう。',
+  'げんかんに 入った とたん――\nバタン！\n「ドアが しまった！ とじこめられた！？」',
+  '「…えっ！？ なにか うごいてる！？」\nがっこうが、おばけに のっとられている。',
+  '「がっこうを もとに もどせば\nでられるかも！」',
 ];
-function showIntroStep() {
-  const line = $('introLine');
-  line.textContent = INTRO_LINES[G.introStep];
-  $('introNext').textContent = G.introStep === INTRO_LINES.length - 1 ? 'ゲームへ すすむ' : 'つぎへ ▶';
-}
-function advanceIntro() {
-  if (G.state !== 'intro') return;
-  if (G.introStep + 1 >= INTRO_LINES.length) finishIntro();
-  else { G.introStep++; showIntroStep(); }
-}
+const SLAM_PAGE = 2;
+const END_LINES = [
+  'がっこうが… ひかってる！\n「ぜんぶ もとに もどった！ やったー！」',
+  'ガチャッ。\n「ドアも あいた！ さて、かえろっと！」',
+  '……\nよるの 2ねん1くみ。\nつくえの なかに、しゅくだいが のこっていた。',
+  'つぎの あさ。\nせんせい「しゅくだいは？」',
+  '「あっ！！ わすれた！」',
+];
+const PUNCH_PAGE = END_LINES.length - 1;
 function startNewGame(withIntro) {
   initAudio();
   resetWorld();
@@ -657,14 +646,13 @@ function startNewGame(withIntro) {
   G.time = 0; G.state = withIntro ? 'intro' : 'play';
   G.introT = 0; G.introStep = 0;
   $('title').hidden = true; titleShown = false;
-  enterRoom('classroom', { x: 2.9, z: 2.2, a: Math.PI }, true);
+  enterRoom(START.room, { x: START.x, z: START.z, a: START.a }, true);
   fadeEl.style.opacity = '0';
   if (withIntro) {
     $('intro').hidden = false; showIntroStep();
-    $('introLine').style.opacity = '1';
   } else {
     $('intro').hidden = true;
-    G.roomTitle = 2.4; G.roomTitleText = '2ねん1くみ';
+    G.roomTitle = 2.4; G.roomTitleText = ROOMS[START.room].name;
   }
   updateContinueUI(); updateInvUI();
   saveGame();
@@ -673,37 +661,64 @@ function finishIntro() {
   if (G.state !== 'intro') return;
   $('intro').hidden = true;
   G.state = 'play';
-  G.roomTitle = 2.6; G.roomTitleText = '2ねん1くみ';
-  say('3まいの おふだを さがそう。', 2.4);
+  G.roomTitle = 2.6; G.roomTitleText = ROOMS[START.room].name;
+  say('ドアが あかない…。がっこうを もとに もどそう！ まずは 2ねん1くみへ。', 3.4);
 }
-function updateIntro(dt) {
-  // じぶんの はやさで よめる。いそいで じどうで おわらせない。
-  G.introT += dt;
+function showIntroStep() {
+  const ending = G.state === 'ending';
+  const lines = ending ? END_LINES : INTRO_LINES;
+  const n = ending ? G.endStep : G.introStep;
+  const line = $('introLine');
+  line.textContent = lines[n];
+  line.classList.toggle('punch', ending && n === PUNCH_PAGE);
+  $('introNext').textContent = n === lines.length - 1 ? (ending ? 'おしまい ▶' : 'ゲームへ すすむ') : 'つぎへ ▶';
+  if (!ending && n === SLAM_PAGE) { SFX.slam(); $('intro').classList.add('shake'); setTimeout(() => $('intro').classList.remove('shake'), 500); }
+  if (ending && n === PUNCH_PAGE) SFX.alert();
 }
+// オープニングも エンディングも、ボタンで 1まいずつ すすむ（じどうで おわらせない）
+function advanceIntro() {
+  if (G.state === 'intro') {
+    if (G.introStep + 1 >= INTRO_LINES.length) finishIntro();
+    else { G.introStep++; showIntroStep(); }
+  } else if (G.state === 'ending' && $('ending').hidden) {
+    if (G.endStep + 1 >= END_LINES.length) showEndPanel();
+    else { G.endStep++; showIntroStep(); }
+  }
+}
+function updateIntro(dt) { G.introT += dt; }
+// エンディング：もどった → かえる → つくえの しゅくだい → つぎの あさ「あっ！！ わすれた！」→ おしまい
 function finishGame() {
-  G.state = 'ending';
-  G.aiming = false; G.keys = Object.create(null);
-  $('ending').hidden = false;
-  $('endTime').textContent = fmtTime(G.time);
-  $('endShots').textContent = G.shots;
-  $('endHp').textContent = G.hp;
-  SFX.win();
+  G.state = 'ending'; G.endT = 0; G.endStep = 0;
+  G.keys = Object.create(null);
   try { localStorage.removeItem(SAVE_KEY); } catch (_) {}
   updateContinueUI();
+  SFX.win();
+  $('intro').hidden = false; $('intro').classList.add('morning');
+  showIntroStep();
+}
+function updateEnding(dt) { G.endT += dt; }
+function showEndPanel() {
+  if (G.state !== 'ending' || !$('ending').hidden) return;
+  $('intro').hidden = true; $('intro').classList.remove('morning'); $('introLine').classList.remove('punch');
+  $('ending').hidden = false;
+  $('endTime').textContent = fmtTime(G.time);
+  $('endHurt').textContent = G.damage;
+  $('endHp').textContent = G.hp;
 }
 function retry() {
   $('over').hidden = true;
   if (!loadGame()) startNewGame(false);
 }
 function toTitle() {
-  G.state = 'title'; G.aiming = false; G.keys = Object.create(null); G.touch = Object.create(null);
+  G.state = 'title'; G.lock = null; G.keys = Object.create(null); G.touch = Object.create(null);
   hideAllOverlays();
   $('title').hidden = false; titleShown = true;
   pauseVeil.style.opacity = '0'; fadeEl.style.opacity = '0';
   updateContinueUI();
 }
 function hideAllOverlays() {
-  for (const id of ['intro', 'inv', 'over', 'ending']) { const el = $(id); if (el) el.hidden = true; }
+  for (const id of ['intro', 'inv', 'over', 'ending', 'lock']) { const el = $(id); if (el) el.hidden = true; }
+  $('intro').classList.remove('morning'); $('introLine').classList.remove('punch');
 }
 
 /* ===== HUD ===== */
@@ -738,12 +753,12 @@ function hudPanel(x, y, w, h) {
 }
 function drawHUD() {
   HUD.clearRect(0, 0, V.W, V.H);
-  if (!activeRoom || G.state === 'title' || G.state === 'intro' || G.state === 'ending') return;
+  if (!activeRoom || G.state === 'title' || G.state === 'intro' || G.state === 'ending' || G.state === 'lock') return;
   const R = activeRoom;
   // 部屋名
   hudText(R.name, 9, 8, 9, 'rgba(232,225,207,.85)');
-  // おふだ
-  hudText(`おふだ ${G.charms}/3`, 311, 8, 9, G.charms >= 3 ? '#ffd76a' : '#d8cfae', 'right');
+  // もどした へや
+  hudText(`もどした ${G.fixed.length}/${FIX_ROOMS.length}`, 311, 8, 9, G.fixed.length >= FIX_ROOMS.length ? '#ffd76a' : '#d8cfae', 'right');
   // 体力
   const hpColor = G.hp <= 1 ? '#ff5a4a' : G.hp === 2 ? '#ffb24a' : '#d84a3a';
   HUD.font = '13px "DotGothic16",monospace'; HUD.textAlign = 'left'; HUD.textBaseline = 'top';
@@ -751,9 +766,8 @@ function drawHUD() {
   let hearts = '';
   for (let i = 0; i < G.maxHp; i++) hearts += i < G.hp ? '♥' : '♡';
   HUD.fillText(hearts, 9, 216);
-  // 水 / やくそう
-  hudText(`みず ${G.ammo}`, 311, 216, 10, G.ammo <= 2 ? '#ff8a6a' : '#cfe8f5', 'right');
-  hudText(`やくそう ${G.herbs}`, 311, 202, 8, '#a9d8a0', 'right');
+  // やくそう
+  hudText(`やくそう ${G.herbs}`, 311, 216, 9, '#a9d8a0', 'right');
   // プロンプト
   if (G.prompt && G.msgT <= 0) {
     hudPanel(38, 202, 244, 20);
@@ -776,29 +790,6 @@ function drawHUD() {
   }
   // オートセーブ
   if (G.autosave > 0) hudText('オートセーブ', 160, 30, 8, 'rgba(200,192,170,.8)', 'center');
-  // ねらい
-  if (G.aiming && G.target && !G.target.dead) {
-    const pos = blockPos(G.target);
-    if (pos.ok) {
-      const s = clamp(14 - Math.min(10, dist2(G.p.x, G.p.z, G.target.group.position.x, G.target.group.position.z) * .4), 6, 14);
-      HUD.strokeStyle = G.target.boss ? '#ffcf6a' : '#dff1ff'; HUD.lineWidth = 1;
-      for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
-        HUD.beginPath();
-        HUD.moveTo(pos.x + sx * s, pos.y + sy * s - sy * 4);
-        HUD.lineTo(pos.x + sx * s, pos.y + sy * s);
-        HUD.lineTo(pos.x + sx * s - sx * 4, pos.y + sy * s);
-        HUD.stroke();
-      }
-    }
-  }
-  // ボス HP
-  if (G.bossFight && G.boss && !G.boss.dead) {
-    const w = 150, x = 85, y = 22;
-    hudPanel(x - 5, y - 5, w + 10, 16);
-    HUD.fillStyle = '#7a201c'; HUD.fillRect(x, y + 3, w, 4);
-    HUD.fillStyle = '#d8493a'; HUD.fillRect(x, y + 3, w * clamp(G.boss.hp / G.boss.max, 0, 1), 4);
-    hudText('ロッカーだいおう', 160, y - 9, 8, '#e8d8c0', 'center');
-  }
   // 低体力の 赤
   if (G.hp <= 1 && G.state === 'play') {
     const a = .10 + .05 * Math.sin(performance.now() / 260);
@@ -813,9 +804,6 @@ function drawHUD() {
   }
   HUD.globalAlpha = 1;
 }
-function blockPos(e) {
-  return projectToScreen(e.group.position.x, e.group.position.y + (e.boss ? 1.5 : .8), e.group.position.z);
-}
 function updateSparks(dt) {
   for (const s of G.sparks) { s.t += dt; s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 150 * dt; }
   G.sparks = G.sparks.filter(s => s.t < s.life);
@@ -823,11 +811,10 @@ function updateSparks(dt) {
 function updatePrompt() {
   const it = nearestItem();
   if (it) { G.prompt = `[E] ${it.def.label || 'しらべる'}`; return; }
+  const sp = nearestSpot();
+  if (sp && SPOTS[sp.id]) { G.prompt = `[E] ${SPOTS[sp.id].label()}`; return; }
   const door = nearestDoor();
   if (door) { G.prompt = `[E] ${door.label}`; return; }
-  if (activeRoom.gate && activeRoom.gateSpot && dist2(G.p.x, G.p.z, activeRoom.gateSpot.x, activeRoom.gateSpot.z) < 1.5) {
-    G.prompt = G.charms >= 3 ? '[E] 校門を あける' : '[E] 校門を しらべる'; return;
-  }
   G.prompt = '';
 }
 
@@ -835,6 +822,12 @@ function updatePrompt() {
 function updateRoomFx() {
   if (!activeRoom) return;
   const t = performance.now() / 1000;
+  if (activeRoom.clockHands && G.fixed.includes('staff')) activeRoom.clockHands[0].rotation.z = -t * 1.2;
+  for (const it of activeRoom.items || []) {
+    if (it.group.userData.spin) it.group.rotation.y = t * 1.6;
+    if (it.group.userData.halo) it.group.userData.halo.material.opacity = .1 + .08 * Math.sin(t * 3);
+  }
+  if (activeRoom.calm) return; // もとに もどった へやは ちらつかない
   for (const f of activeRoom.flickers || []) {
     const blink = (Math.sin(t * 12 + f.ph) > .982 || Math.sin(t * .7 + f.ph) > .995) ? .18 : 1;
     f.light.intensity = f.base * (.72 + .28 * (.5 + .5 * Math.sin(t * 5 + f.ph))) * blink;
@@ -851,7 +844,7 @@ function keyName(code) {
 }
 function openInventory() {
   if (G.state !== 'play') return;
-  G.state = 'inventory'; G.aiming = false; G.keys = Object.create(null); G.touch = Object.create(null);
+  G.state = 'inventory'; G.keys = Object.create(null); G.touch = Object.create(null);
   $('inv').hidden = false; pauseVeil.style.opacity = '1';
   updateInvUI();
 }
@@ -862,12 +855,12 @@ function closeInventory() {
 }
 function updateInvUI() {
   $('invHp').textContent = '♥'.repeat(Math.max(0, G.hp)) + '♡'.repeat(Math.max(0, G.maxHp - G.hp));
-  $('invAmmo').textContent = G.ammo;
+  $('invBag').textContent = G.bag.length ? G.bag.map(id => ITEM_NAMES[id] || id).join('・') : 'なし';
   $('invHerb').textContent = G.herbs;
-  $('invCharm').textContent = `${G.charms} / 3`;
+  $('invFixed').textContent = `${G.fixed.length} / ${FIX_ROOMS.length}`;
   $('invRoom').textContent = (ROOMS[G.room] || {}).name || '？';
   $('invTime').textContent = fmtTime(G.time);
-  $('invObjective').textContent = G.charms >= 3 ? 'げんかんの 校門へ。' : '3まいの おふだを さがそう。';
+  $('invObjective').textContent = objective();
   $('btnControl').textContent = G.mode === 'tank' ? 'タンク（ホラー風）' : 'モダン（カメラ基準）';
   $('btnSound').textContent = G.sound ? 'オン' : 'オフ';
   $('btnFx').textContent = G.fx ? 'オン' : 'オフ';
@@ -875,6 +868,13 @@ function updateInvUI() {
   $('btnMode').textContent = `そうさ：${G.mode === 'tank' ? 'タンク' : 'モダン'}`;
   $('btnTitleSound').textContent = `おと：${G.sound ? 'オン' : 'オフ'}`;
   $('tMute').textContent = G.sound ? '♪' : '×';
+}
+function objective() {
+  const f = id => G.fixed.includes(id);
+  if (G.fixed.length >= FIX_ROOMS.length) return 'げんかんの ドアへ！';
+  if (!f('classroom')) return has('eraser') ? 'こくばんの らくがきを けそう。' : '2ねん1くみの こくばんを もとに もどそう。';
+  if (!f('staff')) return !G.flags.staffOpen && !has('key_staff') ? 'しょくいんしつの かぎを さがそう。' : 'しょくいんしつの とけいを うごかそう。';
+  return G.flags.gymOpen ? 'たいいくかんの おばけを しずかに させよう。' : 'たいいくかんの ばんごうを あつめよう（3けた）。';
 }
 function setMode(mode) {
   G.mode = mode;
@@ -910,35 +910,37 @@ function bindInput() {
       if (c === 'KeyH') useHerb();
       return;
     }
+    if (G.state === 'lock') {
+      const L = G.lock; if (!L) return;
+      if (c === 'Escape' || c === 'Tab') closeLock();
+      else if (c === 'ArrowLeft' || c === 'KeyA') { L.col = (L.col + 2) % 3; updateLockUI(); }
+      else if (c === 'ArrowRight' || c === 'KeyD') { L.col = (L.col + 1) % 3; updateLockUI(); }
+      else if (c === 'ArrowUp' || c === 'KeyW') lockSpin(L.col, 1);
+      else if (c === 'ArrowDown' || c === 'KeyS') lockSpin(L.col, -1);
+      else if (/^Digit\d$/.test(c)) { L.digits[L.col] = +c.slice(5); L.col = Math.min(2, L.col + 1); SFX.camera(); updateLockUI(); }
+      else if (c === 'Enter' || c === 'KeyE' || c === 'Space') lockTry();
+      return;
+    }
     if (G.state === 'dead') { if (c === 'Enter') retry(); return; }
-    if (G.state === 'ending') return;
+    if (G.state === 'ending') { if (c === 'Escape') showEndPanel(); else if (['Enter', 'Space', 'KeyE', 'KeyJ', 'ArrowRight'].includes(c)) advanceIntro(); return; }
     if (G.state !== 'play') return;
     const k = keyName(c);
     if (k) G.keys[k] = true;
     if (c === 'ShiftLeft' || c === 'ShiftRight') G.keys[c] = true;
-    if (c === 'KeyE') interact();
-    else if (c === 'KeyJ' || c === 'Enter') fire();
+    if (c === 'KeyE' || c === 'Enter' || c === 'Space' || c === 'KeyJ') interact();
     else if (c === 'KeyI' || c === 'Escape' || c === 'Tab') openInventory();
     else if (c === 'KeyH') useHerb();
     else if (c === 'KeyM') toggleSound();
-    else if (c === 'Space') G.keys.Space = true;
   });
   addEventListener('keyup', e => {
     const k = keyName(e.code);
     if (k) G.keys[k] = false;
     if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') G.keys[e.code] = false;
-    if (e.code === 'Space') G.keys.Space = false;
   });
-  addEventListener('blur', () => { G.keys = Object.create(null); G.touch = Object.create(null); G.touchAim = false; });
+  addEventListener('blur', () => { G.keys = Object.create(null); G.touch = Object.create(null); });
 
   const stage = $('stage');
   stage.addEventListener('contextmenu', e => e.preventDefault());
-  stage.addEventListener('mousedown', e => {
-    if (G.state !== 'play') return;
-    if (e.button === 2) { G.mouseAim = true; e.preventDefault(); }
-    else if (e.button === 0) fire();
-  });
-  addEventListener('mouseup', e => { if (e.button === 2) G.mouseAim = false; });
 
   const bindHold = (id, on, off) => {
     const el = $(id);
@@ -950,14 +952,12 @@ function bindInput() {
   bindHold('tDown', () => G.touch.down = true, () => G.touch.down = false);
   bindHold('tLeft', () => G.touch.left = true, () => G.touch.left = false);
   bindHold('tRight', () => G.touch.right = true, () => G.touch.right = false);
-  bindHold('tAim', () => { G.touchAim = true; $('tAim').classList.add('on'); }, () => { G.touchAim = false; $('tAim').classList.remove('on'); });
-  $('tFire').addEventListener('pointerdown', e => { e.preventDefault(); fire(); });
   $('tAct').addEventListener('pointerdown', e => { e.preventDefault(); interact(); });
   $('tItem').addEventListener('pointerdown', e => { e.preventDefault(); openInventory(); });
   $('tMute').addEventListener('pointerdown', e => { e.preventDefault(); toggleSound(); });
 
   $('introNext').addEventListener('click', advanceIntro);
-  $('introSkip').addEventListener('click', finishIntro);
+  $('introSkip').addEventListener('click', () => { if (G.state === 'ending') showEndPanel(); else finishIntro(); });
   $('intro').addEventListener('pointerdown', e => {
     if (e.target === $('intro') || e.target === $('introLine')) advanceIntro();
   });
@@ -973,12 +973,18 @@ function bindInput() {
   $('btnFx').addEventListener('click', toggleFx);
   $('btnRetry').addEventListener('click', retry);
   $('btnOverTitle').addEventListener('click', () => { $('over').hidden = true; toTitle(); });
+  for (let i = 0; i < 3; i++) {
+    $('lockU' + i).addEventListener('click', () => lockSpin(i, 1));
+    $('lockN' + i).addEventListener('click', () => lockSpin(i, -1));
+  }
+  $('btnLockOk').addEventListener('click', lockTry);
+  $('btnLockCancel').addEventListener('click', closeLock);
   $('btnEndAgain').addEventListener('click', () => { $('ending').hidden = true; toTitle(); startNewGame(false); });
   $('btnEndTitle').addEventListener('click', () => { $('ending').hidden = true; toTitle(); });
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-      G.keys = Object.create(null); G.touch = Object.create(null); G.touchAim = false;
+      G.keys = Object.create(null); G.touch = Object.create(null);
       if (AudioSys.ctx && AudioSys.ctx.state === 'running') AudioSys.ctx.suspend();
     } else if (AudioSys.ctx && AudioSys.ctx.state === 'suspended') AudioSys.ctx.resume();
   });
@@ -988,16 +994,14 @@ function bindInput() {
 function update(dt) {
   if (G.state === 'title') return;
   if (G.state === 'intro') { updateIntro(dt); updateRoomFx(); return; }
-  if (G.state === 'ending') { return; }
+  if (G.state === 'ending') { updateEnding(dt); return; }
+  if (G.state === 'lock') { updateRoomFx(); return; }
   if (G.state === 'dead') { G.deadT += dt; updateParticles(dt); updateSparks(dt); return; }
   if (G.state === 'inventory') { updateRoomFx(); return; }
   if (G.state === 'transition') { updateTransition(dt); updateRoomFx(); updateParticles(dt); updateSparks(dt); return; }
   if (G.state !== 'play') return;
 
   G.time += dt;
-  G.aiming = !!(G.keys.Space || G.touchAim || G.mouseAim);
-  if (G.aiming) G.aimT += dt; else G.aimT = 0;
-  G.fireCd = Math.max(0, G.fireCd - dt);
   G.invuln = Math.max(0, G.invuln - dt);
   G.hurt = Math.max(0, G.hurt - dt * 1.6);
   G.flash = Math.max(0, G.flash - dt * 2.6);
@@ -1006,12 +1010,9 @@ function update(dt) {
   G.autosave = Math.max(0, G.autosave - dt);
   updatePlayer(dt);
   updateEnemies(dt);
-  updateProjectiles(dt);
-  updateTracers(dt);
   updateParticles(dt);
   updateSparks(dt);
   updateRoomFx();
-  G.target = G.aiming ? findTarget(10.5, .5) : null;
   updatePrompt();
   if (G.hp <= 1) {
     G.heartT -= dt;
@@ -1063,9 +1064,10 @@ function init() {
   requestAnimationFrame(loop);
   window.PS1 = {
     G, ROOMS, startNewGame, advanceIntro, finishIntro, loadGame, saveGame, hasSave, resetWorld,
-    enterRoom, changeRoom, updateTransition, interact, pickupItem, useHerb, fire,
-    hurtPlayer, damageEnemy, killGhost, killBoss, findTarget, updateCamera,
-    update, updatePlayer, updateEnemies, updateBoss, updateProjectiles, nearestItem, nearestDoor,
+    enterRoom, changeRoom, updateTransition, interact, pickupItem, useHerb,
+    hurtPlayer, updateCamera, restoreRoom, openLock, closeLock, lockSpin, lockTry, showEndPanel,
+    update, updatePlayer, updateEnemies, updateBoss, nearestItem, nearestDoor, nearestSpot, objective,
+    FIX_ROOMS, GYM_CODE, SPOTS,
     blocked, tryMove, setMode, openInventory, closeInventory, finishGame,
     camera: () => activeCam, gameCam: () => gameCam, room: () => activeRoom,
     spawnEnemyEntity, spawnItemEntity, applyWorldFlags, updateInvUI, drawHUD,
