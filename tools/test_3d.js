@@ -78,6 +78,41 @@ window.runGameplayTests = function () {
   check('boss announces attack before emitting hazards', !!boss.nextAttack && G.enemies.length === 1);
   kAI(boss, 1.3, true);
   check('announced boss attack executes', !boss.nextAttack && !!boss.last);
+  for (const [index, type] of [[6, 'locker'], [7, 'kousha']]) {
+    startWave(index); state = 'play'; G.enemies = [];
+    const guarded = spawn(type); guarded.armor = 2; G.sp = 100;
+    const hp = guarded.hp; skillSp();
+    check(`${type}: special breaks guard and deals guaranteed damage`, guarded.armor === 0 && guarded.hp <= hp - Math.ceil(guarded.max * .12) && G.sp < 100);
+    guarded.armor = 2; G.bellCd = 0; const after = guarded.hp; skillBell();
+    check(`${type}: bell opens guard and damages boss`, guarded.armor === 0 && guarded.hp < after && guarded.stun > 0);
+    guarded.armor = .4; guarded.stun = 1;
+    bossAI(guarded, .5, true);
+    check(`${type}: stun does not prolong guard`, guarded.armor === 0);
+    guarded.armor = .4;
+    bossAI(guarded, .5, false);
+    check(`${type}: non-live frames do not consume guard`, guarded.armor === .4);
+  }
+  startWave(2); state = 'play'; G.enemies = []; ptr.down = false;
+  for (let i = 0; i < G.wave.max; i++) spawn('globe', -.7 + i * .18, .8);
+  G.kills = Math.floor(G.goal * .5); G.rushed = 0; G.spawnT = 99;
+  update(.01);
+  check('rush waits when active enemy cap is reached', alive() === G.wave.max && G.rushLeft > 0);
+  const remaining = G.rushLeft;
+  G.enemies[0].dead = true; updateRush(.3);
+  check('rush fills one free slot without exceeding cap', alive() === G.wave.max && G.rushLeft === remaining - 1);
+  startWave(3);
+  check('new wave resets pending rush', G.rushLeft === 0);
+  for (const [difficulty, warning] of [['easy', 1], ['normal', .75], ['hard', .55]]) {
+    G.diff = DIFFS[difficulty]; startWave(1); state = 'play'; G.enemies = [];
+    const charger = spawn('isu', 0, .5); charger.appear = 1; charger.charger = true;
+    updEnemies(.01, true);
+    check(`${difficulty}: charger warning matches difficulty`, Math.abs(charger.chg - (warning - .01)) < .001);
+  }
+  const originalEffects = gentleEffects;
+  $('bEffects').click();
+  check('effects button updates setting and accessible state', gentleEffects !== originalEffects && $('bEffects').getAttribute('aria-pressed') === String(gentleEffects));
+  $('bEffects').click();
+  check('effects setting can be restored', gentleEffects === originalEffects);
   G.maxCombo = 123; G.shotN = 123; G.hitShotN = 121;
   finish(false, 'やられた');
   check('accuracy appears separately from combo', $('rCombo').textContent === '123' && $('rAccuracy').textContent === 'めいちゅう 98%');
