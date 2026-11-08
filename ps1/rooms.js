@@ -142,7 +142,7 @@ function buildClassroom() {
   // もの
   addItemDef(R, { id: 'eraser', type: 'eraser', x: 0, z: -2.68, y: .9, label: 'こくばんけしを とる' });
   addItemDef(R, { id: 'key_staff', type: 'key', x: 2.6, z: -1.9, y: .1, hiddenUntil: 'classroom', label: 'かぎを とる' });
-  addItemDef(R, { id: 'herb_class', type: 'herb', x: -3.55, z: 2.55, y: .05, label: 'やくそうを とる' });
+  addItemDef(R, { id: 'herb_class', type: 'herb', x: -3.55, z: 2.55, y: .05, label: 'おまもりの はっぱを とる' });
   // なぞとき
   addSpot(R, { id: 'board', x: -1.3, z: -3.0 });
   addSpot(R, { id: 'homework', x: 1.7, z: .75, r: 1.0 });
@@ -192,7 +192,7 @@ function buildCorridor() {
   addCam(R, { pos: [0, 2.95, 4.2], look: [0, .5, 10.8], zone: { x0: -9, x1: 9, z0: 7.4, z1: 99 } });
   // もの
   addItemDef(R, { id: 'battery', type: 'battery', x: 1.1, z: -8.4, y: .05, label: 'でんちを とる' });
-  addItemDef(R, { id: 'herb_corridor', type: 'herb', x: -1.1, z: 8.2, y: .05, label: 'やくそうを とる' });
+  addItemDef(R, { id: 'herb_corridor', type: 'herb', x: -1.1, z: 8.2, y: .05, label: 'おまもりの はっぱを とる' });
   addItemDef(R, { id: 'note_corridor', type: 'note', x: 1.2, z: -7.2, y: .1, label: 'けいじばんを よむ', text: 'ポスターに おばけの らくがき。「たいいくかんの ばんごう、3ばんめは ７ だよ〜」' });
   addEnemyDef(R, { id: 'h_ghost', type: 'ghost', x: 0, z: -8.6, wake: 6.0 });
   addEnemyDef(R, { id: 'h_randoseru', type: 'randoseru', x: -.75, z: 6.6, wake: 6.0 });
@@ -305,7 +305,7 @@ function buildGym() {
   addCam(R, { pos: [0, 5.05, 4.3], look: [0, 1.1, -5.2], zone: { x0: -9, x1: 9, z0: -99, z1: 3 } });
   R.bossCam = { pos: [6.35, 5.0, 7.35], look: [0, 1.05, -1.5] };
   // もの
-  addItemDef(R, { id: 'herb_gym', type: 'herb', x: -5.4, z: 2.2, y: .05, label: 'やくそうを とる' });
+  addItemDef(R, { id: 'herb_gym', type: 'herb', x: -5.4, z: 2.2, y: .05, label: 'おまもりの はっぱを とる' });
   addSpot(R, { id: 'stage', x: 0, z: -5.9, r: 1.6 });
   // おばけ
   addEnemyDef(R, { id: 'g_uwabaki1', type: 'uwabaki', x: -4.4, z: -1.2, wake: 8.0 });

@@ -327,7 +327,12 @@ function initAudio() {
     const ctx = new AC();
     AudioSys.ctx = ctx;
     AudioSys.master = ctx.createGain(); AudioSys.master.gain.value = G.sound ? .22 : 0;
-    AudioSys.master.connect(ctx.destination);
+    // 急なびっくり音の音量差をおさえる（マスターのあとにリミッタ）
+    const limiter = ctx.createDynamicsCompressor();
+    limiter.threshold.value = -15; limiter.knee.value = 12;
+    limiter.ratio.value = 5; limiter.attack.value = .004; limiter.release.value = .19;
+    AudioSys.master.connect(limiter); limiter.connect(ctx.destination);
+    AudioSys.limiter = limiter;
     const len = ctx.sampleRate * 2;
     const buf = ctx.createBuffer(1, len, ctx.sampleRate);
     const d = buf.getChannelData(0);

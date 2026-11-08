@@ -37,7 +37,7 @@ function spawnEnemyEntity(R, def) {
     mode: 'idle', timer: 0, phase2: false, summoned: false,
     vx: 0, vz: 0,
   };
-  if (e.boss) { e.speed = .62; e.cd = 1.4; }
+  if (e.boss) { e.speed = .40; e.cd = 2.6; }
   if (enemyGone(e)) { e.dead = true; e.group.visible = false; }
   return e;
 }
@@ -103,6 +103,7 @@ function resetWorld() {
     }
   }
   applyRoomLooks();
+  ComicHorror.reset();
 }
 
 /* ===== カメラ ===== */
@@ -148,6 +149,7 @@ function enterRoom(id, spawn, silent) {
   }
   G.bossFight = false; lastCamDef = null;
   updateCamera(true);
+  ComicHorror.enter(id);
   G.roomTitle = 2.4; G.roomTitleText = R.name;
   if (!silent) saveGame();
 }
@@ -276,8 +278,14 @@ function updateGhost(e, dt) {
     setGhostFlash(e, true);
     if (e.windup <= 0) {
       setGhostFlash(e, false);
-      if (d < 1.65) { hurtPlayer(); e.stagger = 1.6; } // おどかしたら すこし はなれる
-      e.cd = 1.55;
+      if (d < 1.65) {
+        hurtPlayer(e.type);
+        e.stagger = 2.9; // おどかしたら すこし うしろに とびのく
+        const b = activeRoom.bounds;
+        e.x = clamp(e.x - dx / d * 1.55, b.x0 + .4, b.x1 - .4);
+        e.z = clamp(e.z - dz / d * 1.55, b.z0 + .4, b.z1 - .4);
+      }
+      e.cd = 4.2;
     }
     return;
   }
@@ -303,7 +311,7 @@ function updateBoss(e, dt) {
   if (!e.awake) {
     if (G.room === 'gym' && G.p.z < 4.2 && !G.bossDead) {
       e.awake = true; G.bossFight = true; G.boss = e;
-      SFX.boss(); say('ロッカーだいおうが おきた！ ステージで なにか できないかな？', 3);
+      SFX.comicScare('locker'); say('ロッカーだいおうが おどりだした！ ステージで なにか できないかな？', 3);
       lastCamDef = null; updateCamera(true);
     }
     return;
@@ -321,8 +329,8 @@ function updateBoss(e, dt) {
     e.x += e.vx * dt; e.z += e.vz * dt;
     const b = activeRoom.bounds;
     e.x = clamp(e.x, b.x0 + .7, b.x1 - .7); e.z = clamp(e.z, b.z0 + .7, b.z1 - .7);
-    if (d < 1.15 && e.atkCd <= 0) { hurtPlayer(); e.atkCd = 1.6; }
-    if (e.timer <= 0) { e.mode = 'idle'; e.cd = 2.4; }
+    if (d < 1.15 && e.atkCd <= 0) { hurtPlayer('locker'); e.atkCd = 3.5; }
+    if (e.timer <= 0) { e.mode = 'idle'; e.cd = 4.2; }
     return;
   }
   e.cd -= dt;
@@ -330,11 +338,11 @@ function updateBoss(e, dt) {
     const sp = e.speed * (G.state === 'play' ? 1 : 0);
     e.x += dx / d * sp * dt; e.z += dz / d * sp * dt;
   }
-  if (d < 1.2 && e.atkCd <= 0) { hurtPlayer(); e.atkCd = 1.6; }
+  if (d < 1.2 && e.atkCd <= 0) { hurtPlayer('locker'); e.atkCd = 3.5; }
   if (e.cd <= 0) {
     e.mode = 'wind'; e.timer = .95;
-    e.vx = dx / d * 4.6; e.vz = dz / d * 4.6;
-    SFX.alert(); say('くるぞ！ よけろ！', 1.1);
+    e.vx = dx / d * 2.6; e.vz = dz / d * 2.6;
+    SFX.comicScare('boing'); say('ロッカーだいおう、ズッコケ とっしん！', 1.7);
   }
 }
 function updateEnemies(dt) {
@@ -374,12 +382,10 @@ function addSparks(x, y, z, color, n) {
 }
 
 /* ===== ダメージ ===== */
-function hurtPlayer() {
+// おばけは驚かせるだけ。接触してもHPは減らない。
+function hurtPlayer(kind = 'ghost') {
   if (G.state !== 'play' || G.invuln > 0) return;
-  G.hp--; G.invuln = 1.35; G.hurt = .65; G.damage++;
-  SFX.hurt();
-  say(G.hp <= 1 ? 'もう たおれそうだ…' : 'いたっ！', 1.5);
-  if (G.hp <= 0) die();
+  if (ComicHorror.scare(kind)) G.hurt = G.fx ? .20 : 0;
 }
 function die() {
   if (G.state === 'dead') return;
@@ -426,14 +432,14 @@ function nearestSpot() {
 const has = id => G.bag.includes(id);
 function pickupItem(it) {
   if (!it || it.taken) return;
-  if (it.type === 'note') { say(it.def.text, 5); return; }
+  if (it.type === 'note') { SFX.comicScare('paper'); say(it.def.text, 5); return; }
   it.taken = true;
   if (!G.taken.includes(it.id)) G.taken.push(it.id);
   it.group.visible = false;
   SFX.pickup();
   if (it.type === 'herb') {
     G.herbs++;
-    say('やくそうを てに いれた。', 1.5);
+    say('おまもりの はっぱを てに いれた！', 1.8);
   } else {
     if (!G.bag.includes(it.id)) G.bag.push(it.id);
     const hint = {
@@ -457,7 +463,7 @@ function restoreRoom(id, text) {
     }
   }
   applyWorldFlags();
-  G.flash = .8; SFX.fixed();
+  G.flash = G.fx ? .35 : 0; ComicHorror.solve(id);
   const n = G.fixed.length;
   say(n >= FIX_ROOMS.length
     ? `${text} がっこうが ぜんぶ もとに もどった！ げんかんへ！`
@@ -470,13 +476,14 @@ const SPOTS = {
     label: () => G.fixed.includes('classroom') ? 'こくばんを よむ' : 'こくばんを しらべる',
     act() {
       if (G.fixed.includes('classroom')) return say('こくばん「たいいくかんの ばんごう 1ばんめ＝5」', 3);
-      if (!has('eraser')) return say('こくばんが おばけの らくがきで いっぱいだ。けす ものが あれば…', 3);
+      if (!has('eraser')) { SFX.comicScare('chalk'); return say('こくばんが おばけの らくがきで いっぱいだ。けす ものが あれば…', 3); }
       restoreRoom('classroom', 'らくがきを けした！ 2ねん1くみが もとに もどった！');
     },
   },
   homework: {
     label: () => 'ぼくの つくえを しらべる',
     act() {
+      if (!G.flags.homework) ComicHorror.scare('book','homework-prank');
       G.flags.homework = true;
       say('しゅくだいの ノートだ。…いまは それどころじゃない！ あとで あとで！', 3.6);
     },
@@ -485,7 +492,7 @@ const SPOTS = {
     label: () => G.fixed.includes('staff') ? 'とけいを しらべる' : 'とまった とけいを しらべる',
     act() {
       if (G.fixed.includes('staff')) return say('とけいの うらに「たいいくかんの ばんごう 2ばんめ＝1」', 3);
-      if (!has('battery')) return say('とけいが とまっている。でんちが ぬかれているみたいだ。', 3);
+      if (!has('battery')) { SFX.clockTick(); return say('とけいが とまっている。でんちが ぬかれているみたいだ。', 3); }
       restoreRoom('staff', 'でんちを いれた！ とけいが うごいた！ しょくいんしつが もとに もどった！');
     },
   },
@@ -502,6 +509,7 @@ const SPOTS = {
     label: () => G.fixed.length >= FIX_ROOMS.length ? 'ドアを あける' : 'ドアを しらべる',
     act() {
       if (G.fixed.length >= FIX_ROOMS.length) return finishGame();
+      SFX.comicScare('knock');
       say(`あかない！ おばけの ちからで とじている。がっこうを もとに もどせば…（${G.fixed.length}/${FIX_ROOMS.length}）`, 3.4);
     },
   },
@@ -563,11 +571,31 @@ function updateLockUI() {
 
 function useHerb() {
   if (G.state !== 'play' && G.state !== 'inventory') return;
-  if (G.herbs <= 0) { say('やくそうを もっていない。', 1.6); return; }
-  if (G.hp >= G.maxHp) { say('たいりょくは げんきだ。', 1.4); return; }
-  G.herbs--; G.hp = Math.min(G.maxHp, G.hp + 2);
-  SFX.herb(); say('やくそうを つかった。たいりょくが かいふくした。', 2);
+  if (G.herbs <= 0) { say('おまもりの はっぱを もっていない。', 1.6); return; }
+  G.herbs--;
+  ComicHorror.calm(); // 12秒間はびっくり演出が来ない
+  SFX.herb();
+  say('はっぱで ほっと ひといき！ つぎは '+objective(), 4);
   saveGame(); updateInvUI();
+}
+function showHint() {
+  const fixed = id => G.fixed.includes(id);
+  let hint;
+  if (!fixed('classroom')) hint=has('eraser')
+    ? 'こくばんを こくばんけしで けそう。'
+    : '2ねん1くみにある こくばんけしを さがしてみよう。';
+  else if (!fixed('staff')) hint=!has('key_staff')
+    ? 'こくばんを きれいにすると、かぎが あらわれるよ。'
+    : !has('battery') ? 'ろうかの おくに でんちが あるよ。'
+    : 'しょくいんしつの とけいに でんちを いれよう。';
+  else if (!G.flags.gymOpen) hint='ばんごうは こくばんの 5、とけいの 1、ろうかの 7。5・1・7！';
+  else if (!fixed('gym')) hint=has('whistle')
+    ? 'たいいくかんの ステージで ふえを ふこう！'
+    : 'しょくいんしつに せんせいの ふえが あるよ。';
+  else hint='げんかんの ドアを しらべよう！';
+  $('invObjective').textContent='ヒント：'+hint;
+  SFX.camera();
+  return hint;
 }
 
 /* ===== セーブ ===== */
@@ -578,7 +606,7 @@ function saveGame() {
       v: 2, room: G.room, x: G.p.x, z: G.p.z, a: G.p.a,
       hp: G.hp, herbs: G.herbs, time: G.time, damage: G.damage,
       bag: G.bag, fixed: G.fixed, flags: G.flags,
-      taken: G.taken, dead: G.dead,
+      taken: G.taken, dead: G.dead, scareSeen: G.scareSeen,
     }));
     G.autosave = 1.5; SFX.save();
   } catch (_) {}
@@ -592,10 +620,11 @@ function loadGame() {
   try { s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch (_) {}
   if (!s || s.v !== 2) return false;
   resetWorld();
-  G.hp = clamp(s.hp == null ? HP_MAX : s.hp, 1, HP_MAX);
+  G.hp = HP_MAX; // 旧セーブも死なないルールで再開
   G.herbs = s.herbs || 0; G.time = s.time || 0; G.damage = s.damage || 0;
   const arr = v => Array.isArray(v) ? v.slice() : [];
   G.taken = arr(s.taken); G.dead = arr(s.dead); G.bag = arr(s.bag);
+  G.scareSeen = arr(s.scareSeen);
   G.fixed = arr(s.fixed).filter(id => FIX_ROOMS.includes(id));
   G.flags = s.flags && typeof s.flags === 'object' ? Object.assign({}, s.flags) : {};
   G.bossDead = G.fixed.includes('gym');
@@ -692,6 +721,12 @@ function finishGame() {
   G.keys = Object.create(null);
   try { localStorage.removeItem(SAVE_KEY); } catch (_) {}
   updateContinueUI();
+  ComicHorror.clearVisual();
+  // 脱出後は不気味なうなりを消して、エンディングのメロディを残す
+  if (AudioSys.ctx && AudioSys.ambient && AudioSys.rain) {
+    AudioSys.ambient.gg.gain.setTargetAtTime(.001, AudioSys.ctx.currentTime, .45);
+    AudioSys.rain.rg.gain.setTargetAtTime(.018, AudioSys.ctx.currentTime, .6);
+  }
   SFX.win();
   $('intro').hidden = false; $('intro').classList.add('morning');
   showIntroStep();
@@ -703,13 +738,14 @@ function showEndPanel() {
   $('ending').hidden = false;
   $('endTime').textContent = fmtTime(G.time);
   $('endHurt').textContent = G.damage;
-  $('endHp').textContent = G.hp;
+  $('endHp').textContent = G.herbs;
 }
 function retry() {
   $('over').hidden = true;
   if (!loadGame()) startNewGame(false);
 }
 function toTitle() {
+  ComicHorror.clearVisual();
   G.state = 'title'; G.lock = null; G.keys = Object.create(null); G.touch = Object.create(null);
   hideAllOverlays();
   $('title').hidden = false; titleShown = true;
@@ -759,15 +795,9 @@ function drawHUD() {
   hudText(R.name, 9, 8, 9, 'rgba(232,225,207,.85)');
   // もどした へや
   hudText(`もどした ${G.fixed.length}/${FIX_ROOMS.length}`, 311, 8, 9, G.fixed.length >= FIX_ROOMS.length ? '#ffd76a' : '#d8cfae', 'right');
-  // 体力
-  const hpColor = G.hp <= 1 ? '#ff5a4a' : G.hp === 2 ? '#ffb24a' : '#d84a3a';
-  HUD.font = '13px "DotGothic16",monospace'; HUD.textAlign = 'left'; HUD.textBaseline = 'top';
-  HUD.fillStyle = hpColor;
-  let hearts = '';
-  for (let i = 0; i < G.maxHp; i++) hearts += i < G.hp ? '♥' : '♡';
-  HUD.fillText(hearts, 9, 216);
-  // やくそう
-  hudText(`やくそう ${G.herbs}`, 311, 216, 9, '#a9d8a0', 'right');
+  // 体力ゲージは不要。「びっくり回数」を記録して遊ぶ。
+  hudText(`びっくり ${G.damage}かい`, 9, 216, 9, '#ffe0a5');
+  hudText(`はっぱ ${G.herbs}`, 311, 216, 9, '#a9d8a0', 'right');
   // プロンプト
   if (G.prompt && G.msgT <= 0) {
     hudPanel(38, 202, 244, 20);
@@ -790,14 +820,7 @@ function drawHUD() {
   }
   // オートセーブ
   if (G.autosave > 0) hudText('オートセーブ', 160, 30, 8, 'rgba(200,192,170,.8)', 'center');
-  // 低体力の 赤
-  if (G.hp <= 1 && G.state === 'play') {
-    const a = .10 + .05 * Math.sin(performance.now() / 260);
-    const gr = HUD.createRadialGradient(160, 120, 50, 160, 120, 190);
-    gr.addColorStop(0, 'rgba(120,10,10,0)'); gr.addColorStop(1, `rgba(150,12,12,${a})`);
-    HUD.fillStyle = gr; HUD.fillRect(0, 0, 320, 240);
-  }
-  // 火花
+  // 赤い瀕死演出は使用しない。  // 火花
   for (const s of G.sparks) {
     HUD.globalAlpha = clamp(1 - s.t / s.life, 0, 1);
     HUD.fillStyle = s.c; HUD.fillRect(s.x | 0, s.y | 0, 2, 2);
@@ -854,7 +877,7 @@ function closeInventory() {
   G.state = 'play';
 }
 function updateInvUI() {
-  $('invHp').textContent = '♥'.repeat(Math.max(0, G.hp)) + '♡'.repeat(Math.max(0, G.maxHp - G.hp));
+  $('invHp').textContent = G.damage+'かい';
   $('invBag').textContent = G.bag.length ? G.bag.map(id => ITEM_NAMES[id] || id).join('・') : 'なし';
   $('invHerb').textContent = G.herbs;
   $('invFixed').textContent = `${G.fixed.length} / ${FIX_ROOMS.length}`;
@@ -864,7 +887,7 @@ function updateInvUI() {
   $('btnControl').textContent = G.mode === 'tank' ? 'タンク（ホラー風）' : 'モダン（カメラ基準）';
   $('btnSound').textContent = G.sound ? 'オン' : 'オフ';
   $('btnFx').textContent = G.fx ? 'オン' : 'オフ';
-  $('btnHerb').disabled = !(G.herbs > 0 && G.hp < G.maxHp);
+  $('btnHerb').disabled = G.herbs <= 0;
   $('btnMode').textContent = `そうさ：${G.mode === 'tank' ? 'タンク' : 'モダン'}`;
   $('btnTitleSound').textContent = `おと：${G.sound ? 'オン' : 'オフ'}`;
   $('tMute').textContent = G.sound ? '♪' : '×';
@@ -967,6 +990,7 @@ function bindInput() {
   $('btnTitleSound').addEventListener('click', () => { initAudio(); toggleSound(); });
   $('btnResume').addEventListener('click', closeInventory);
   $('btnHerb').addEventListener('click', useHerb);
+  $('btnHint').addEventListener('click', showHint);
   $('btnInvTitle').addEventListener('click', () => { $('inv').hidden = true; pauseVeil.style.opacity = '0'; toTitle(); });
   $('btnControl').addEventListener('click', () => setMode(G.mode === 'tank' ? 'modern' : 'tank'));
   $('btnSound').addEventListener('click', toggleSound);
@@ -1014,12 +1038,13 @@ function update(dt) {
   updateSparks(dt);
   updateRoomFx();
   updatePrompt();
+  ComicHorror.tick(dt);
   if (G.hp <= 1) {
     G.heartT -= dt;
     if (G.heartT <= 0) { G.heartT = 1.15; tone(62, .25, 'sine', .07); tone(52, .3, 'sine', .06, 0, .24); }
   }
   flashEl.style.opacity = String(Math.max(G.hurt * .9, G.flash * .55));
-  flashEl.style.background = G.flash > G.hurt ? '#d8c58a' : '#b42424';
+  flashEl.style.background = G.flash > G.hurt ? '#ffe7aa' : '#c5a9eb';
 }
 function loop(now) {
   const dt = Math.min(.05, Math.max(0, (now - loop.last) / 1000 || 0));
@@ -1066,6 +1091,7 @@ function init() {
     G, ROOMS, startNewGame, advanceIntro, finishIntro, loadGame, saveGame, hasSave, resetWorld,
     enterRoom, changeRoom, updateTransition, interact, pickupItem, useHerb,
     hurtPlayer, updateCamera, restoreRoom, openLock, closeLock, lockSpin, lockTry, showEndPanel,
+    comic: ComicHorror, showHint,
     update, updatePlayer, updateEnemies, updateBoss, nearestItem, nearestDoor, nearestSpot, objective,
     FIX_ROOMS, GYM_CODE, SPOTS,
     blocked, tryMove, setMode, openInventory, closeInventory, finishGame,

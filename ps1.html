@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap">
-<link rel="stylesheet" href="ps1/style.css">
+<link rel="stylesheet" href="ps1/style.css?v=20261108comic">
 </head>
 <body>
 <div id="viewport">
@@ -22,6 +22,13 @@
     <div id="flash" aria-hidden="true"></div>
     <div id="pauseVeil" aria-hidden="true"></div>
     <div id="fade" aria-hidden="true"></div>
+    <div id="booOverlay" aria-hidden="true">
+      <div class="boo-burst">
+        <div class="boo-sprite"><i class="boo-eye"></i><i class="boo-eye"></i><i class="boo-mouth"></i></div>
+        <div id="booWord" class="boo-word"></div>
+        <div id="booFaceLabel" class="boo-caption"></div>
+      </div>
+    </div>
 
     <div id="touch" aria-label="タッチ操作">
       <button class="tbtn" id="tUp" aria-label="すすむ">▲</button>
@@ -44,7 +51,7 @@
           <div class="hint" id="continueHint">セーブデータなし</div>
           <button id="btnMode">そうさ：タンク</button>
         </div>
-        <p class="warn">※ びっくりする 演出があります。<br>ヘッドホンで あそぶと こわさが ます。</p>
+        <p class="warn">※ おばけは おどかすだけ。ゲームオーバーには なりません。<br>おとが こわければ ♪ で オフに できます。</p>
         <div class="press">PRESS ANY KEY</div>
         <div class="titleFoot">
           <span>© 1996 OBAKE DAIICHI</span>
@@ -67,9 +74,9 @@
       <div class="panel">
         <h2>もちもの <small>PAUSE</small></h2>
         <div class="statgrid">
-          <span>たいりょく</span><b id="invHp">♥♥♥♥</b>
+          <span>びっくりした かず</span><b id="invHp">0かい</b>
           <span>もちもの</span><b id="invBag">なし</b>
-          <span>やくそう</span><b id="invHerb">0</b>
+          <span>おまもりの はっぱ</span><b id="invHerb">0</b>
           <span>もとに もどした へや</span><b id="invFixed">0 / 3</b>
           <span>いまの ばしょ</span><b id="invRoom">2ねん1くみ</b>
           <span>あそんだ じかん</span><b id="invTime">00:00</b>
@@ -77,7 +84,8 @@
         <p id="invObjective">2ねん1くみの こくばんを もとに もどそう。</p>
         <div class="row">
           <button id="btnResume" class="primary">つづける</button>
-          <button id="btnHerb">やくそうを つかう</button>
+          <button id="btnHerb">はっぱで おちつく</button>
+          <button id="btnHint">ヒントを みる</button>
           <button id="btnInvTitle">タイトルへ</button>
         </div>
         <div class="setting"><span>そうさ</span><button id="btnControl">タンク（ホラー風）</button></div>
@@ -86,7 +94,7 @@
         <div class="controls">
           <b>↑↓</b> すすむ／さがる　<b>←→</b> まわる（タンク）<br>
           <b>E／Enter／スペース</b> しらべる・とる・つかう<br>
-          <b>I／Esc</b> もちもの　<b>H</b> やくそう　<b>M</b> おと
+          <b>I／Esc</b> もちもの　<b>H</b> はっぱ　<b>M</b> おと
         </div>
       </div>
     </section>
@@ -133,7 +141,7 @@
         <div class="statgrid">
           <span>クリア じかん</span><b id="endTime">00:00</b>
           <span>びっくりした かず</span><b id="endHurt">0</b>
-          <span>たいりょく</span><b id="endHp">4</b>
+          <span>のこった はっぱ</span><b id="endHp">0</b>
           <span>もとに もどした へや</span><b>3 / 3</b>
         </div>
         <p style="font-size:10px;color:#8e8798">「あしたは わすれないぞ…たぶん。」</p>
@@ -147,8 +155,9 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
-<script src="ps1/engine.js"></script>
-<script src="ps1/rooms.js"></script>
-<script src="ps1/logic.js"></script>
+<script src="ps1/engine.js?v=20261108comic"></script>
+<script src="ps1/comic-horror.js?v=20261108comic"></script>
+<script src="ps1/rooms.js?v=20261108comic"></script>
+<script src="ps1/logic.js?v=20261108comic"></script>
 </body>
 </html>

@@ -134,12 +134,14 @@ window.runPS1Tests = function () {
   G.p = { x: 1.2, z: 0.4, a: 0.5, walk: 0, moving: 0 };
   P.saveGame();
   const snapBag = G.bag.slice(), snapFixed = G.fixed.slice();
+  G.scareSeen = ['test-scare-save']; P.saveGame();
   P.resetWorld();
   check('reset clears progress', G.fixed.length === 0 && G.bag.length === 0);
   check('load restores state', P.loadGame() === true);
   check('load restores room', G.room === 'staff', G.room);
   check('load restores bag', JSON.stringify(G.bag) === JSON.stringify(snapBag), G.bag);
-  check('load restores fixed rooms', JSON.stringify(G.fixed) === JSON.stringify(snapFixed) && G.hp === 2, G.fixed);
+  check('load restores seen scares', G.scareSeen.includes('test-scare-save'));
+  check('load restores fixed rooms and safe HP', JSON.stringify(G.fixed) === JSON.stringify(snapFixed) && G.hp === 4, G.fixed);
   check('load restores door flags', G.flags.staffOpen === true && G.flags.gymOpen === true, G.flags);
   check('load keeps ghosts gone', P.ROOMS.corridor.enemies.every(e => e.dead));
 
@@ -176,28 +178,40 @@ window.runPS1Tests = function () {
   P.startNewGame(true); P.finishIntro();
   check('intro can be skipped', G.state === 'play');
 
-  // --- おばけは あたると いたい（にげるしか ない）---
+  // --- おばけの びっくり：ダメージなし・何度でも探索できる ---
   P.startNewGame(false);
+  check('comic scare director has ten scripted moments', P.comic.BEATS.length >= 10);
+  check('soundtrack cue and scare synthesis available', typeof SFX.comicScare === 'function' && typeof SFX.roomAmbience === 'function');
   place('corridor', 0, 0, Math.PI);
   P.room().enemies.forEach(e => { e.dead = true; e.group.visible = false; });
   const ghost = P.spawnEnemyEntity(P.room(), { id: 't_ghost', type: 'ghost', x: 0, z: -0.9, wake: 99 });
-  ghost.awake = true; ghost.cd = 0;
-  P.room().enemies.push(ghost);
+  ghost.awake = true; ghost.cd = 0; P.room().enemies.push(ghost);
   G.hp = 4; G.invuln = 99;
   step(0.7);
-  check('ghost winds up before attacking', ghost.windup > 0 || ghost.cd > 0, { windup: ghost.windup, cd: ghost.cd });
+  check('ghost winds up before a scare', ghost.windup > 0 || ghost.cd > 0);
   G.invuln = 0; ghost.cd = 0; ghost.stagger = 0;
   step(0.8);
-  check('ghost attack hurts player', G.hp < 4, G.hp);
+  check('ghost contact never decreases hp', G.hp === 4 && G.state === 'play', { hp:G.hp, state:G.state });
   check('ghost backs off after a scare', ghost.stagger > 0 || ghost.cd > 0);
   P.room().enemies.pop(); ghost.group.removeFromParent();
-  G.hp = 4; G.invuln = 0; G.state = 'play';
+  G.hp = 1; G.invuln = 0; G.state = 'play';
   P.hurtPlayer();
-  check('hurt costs one heart', G.hp === 3, G.hp);
+  check('no deaths even with old-save low hp', G.hp === 1 && G.state === 'play');
   G.herbs = 1; P.useHerb();
-  check('herb heals', G.hp === 4 && G.herbs === 0, { hp: G.hp, herbs: G.herbs });
-  G.hp = 1; G.invuln = 0; P.hurtPlayer();
-  check('zero hp is game over', G.state === 'dead' && G.hp === 0, { state: G.state, hp: G.hp });
+  check('leaf grants a calm period', G.herbs === 0 && P.comic.status().safe > 0);
+  check('leaf does not change hp', G.hp === 1);
+  P.startNewGame(false);
+  step(8);
+  check('entrance has a scripted nonlethal surprise', G.damage >= 1 && G.hp === 4 && G.state === 'play', { count:G.damage, state:G.state });
+  check('one-time entrance scene is remembered', G.scareSeen.includes('entrance-knock'));
+  G.herbs = 1;
+  P.useHerb();
+  check('leaf suppresses consecutive scares', P.comic.scare('ghost') === false);
+  P.startNewGame(false);
+  G.fixed = []; G.bag = []; G.flags = {};
+  P.openInventory();
+  check('optional hint shows the eraser route', P.showHint().includes('こくばんけし'));
+  P.closeInventory();
 
   // --- カメラの 固定切りかえ ---
   P.startNewGame(false);
