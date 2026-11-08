@@ -635,22 +635,32 @@ function updateContinueUI() {
 
 /* ===== はじめ / おわり ===== */
 const INTRO_LINES = [
-  [0, 'あめの よる。\nわすれものを とりに きた。'],
-  [1.5, '2ねん1くみで チャイムが！\nランドセルが うごいてる！？'],
-  [3.4, 'がっこうが おばけに！？\nおふだ 3まいで しずめよう。'],
-  [5.4, 'みずでっぽうで まもろう。\nげんかんへ いこう。'],
+  'あめの よる。\nわすれものを とりに きた。',
+  '2ねん1くみで チャイムが！\nだれも いない はずなのに。',
+  'ランドセルが うごいてる！\nがっこうが おばけに なった！？',
+  'おふだを 3まい あつめよう。\nみずでっぽうで すすもう！',
 ];
+function showIntroStep() {
+  const line = $('introLine');
+  line.textContent = INTRO_LINES[G.introStep];
+  $('introNext').textContent = G.introStep === INTRO_LINES.length - 1 ? 'ゲームへ すすむ' : 'つぎへ ▶';
+}
+function advanceIntro() {
+  if (G.state !== 'intro') return;
+  if (G.introStep + 1 >= INTRO_LINES.length) finishIntro();
+  else { G.introStep++; showIntroStep(); }
+}
 function startNewGame(withIntro) {
   initAudio();
   resetWorld();
   hideAllOverlays();
   G.time = 0; G.state = withIntro ? 'intro' : 'play';
-  G.introT = 0; G.introStep = -1;
+  G.introT = 0; G.introStep = 0;
   $('title').hidden = true; titleShown = false;
   enterRoom('classroom', { x: 2.9, z: 2.2, a: Math.PI }, true);
   fadeEl.style.opacity = '0';
   if (withIntro) {
-    $('intro').hidden = false; $('introLine').textContent = INTRO_LINES[0][1];
+    $('intro').hidden = false; showIntroStep();
     $('introLine').style.opacity = '1';
   } else {
     $('intro').hidden = true;
@@ -660,21 +670,15 @@ function startNewGame(withIntro) {
   saveGame();
 }
 function finishIntro() {
+  if (G.state !== 'intro') return;
   $('intro').hidden = true;
   G.state = 'play';
   G.roomTitle = 2.6; G.roomTitleText = '2ねん1くみ';
   say('3まいの おふだを さがそう。', 2.4);
 }
 function updateIntro(dt) {
+  // じぶんの はやさで よめる。いそいで じどうで おわらせない。
   G.introT += dt;
-  let idx = 0;
-  for (let i = 0; i < INTRO_LINES.length; i++) if (G.introT >= INTRO_LINES[i][0]) idx = i;
-  if (idx !== G.introStep) {
-    G.introStep = idx;
-    $('introLine').style.opacity = '0';
-    setTimeout(() => { $('introLine').textContent = INTRO_LINES[idx][1]; $('introLine').style.opacity = '1'; }, 120);
-  }
-  if (G.introT > 7.2) finishIntro();
 }
 function finishGame() {
   G.state = 'ending';
@@ -897,7 +901,8 @@ function bindInput() {
       return;
     }
     if (G.state === 'intro') {
-      if (['Enter', 'Space', 'KeyE', 'KeyJ'].includes(c)) finishIntro();
+      if (c === 'Escape') finishIntro();
+      else if (['Enter', 'Space', 'KeyE', 'KeyJ', 'ArrowRight'].includes(c)) advanceIntro();
       return;
     }
     if (G.state === 'inventory') {
@@ -951,6 +956,11 @@ function bindInput() {
   $('tItem').addEventListener('pointerdown', e => { e.preventDefault(); openInventory(); });
   $('tMute').addEventListener('pointerdown', e => { e.preventDefault(); toggleSound(); });
 
+  $('introNext').addEventListener('click', advanceIntro);
+  $('introSkip').addEventListener('click', finishIntro);
+  $('intro').addEventListener('pointerdown', e => {
+    if (e.target === $('intro') || e.target === $('introLine')) advanceIntro();
+  });
   $('btnNew').addEventListener('click', () => startNewGame(true));
   $('btnContinue').addEventListener('click', () => { if (!loadGame()) startNewGame(true); });
   $('btnMode').addEventListener('click', () => setMode(G.mode === 'tank' ? 'modern' : 'tank'));
@@ -1052,7 +1062,7 @@ function init() {
   $('title').hidden = false;
   requestAnimationFrame(loop);
   window.PS1 = {
-    G, ROOMS, startNewGame, loadGame, saveGame, hasSave, resetWorld,
+    G, ROOMS, startNewGame, advanceIntro, finishIntro, loadGame, saveGame, hasSave, resetWorld,
     enterRoom, changeRoom, updateTransition, interact, pickupItem, useHerb, fire,
     hurtPlayer, damageEnemy, killGhost, killBoss, findTarget, updateCamera,
     update, updatePlayer, updateEnemies, updateBoss, updateProjectiles, nearestItem, nearestDoor,

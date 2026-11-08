@@ -18,6 +18,18 @@ window.runPS1Tests = function () {
   const clearRoom = () => { P.room().enemies.forEach(e => { e.dead = true; e.group.visible = false; }); };
   const place = (room, x, z, a) => P.enterRoom(room, { x, z, a: a == null ? Math.PI : a }, true);
 
+  // --- 導入：読むスピードをプレイヤーが決める ---
+  P.startNewGame(true);
+  check('intro starts at first page', G.state === 'intro' && G.introStep === 0);
+  check('intro says why player came to school', document.getElementById('introLine').textContent.includes('わすれもの'));
+  step(15);
+  check('intro does not auto-skip', G.state === 'intro' && G.introStep === 0);
+  P.advanceIntro();
+  check('intro advances one page', G.introStep === 1 && G.state === 'intro');
+  P.advanceIntro(); P.advanceIntro(); P.advanceIntro();
+  check('last intro page starts game', G.state === 'play');
+  check('ending contains dawn and gate animation', !!document.querySelector('#ending .dawn-scene .dawn-gate'));
+
   // --- 初期状態 ---
   P.startNewGame(false);
   check('new game starts in play', G.state === 'play', G.state);

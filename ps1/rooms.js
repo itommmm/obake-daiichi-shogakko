@@ -183,7 +183,7 @@ function buildCorridor() {
   // もの
   addItemDef(R, { id: 'ammo_corridor', type: 'ammo', x: 1.1, z: -8.4, y: .05, amount: 6, label: 'みずの たまを とる' });
   addItemDef(R, { id: 'herb_corridor', type: 'herb', x: -1.1, z: 8.2, y: .05, label: 'やくそうを とる' });
-  addItemDef(R, { id: 'note_corridor', type: 'note', x: 1.2, z: -7.2, y: .1, label: 'けいじばんを よむ', text: '「よるの チャイムが なってから、がっこうの ものが かってに うごいている。」' });
+  addItemDef(R, { id: 'note_corridor', type: 'note', x: 1.2, z: -7.2, y: .1, label: 'けいじばんを よむ', text: '「よるの チャイムが なんども なる。こうしゃの とけいが こわれたのかな？」' });
   addEnemyDef(R, { id: 'h_ghost', type: 'ghost', x: 0, z: -8.6, wake: 7.0 });
   addEnemyDef(R, { id: 'h_uwabaki', type: 'uwabaki', x: .9, z: -1.2, wake: 5.0 });
   addEnemyDef(R, { id: 'h_randoseru', type: 'randoseru', x: -.75, z: 6.6, wake: 6.0 });
@@ -236,7 +236,7 @@ function buildStaffroom() {
   // もの
   addItemDef(R, { id: 'charm_staff', type: 'charm', x: 2.8, z: -2.36, y: .72, label: 'おふだを とる' });
   addItemDef(R, { id: 'ammo_staff', type: 'ammo', x: 0, z: .3, y: .72, amount: 6, label: 'みずの たまを とる' });
-  addItemDef(R, { id: 'note_staff', type: 'note', x: -.5, z: -2.86, y: .1, label: 'けいじを よむ', text: '「おふだを 3まい そろえると、がっこうが しずまり、げんかんの かぎが ひらく。」' });
+  addItemDef(R, { id: 'note_staff', type: 'note', x: -.5, z: -2.86, y: .1, label: 'けいじを よむ', text: '「かみなりで とけいが くるった。チャイムが おばけを おこした。おふだ 3まいを そろえよう。」' });
   addEnemyDef(R, { id: 's_chalk', type: 'chalk', x: 2.1, z: -1.7, wake: 6.2 });
   addEnemyDef(R, { id: 's_ghost', type: 'ghost', x: -2.7, z: -1.4, wake: 5.5 });
   return R;

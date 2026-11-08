@@ -57,9 +57,12 @@
       </div>
     </section>
 
-    <section id="intro" hidden>
-      <div class="introLine" id="introLine"></div>
-      <div class="skip">ボタンで スキップ</div>
+    <section id="intro" hidden aria-label="ものがたり">
+      <div class="introLine" id="introLine" aria-live="polite"></div>
+      <div class="introControls">
+        <button id="introNext" type="button" class="introNext">つぎへ ▶</button>
+        <button id="introSkip" type="button" class="introSkip">とばす</button>
+      </div>
     </section>
 
     <section id="inv" class="overlay" hidden>
@@ -104,6 +107,12 @@
     <section id="ending" class="overlay" hidden>
       <div class="panel">
         <h2>ENDING</h2>
+        <div class="dawn-scene" role="img" aria-label="校門が開き、学校に朝日が差す">
+          <div class="dawn-sun"></div>
+          <div class="dawn-school"><div class="dawn-roof"></div><div class="dawn-windows"></div><div class="dawn-door"></div></div>
+          <div class="dawn-path"></div>
+          <div class="dawn-gate"><div class="dawn-gate-left"></div><div class="dawn-gate-right"></div></div>
+        </div>
         <div class="big">がっこうに あさが きた！</div>
         <p id="endText">おふだが 3まい そろった。おばけたちは しずまり、校門の かぎが ひらいた。わすれものは また あした！</p>
         <div class="statgrid">
