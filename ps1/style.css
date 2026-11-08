@@ -265,3 +265,96 @@ button:focus-visible{outline:2px solid var(--paper);outline-offset:2px}
 #stage.mode-modern #tAct.ready{background:rgba(165,107,38,.96);border-color:#fff5bd}
 #stage.mode-modern #tItem,#stage.mode-modern #tMute{z-index:4;min-height:30px;min-width:38px}
 @media (pointer:coarse){#touch{display:block}}
+
+/* ===== 子ども向けタップ探索GUI =====
+ * 操作は左スティックのまま。調べる対象には大きなタップ領域を重ねる。
+ */
+#poiLayer{position:absolute;inset:0;z-index:8;pointer-events:none;}
+.poi-marker{
+  position:absolute;transform:translate(-50%,-50%);
+  min-width:44px;min-height:44px;padding:0;
+  display:grid;place-items:center;
+  border:2px solid #ffe2a2;border-radius:50%;color:#fff9df;
+  background:rgba(46,36,77,.86);box-shadow:0 2px 0 #171326,0 0 0 3px rgba(14,12,23,.6);
+  font-size:22px;line-height:1;pointer-events:auto;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+}
+.poi-marker.near{background:#77612d;border-color:#fff1b9;}
+.poi-marker.selected{background:#7657a2;border-color:#fff;}
+.poi-marker:focus-visible{outline:3px solid #fff;outline-offset:3px;}
+.poi-marker:active{transform:translate(-50%,-50%) scale(.90);}
+#quickBar{
+  position:absolute;z-index:9;top:6px;left:8px;right:108px;
+  display:flex;align-items:center;gap:5px;pointer-events:none;
+  max-height:52px;
+}
+#quickBar button{
+  min-width:44px;min-height:44px;padding:5px 8px;border:2px solid #d9c58b;
+  background:#2b2838;color:#fff3cc;border-radius:7px;font-size:clamp(10px,1.9vw,13px);
+  pointer-events:auto;touch-action:manipulation;white-space:nowrap;
+}
+#quickBar button:active{background:#6e5d47;}
+#quickItems{
+  min-width:0;flex:1;display:flex;align-items:center;gap:3px;
+  height:44px;overflow:auto hidden;scrollbar-width:none;
+  padding:2px 6px;border:1px solid #5a5262;border-radius:6px;
+  background:rgba(11,10,17,.85);font-size:10px;color:#eee2cf;white-space:nowrap;
+}
+#quickItems::-webkit-scrollbar{display:none;}
+.quick-item{display:inline-block;flex:0 0 auto;border:1px solid #8a7c67;border-radius:4px;padding:6px 5px;background:#22202a;}
+#tapStatus{
+  position:absolute;left:28%;right:26%;bottom:18px;
+  z-index:9;padding:5px 7px;text-align:center;pointer-events:none;
+  background:rgba(15,13,25,.89);border:1px solid #b6a88f;
+  color:#f6ebd0;font-size:clamp(9px,1.8vw,12px);border-radius:4px;
+}
+#inspectPanel{z-index:16;padding:10px;}
+#inspectPanel .inspect-panel{
+  width:min(380px,100%);max-height:100%;overflow-y:auto;
+  padding:14px 16px;background:#161420;border:2px solid #8f8471;
+}
+#inspectPanel h2{font-size:clamp(15px,3.8vh,20px);}
+#inspectPanel .inspect-illustration{
+  height:clamp(66px,24vh,138px);
+  display:grid;place-items:center;
+  border:4px solid #63584b;background:#20252b;color:#ece9ce;
+  font-size:clamp(18px,5vw,32px);letter-spacing:.08em;text-align:center;
+}
+#inspectIllustration[data-kind="board"]{background:#234339;border:6px solid #795d39;}
+#inspectIllustration[data-kind="clock"]{background:#b8b6a4;color:#24282a;border:7px solid #6d4f3d;border-radius:50%;max-width:160px;margin:0 auto;}
+#inspectIllustration[data-kind="stage"]{background:#4a344e;color:#f6e6b6;}
+#inspectIllustration[data-kind="homework"]{background:#e8debd;color:#302c36;}
+#inspectIllustration[data-kind="gate"]{background:#6c6f78;color:#fff;}
+#inspectIllustration[data-kind="hint"]{background:#46412e;color:#fff3b8;}
+#inspectDescription{font-size:clamp(12px,2.8vh,16px);white-space:pre-line;line-height:1.85;}
+#inspectPanel .row{gap:10px;}
+#inspectPanel button{min-height:44px;min-width:92px;border-radius:6px;font-size:clamp(12px,2.8vh,16px);padding:8px 16px;touch-action:manipulation;}
+#tItem,#tMute{min-width:44px;min-height:44px;}
+#stage.mode-modern #tItem,#stage.mode-modern #tMute{min-width:44px;min-height:44px;}
+@media(max-height:330px){
+  #quickBar{top:3px;max-height:44px;}
+  #quickBar button,#quickItems{min-height:38px;height:38px;}
+  #inspectPanel .inspect-illustration{height:64px;}
+}
+@media(prefers-reduced-motion:reduce){
+  .poi-marker{transition:none;animation:none;}
+}
+
+.poi-marker.spot{border-color:#d7f5b2;}
+.poi-marker.near::after,.poi-marker.selected::after{
+  content:attr(data-short);
+  position:absolute;top:100%;left:50%;transform:translateX(-50%);
+  max-width:104px;min-width:50px;padding:3px 5px;
+  background:#15131d;border:1px solid #e6d5a5;color:#fff0c6;
+  border-radius:3px;font-size:10px;line-height:1.3;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;
+}
+
+/* スティック操作では上部の「かばん」と二重になる小ボタンを隠す */
+#stage.mode-modern #tItem{display:none;}
+/* 暗証番号と文章送りも指で押しやすいサイズに */
+#lock .dial button{min-height:44px;min-width:44px;}
+#lock .row button,#intro .introControls button{min-height:44px;}
+
+/* とけいの拡大図は正円を維持 */
+#inspectIllustration[data-kind="clock"]{width:min(132px,32vw,25vh);height:auto;aspect-ratio:1;}

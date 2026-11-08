@@ -104,6 +104,7 @@ function resetWorld() {
   }
   applyRoomLooks();
   ComicHorror.reset();
+  AdventureUI.suspend();
 }
 
 /* ===== 固定カメラ ===== */
@@ -140,6 +141,7 @@ function updateCamera(force) {
 
 /* ===== 部屋の 出入り ===== */
 function enterRoom(id, spawn, silent) {
+  AdventureUI.suspend();
   const R = ROOMS[id] || ROOMS.classroom;
   G.room = R.id;
   activeRoom = R;
@@ -161,6 +163,7 @@ function enterRoom(id, spawn, silent) {
 }
 function changeRoom(door) {
   if (G.state !== 'play' || G.trans) return;
+  AdventureUI.suspend();
   G.trans = { t: 0, door, switched: false };
   G.state = 'transition';
   fadeEl.style.opacity = '1';
@@ -202,12 +205,14 @@ function inputDown(name) {
 }
 function updatePlayer(dt) {
   if (!activeRoom || G.state !== 'play') return;
+  const autoMoved = AdventureUI.autoStep(dt);
+  if (G.state !== 'play') return;
   const p = G.p;
   const up = inputDown('up'), down = inputDown('down'), left = inputDown('left'), right = inputDown('right');
   const joyX = G.touch.joyX || 0, joyY = G.touch.joyY || 0;
   const run = !!(G.keys.ShiftLeft || G.keys.ShiftRight) ||
     (G.mode === 'modern' && Math.hypot(joyX, joyY) > .92);
-  let moving = 0;
+  let moving = autoMoved ? 1 : 0;
   if (G.mode === 'tank') {
     // クラシック：左右で向きを変え、前後で移動。
     if (left) p.a += 2.25 * dt;
@@ -546,6 +551,7 @@ function interact() {
 
 /* ===== ばんごうロック ===== */
 function openLock(door) {
+  AdventureUI.suspend();
   ModernControls.release(); // マウスロックを解除し、暗証番号ボタンを操作可能に
   G.state = 'lock'; G.keys = Object.create(null); G.touch = Object.create(null);
   G.lock = { door, digits: [0, 0, 0], col: 0 };
@@ -729,6 +735,7 @@ function advanceIntro() {
 function updateIntro(dt) { G.introT += dt; }
 // エンディング：もどった → かえる → つくえの しゅくだい → つぎの あさ「あっ！！ わすれた！」→ おしまい
 function finishGame() {
+  AdventureUI.suspend();
   ModernControls.release(); // エンディングのボタンをクリックできるように
   G.state = 'ending'; G.endT = 0; G.endStep = 0;
   G.keys = Object.create(null);
@@ -758,6 +765,7 @@ function retry() {
   if (!loadGame()) startNewGame(false);
 }
 function toTitle() {
+  AdventureUI.suspend();
   ModernControls.release();
   ComicHorror.clearVisual();
   G.state = 'title'; G.lock = null; G.keys = Object.create(null); G.touch = Object.create(null);
@@ -806,7 +814,7 @@ function drawHUD() {
   if (!activeRoom || G.state === 'title' || G.state === 'intro' || G.state === 'ending' || G.state === 'lock') return;
   const R = activeRoom;
   // 部屋名
-  hudText(R.name, 9, 8, 9, 'rgba(232,225,207,.85)');
+  hudText(R.name, 9, 58, 9, 'rgba(232,225,207,.85)'); // 上部のヒント／かばんと重ねない
   // もどした へや
   hudText(`もどした ${G.fixed.length}/${FIX_ROOMS.length}`, 311, 8, 9, G.fixed.length >= FIX_ROOMS.length ? '#ffd76a' : '#d8cfae', 'right');
   // 体力ゲージは不要。「びっくり回数」を記録して遊ぶ。
@@ -883,6 +891,7 @@ function keyName(code) {
 }
 function openInventory() {
   if (G.state !== 'play') return;
+  AdventureUI.suspend();
   ModernControls.release();
   G.state = 'inventory'; G.keys = Object.create(null); G.touch = Object.create(null);
   $('inv').hidden = false; pauseVeil.style.opacity = '1';
@@ -951,6 +960,10 @@ function bindInput() {
       else if (['Enter', 'Space', 'KeyE', 'KeyJ', 'ArrowRight'].includes(c)) advanceIntro();
       return;
     }
+    if (G.state === 'inspect') {
+      if (c === 'Escape' || c === 'Backspace') AdventureUI.closePanel(false);
+      return;
+    }
     if (G.state === 'inventory') {
       if (['Escape', 'KeyI', 'Tab'].includes(c)) closeInventory();
       if (c === 'KeyH') useHerb();
@@ -988,6 +1001,7 @@ function bindInput() {
   const stage = $('stage');
   stage.addEventListener('contextmenu', e => e.preventDefault());
   ModernControls.bind();
+  AdventureUI.bind();
 
   const bindHold = (id, on, off) => {
     const el = $(id);
@@ -1062,6 +1076,7 @@ function update(dt) {
   updateSparks(dt);
   updateRoomFx();
   updatePrompt();
+  AdventureUI.refresh(dt);
   ComicHorror.tick(dt);
   if (G.hp <= 1) {
     G.heartT -= dt;
@@ -1115,7 +1130,7 @@ function init() {
     G, ROOMS, startNewGame, advanceIntro, finishIntro, loadGame, saveGame, hasSave, resetWorld,
     enterRoom, changeRoom, updateTransition, interact, pickupItem, useHerb,
     hurtPlayer, updateCamera, restoreRoom, openLock, closeLock, lockSpin, lockTry, showEndPanel,
-    comic: ComicHorror, modernControls: ModernControls, showHint,
+    comic: ComicHorror, modernControls: ModernControls, adventureUI: AdventureUI, showHint,
     update, updatePlayer, updateEnemies, updateBoss, nearestItem, nearestDoor, nearestSpot, objective,
     FIX_ROOMS, GYM_CODE, SPOTS,
     blocked, tryMove, setMode, openInventory, closeInventory, finishGame,

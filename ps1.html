@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap">
-<link rel="stylesheet" href="ps1/style.css?v=20261108stick">
+<link rel="stylesheet" href="ps1/style.css?v=20261109gui1">
 </head>
 <body>
 <div id="viewport">
@@ -22,6 +22,13 @@
     <div id="flash" aria-hidden="true"></div>
     <div id="pauseVeil" aria-hidden="true"></div>
     <div id="fade" aria-hidden="true"></div>
+    <div id="poiLayer" hidden aria-label="しらべられる ばしょ"></div>
+    <div id="quickBar" hidden aria-label="すぐ つかえる メニュー">
+      <button id="quickHint" type="button" aria-label="つぎに することの ヒント">？ ヒント</button>
+      <div id="quickItems" aria-live="polite">もちもの なし</div>
+      <button id="quickBag" type="button">かばん</button>
+    </div>
+    <div id="tapStatus" hidden role="status" aria-live="polite"></div>
     <div id="booOverlay" aria-hidden="true">
       <div class="boo-burst">
         <div class="boo-sprite"><i class="boo-eye"></i><i class="boo-eye"></i><i class="boo-mouth"></i></div>
@@ -68,6 +75,20 @@
       <div class="introControls">
         <button id="introNext" type="button" class="introNext">つぎへ ▶</button>
         <button id="introSkip" type="button" class="introSkip">とばす</button>
+      </div>
+    </section>
+
+    <section id="inspectPanel" class="overlay" hidden role="dialog" aria-modal="true" aria-labelledby="inspectTitle">
+      <div class="panel inspect-panel">
+        <h2 id="inspectTitle">しらべる</h2>
+        <div id="inspectIllustration" class="inspect-illustration" data-kind="board" aria-hidden="true">
+          <span id="inspectArtText"></span>
+        </div>
+        <p id="inspectDescription">なにか みつけた！</p>
+        <div class="row">
+          <button id="inspectAction" type="button" class="primary">しらべる</button>
+          <button id="inspectClose" type="button">とじる</button>
+        </div>
       </div>
     </section>
 
@@ -161,6 +182,7 @@
 <script src="ps1/comic-horror.js?v=20261108stick"></script>
 <script src="ps1/controls.js?v=20261108stick"></script>
 <script src="ps1/rooms.js?v=20261108fixedaxis"></script>
-<script src="ps1/logic.js?v=20261108fixedaxis"></script>
+<script src="ps1/adventure-ui.js?v=20261109gui1"></script>
+<script src="ps1/logic.js?v=20261109gui1"></script>
 </body>
 </html>

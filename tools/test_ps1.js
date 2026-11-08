@@ -318,6 +318,36 @@ window.runPS1Tests = function () {
   check('legacy fixed camera and tank controls still work', G.mode === 'tank');
   P.setMode('modern');
 
+  // --- タップ探索GUI：固定カメラとスティックはそのまま ---
+  P.startNewGame(false);
+  P.setMode('modern');
+  check('tap adventure API loaded', !!P.adventureUI && typeof P.adventureUI.routeTo === 'function');
+  check('quick hint and bag accessible', !!document.getElementById('quickHint') && !!document.getElementById('quickBag'));
+  check('large object hotspots layer exists', !!document.getElementById('poiLayer'));
+  check('zoomed puzzle panel exists', !!document.getElementById('inspectPanel'));
+  at('classroom', -1.3, -2.1);
+  const boardEntry = P.adventureUI.targets().find(x => x.type === 'spot' && x.ref.id === 'board');
+  check('blackboard target listed', !!boardEntry);
+  check('tap blackboard opens a closer view', P.adventureUI.choose(boardEntry) &&
+    G.state === 'inspect' && !document.getElementById('inspectPanel').hidden);
+  check('zoom displays contextual text', document.getElementById('inspectDescription').textContent.includes('らくがき'));
+  P.adventureUI.closePanel(false);
+  check('close zoom returns safely to exploration', G.state === 'play' && document.getElementById('inspectPanel').hidden);
+  P.adventureUI.showHintPanel();
+  check('hint available without opening inventory', G.state === 'inspect' &&
+    document.getElementById('inspectDescription').textContent.includes('こくばんけし'));
+  P.adventureUI.closePanel(false);
+  G.bag = ['eraser', 'key_staff']; G.herbs = 2;
+  P.adventureUI.refresh(.5);
+  check('on-screen item tray shows collected items', document.getElementById('quickItems').textContent.includes('かぎ') &&
+    document.getElementById('quickItems').textContent.includes('はっぱ'));
+  check('quick bar stays available while playing', !document.getElementById('quickBar').hidden);
+  P.openInventory();
+  check('puzzle overlays hide the exploration buttons', document.getElementById('quickBar').hidden &&
+    document.getElementById('poiLayer').hidden);
+  P.closeInventory();
+  G.bag = []; G.herbs = 0;
+
   // --- 画面 ---
   check('no shooting buttons', !document.getElementById('tFire') && !document.getElementById('tAim'));
   check('fx toggle element exists', !!document.getElementById('btnFx'));
