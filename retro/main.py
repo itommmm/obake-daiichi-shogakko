@@ -2440,7 +2440,7 @@ class Game:
             self.otext(W / 2 - self.font.text_width(s) / 2, 12, s, K + 1, WH)
             s = "スコア %d   ランク %s" % (self.score, self.rank)
             if self.conts:
-                s += "   つづき %dかい" % self.conts
+                s += "   やりなおし %dかい" % self.conts
             self.otext(W / 2 - self.font.text_width(s) / 2, 26, s, K + 1, WH)
         if t > 320 and t % 60 < 40:
             s = "おして タイトルへ"
