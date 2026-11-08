@@ -155,3 +155,36 @@ button:focus-visible{outline:2px solid var(--paper);outline-offset:2px}
 @keyframes slam{0%{transform:translate(6px,-4px)}25%{transform:translate(-6px,3px)}50%{transform:translate(4px,4px)}75%{transform:translate(-3px,-2px)}100%{transform:none}}
 #intro.morning{background:radial-gradient(ellipse at 50% 30%,#2a2620 0%,#0b0a09 70%,#000 100%)}
 #intro .introLine.punch{font-size:clamp(26px,7vh,52px);color:#ffd76a;letter-spacing:.08em;animation:slam .45s steps(2) 1}
+
+/* 小学2年生向け：じぶんのペースで読める導入 */
+#intro{padding:14px 22px}
+#intro .introLine{font-size:clamp(14px,3.4vh,20px);letter-spacing:.06em;line-height:1.95;max-width:100%}
+#intro .introControls{position:absolute;bottom:12px;left:0;right:0;display:flex;gap:14px;align-items:center;justify-content:center}
+#intro .introControls button{font-size:12px;min-height:36px;padding:6px 14px;background:#17141c;border:1px solid #928a75;color:#fff6dc}
+#intro .introControls button:focus-visible{outline:2px solid #fff6dc}
+#intro .introControls .introSkip{font-size:10px;color:#c3b9af;border-color:#57515e}
+
+/* クリア演出：門が開いて朝になる。プレイに必要なDOMや描画は変更しない。 */
+#ending .panel{max-height:100%;overflow-y:auto;padding:12px 15px}
+#ending .dawn-scene{height:82px;margin:2px 0 8px;position:relative;overflow:hidden;border:1px solid #4f5367;background:#10152e;animation:dawn-sky 3.2s steps(5,end) forwards}
+.dawn-sun{position:absolute;width:26px;height:26px;left:17%;bottom:-25px;background:#ffe9aa;border-radius:50%;animation:dawn-sunrise 3.2s ease-out forwards}
+.dawn-school{position:absolute;bottom:12px;left:32%;width:36%;height:45px;background:#454b62;border:2px solid #202638}
+.dawn-roof{position:absolute;width:112%;height:7px;top:-6px;left:-6%;background:#262e46}
+.dawn-windows{position:absolute;left:9%;top:9px;width:82%;height:15px;background:repeating-linear-gradient(90deg,#a5bfd0 0 8px,#454b62 8px 18px)}
+.dawn-door{position:absolute;left:41%;bottom:0;width:18%;height:17px;background:#9ab5c2;border:2px solid #303447}
+.dawn-path{position:absolute;left:36%;width:28%;bottom:0;height:15px;background:#6f7a80;clip-path:polygon(40% 0,60% 0,100% 100%,0 100%)}
+.dawn-gate{position:absolute;left:27%;width:46%;bottom:0;height:29px;display:flex;perspective:200px}
+.dawn-gate-left,.dawn-gate-right{height:100%;width:50%;border:2px solid #282b39;background:repeating-linear-gradient(90deg,transparent 0 6px,#282b39 6px 8px);animation:gate-left 1.2s ease-in-out 1.1s forwards;transform-origin:left center}
+.dawn-gate-left{transform-origin:left center}
+.dawn-gate-right{transform-origin:right center;animation-name:gate-right}
+@keyframes dawn-sky{0%{background:#10152e}55%{background:#4d627a}100%{background:#a3c9d6}}
+@keyframes dawn-sunrise{0%{bottom:-25px}100%{bottom:43px}}
+@keyframes gate-left{to{transform:rotateY(-70deg)}}
+@keyframes gate-right{to{transform:rotateY(70deg)}}
+@media (prefers-reduced-motion:reduce){
+  #ending .dawn-scene,#ending .dawn-sun,#ending .dawn-gate-left,#ending .dawn-gate-right{animation:none}
+  #ending .dawn-scene{background:#a3c9d6}
+  #ending .dawn-sun{bottom:43px}
+  #ending .dawn-gate-left{transform:rotateY(-70deg)}
+  #ending .dawn-gate-right{transform:rotateY(70deg)}
+}

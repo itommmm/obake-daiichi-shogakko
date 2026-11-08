@@ -342,7 +342,7 @@ const ROOMS={
   gym:{zb:1.3,spawn:1.15,halfW:4.6,ceil:6,xs:1},
 };
 /* ゲーム座標(x:-1〜1, z:0手前〜1奥, h:浮き) → 3D(m) */
-const D0=1.5,DZ=4,EYE=.76,LIFT=.9,SCL=.27;
+const D0=1.5,DZ=4,EYE=1.00,LIFT=.9,SCL=.27;
 const zD=z=>-(D0+z*DZ);
 // 左右の広がり：手前ほど画面のはしまで使う（以前の約2.2倍）。部屋の壁を こえないように おさえる
 const XSPREAD=z=>1.75+1.2*z;

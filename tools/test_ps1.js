@@ -147,26 +147,34 @@ window.runPS1Tests = function () {
   use('entrance', 'gate');
   check('door opens after restoring all', G.state === 'ending', G.state);
   check('ending does not leave a save', P.hasSave() === false);
-  const lines = [];
-  for (let t = 0; t < 14; t += 1 / 30) {
-    P.update(1 / 30);
-    const txt = document.getElementById('introLine').textContent;
-    if (lines[lines.length - 1] !== txt) lines.push(txt);
-    if (!document.getElementById('ending').hidden) break;
-  }
-  // テキストの 入れかえは setTimeout なので、行の 番号で 確かめる
-  check('ending story reaches the morning', G.endStep === 4, G.endStep);
-  check('ending panel shows', !document.getElementById('ending').hidden);
+  check('ending starts on the first page', G.endStep === 0 && !document.getElementById('intro').hidden, G.endStep);
+  step(20);
+  check('ending does not auto-advance', G.endStep === 0 && document.getElementById('ending').hidden, G.endStep);
+  P.advanceIntro(); P.advanceIntro();
+  check('ending shows homework left in the desk', document.getElementById('introLine').textContent.indexOf('しゅくだいが のこっていた') >= 0);
+  P.advanceIntro(); P.advanceIntro();
+  check('ending punchline', document.getElementById('introLine').textContent.indexOf('あっ！！ わすれた！') >= 0
+    && document.getElementById('introLine').classList.contains('punch'));
+  P.advanceIntro();
+  check('ending panel shows', !document.getElementById('ending').hidden && document.getElementById('intro').hidden);
   check('ending says おしまい', document.querySelector('#ending .big').textContent === 'おしまい');
+  check('ending contains dawn and door animation', !!document.querySelector('#ending .dawn-scene .dawn-gate'));
 
-  // --- イントロ ---
+  // --- イントロ：読むスピードを プレイヤーが きめる ---
   P.startNewGame(true);
-  check('intro starts', G.state === 'intro', G.state);
-  step(5);
-  check('intro reaches the slam', G.introStep >= 2, G.introStep);
-  step(6);
+  check('intro starts at first page', G.state === 'intro' && G.introStep === 0, G.state);
+  check('intro says why player came to school', document.getElementById('introLine').textContent.indexOf('しゅくだい') >= 0);
+  step(15);
+  check('intro does not auto-skip', G.state === 'intro' && G.introStep === 0);
+  P.advanceIntro(); P.advanceIntro();
+  check('intro reaches the slam', G.introStep === 2 && document.getElementById('introLine').textContent.indexOf('とじこめられた') >= 0);
+  P.advanceIntro(); P.advanceIntro();
+  check('last intro page has the go button', document.getElementById('introNext').textContent === 'ゲームへ すすむ');
+  P.advanceIntro();
   check('intro flows into play', G.state === 'play', G.state);
   check('intro room is entrance', G.room === 'entrance', G.room);
+  P.startNewGame(true); P.finishIntro();
+  check('intro can be skipped', G.state === 'play');
 
   // --- おばけは あたると いたい（にげるしか ない）---
   P.startNewGame(false);

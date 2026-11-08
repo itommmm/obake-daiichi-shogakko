@@ -622,34 +622,34 @@ function updateContinueUI() {
 }
 
 /* ===== はじめ / おわり ===== */
+// 小学2年生が じぶんの はやさで よめるように、ボタン（つぎへ）で 1まいずつ すすむ
 const INTRO_LINES = [
-  [0, 'あめの よる。\n午後7時すぎ'],
-  [1.6, '「あっ！ しゅくだい、\nつくえに わすれた！」\nあした 出す しゅくだいの ノート。'],
-  [3.8, 'げんかんに 入った とたん――\nバタン！\n「ドアが しまった！ とじこめられた！？」'],
-  [6.2, '「…えっ！？ なにか うごいてる！？」\nがっこうが、おばけに のっとられている。'],
-  [8.4, '「がっこうを もとに もどせば\nでられるかも！」'],
+  'あめの よる。\n「あっ！ しゅくだい、\nつくえに わすれた！」',
+  'あした 出す しゅくだいの ノート。\nとりに いこう。',
+  'げんかんに 入った とたん――\nバタン！\n「ドアが しまった！ とじこめられた！？」',
+  '「…えっ！？ なにか うごいてる！？」\nがっこうが、おばけに のっとられている。',
+  '「がっこうを もとに もどせば\nでられるかも！」',
 ];
-const INTRO_END = 10.6;
+const SLAM_PAGE = 2;
 const END_LINES = [
-  [0, 'がっこうが… ひかってる！\n「ぜんぶ もとに もどった！ やったー！」'],
-  [2.8, 'ガチャッ。\n「ドアも あいた！ さて、かえろっと！」'],
-  [5.4, '……\nよるの 2ねん1くみ。\nつくえの なかに、しゅくだいが のこっていた。'],
-  [8.6, 'つぎの あさ。\nせんせい「しゅくだいは？」'],
-  [11.0, '「あっ！！ わすれた！」'],
+  'がっこうが… ひかってる！\n「ぜんぶ もとに もどった！ やったー！」',
+  'ガチャッ。\n「ドアも あいた！ さて、かえろっと！」',
+  '……\nよるの 2ねん1くみ。\nつくえの なかに、しゅくだいが のこっていた。',
+  'つぎの あさ。\nせんせい「しゅくだいは？」',
+  '「あっ！！ わすれた！」',
 ];
-const END_T = 13.6;
+const PUNCH_PAGE = END_LINES.length - 1;
 function startNewGame(withIntro) {
   initAudio();
   resetWorld();
   hideAllOverlays();
   G.time = 0; G.state = withIntro ? 'intro' : 'play';
-  G.introT = 0; G.introStep = -1;
+  G.introT = 0; G.introStep = 0;
   $('title').hidden = true; titleShown = false;
   enterRoom(START.room, { x: START.x, z: START.z, a: START.a }, true);
   fadeEl.style.opacity = '0';
   if (withIntro) {
-    $('intro').hidden = false; $('introLine').textContent = INTRO_LINES[0][1];
-    $('introLine').style.opacity = '1';
+    $('intro').hidden = false; showIntroStep();
   } else {
     $('intro').hidden = true;
     G.roomTitle = 2.4; G.roomTitleText = ROOMS[START.room].name;
@@ -658,45 +658,45 @@ function startNewGame(withIntro) {
   saveGame();
 }
 function finishIntro() {
+  if (G.state !== 'intro') return;
   $('intro').hidden = true;
   G.state = 'play';
   G.roomTitle = 2.6; G.roomTitleText = ROOMS[START.room].name;
   say('ドアが あかない…。がっこうを もとに もどそう！ まずは 2ねん1くみへ。', 3.4);
 }
-function showLines(lines, t, stepKey) {
-  let idx = 0;
-  for (let i = 0; i < lines.length; i++) if (t >= lines[i][0]) idx = i;
-  if (idx !== G[stepKey]) {
-    G[stepKey] = idx;
-    $('introLine').style.opacity = '0';
-    setTimeout(() => { $('introLine').textContent = lines[idx][1]; $('introLine').style.opacity = '1'; }, 120);
-    return idx;
+function showIntroStep() {
+  const ending = G.state === 'ending';
+  const lines = ending ? END_LINES : INTRO_LINES;
+  const n = ending ? G.endStep : G.introStep;
+  const line = $('introLine');
+  line.textContent = lines[n];
+  line.classList.toggle('punch', ending && n === PUNCH_PAGE);
+  $('introNext').textContent = n === lines.length - 1 ? (ending ? 'おしまい ▶' : 'ゲームへ すすむ') : 'つぎへ ▶';
+  if (!ending && n === SLAM_PAGE) { SFX.slam(); $('intro').classList.add('shake'); setTimeout(() => $('intro').classList.remove('shake'), 500); }
+  if (ending && n === PUNCH_PAGE) SFX.alert();
+}
+// オープニングも エンディングも、ボタンで 1まいずつ すすむ（じどうで おわらせない）
+function advanceIntro() {
+  if (G.state === 'intro') {
+    if (G.introStep + 1 >= INTRO_LINES.length) finishIntro();
+    else { G.introStep++; showIntroStep(); }
+  } else if (G.state === 'ending' && $('ending').hidden) {
+    if (G.endStep + 1 >= END_LINES.length) showEndPanel();
+    else { G.endStep++; showIntroStep(); }
   }
-  return -1;
 }
-function updateIntro(dt) {
-  G.introT += dt;
-  const idx = showLines(INTRO_LINES, G.introT, 'introStep');
-  if (idx === 2) { SFX.slam(); $('intro').classList.add('shake'); setTimeout(() => $('intro').classList.remove('shake'), 500); }
-  if (G.introT > INTRO_END) finishIntro();
-}
+function updateIntro(dt) { G.introT += dt; }
 // エンディング：もどった → かえる → つくえの しゅくだい → つぎの あさ「あっ！！ わすれた！」→ おしまい
 function finishGame() {
-  G.state = 'ending'; G.endT = 0; G.endStep = -1;
+  G.state = 'ending'; G.endT = 0; G.endStep = 0;
   G.keys = Object.create(null);
   try { localStorage.removeItem(SAVE_KEY); } catch (_) {}
   updateContinueUI();
   SFX.win();
-  $('intro').hidden = false; $('introLine').textContent = END_LINES[0][1]; $('introLine').style.opacity = '1';
-  $('intro').classList.add('morning');
+  $('intro').hidden = false; $('intro').classList.add('morning');
+  showIntroStep();
 }
-function updateEnding(dt) {
-  if (!$('ending').hidden) return;
-  G.endT += dt;
-  const idx = showLines(END_LINES, G.endT, 'endStep');
-  if (idx === 4) { SFX.alert(); setTimeout(() => $('introLine').classList.add('punch'), 120); }
-  if (G.endT > END_T) showEndPanel();
-}
+function updateEnding(dt) { G.endT += dt; }
 function showEndPanel() {
   if (G.state !== 'ending' || !$('ending').hidden) return;
   $('intro').hidden = true; $('intro').classList.remove('morning'); $('introLine').classList.remove('punch');
@@ -901,7 +901,8 @@ function bindInput() {
       return;
     }
     if (G.state === 'intro') {
-      if (['Enter', 'Space', 'KeyE', 'KeyJ'].includes(c)) finishIntro();
+      if (c === 'Escape') finishIntro();
+      else if (['Enter', 'Space', 'KeyE', 'KeyJ', 'ArrowRight'].includes(c)) advanceIntro();
       return;
     }
     if (G.state === 'inventory') {
@@ -921,7 +922,7 @@ function bindInput() {
       return;
     }
     if (G.state === 'dead') { if (c === 'Enter') retry(); return; }
-    if (G.state === 'ending') { if (['Enter', 'Space', 'KeyE'].includes(c)) showEndPanel(); return; }
+    if (G.state === 'ending') { if (c === 'Escape') showEndPanel(); else if (['Enter', 'Space', 'KeyE', 'KeyJ', 'ArrowRight'].includes(c)) advanceIntro(); return; }
     if (G.state !== 'play') return;
     const k = keyName(c);
     if (k) G.keys[k] = true;
@@ -955,6 +956,11 @@ function bindInput() {
   $('tItem').addEventListener('pointerdown', e => { e.preventDefault(); openInventory(); });
   $('tMute').addEventListener('pointerdown', e => { e.preventDefault(); toggleSound(); });
 
+  $('introNext').addEventListener('click', advanceIntro);
+  $('introSkip').addEventListener('click', () => { if (G.state === 'ending') showEndPanel(); else finishIntro(); });
+  $('intro').addEventListener('pointerdown', e => {
+    if (e.target === $('intro') || e.target === $('introLine')) advanceIntro();
+  });
   $('btnNew').addEventListener('click', () => startNewGame(true));
   $('btnContinue').addEventListener('click', () => { if (!loadGame()) startNewGame(true); });
   $('btnMode').addEventListener('click', () => setMode(G.mode === 'tank' ? 'modern' : 'tank'));
@@ -973,7 +979,6 @@ function bindInput() {
   }
   $('btnLockOk').addEventListener('click', lockTry);
   $('btnLockCancel').addEventListener('click', closeLock);
-  $('intro').addEventListener('pointerdown', () => { if (G.state === 'intro') finishIntro(); else if (G.state === 'ending') showEndPanel(); });
   $('btnEndAgain').addEventListener('click', () => { $('ending').hidden = true; toTitle(); startNewGame(false); });
   $('btnEndTitle').addEventListener('click', () => { $('ending').hidden = true; toTitle(); });
 
@@ -1058,7 +1063,7 @@ function init() {
   $('title').hidden = false;
   requestAnimationFrame(loop);
   window.PS1 = {
-    G, ROOMS, startNewGame, loadGame, saveGame, hasSave, resetWorld,
+    G, ROOMS, startNewGame, advanceIntro, finishIntro, loadGame, saveGame, hasSave, resetWorld,
     enterRoom, changeRoom, updateTransition, interact, pickupItem, useHerb,
     hurtPlayer, updateCamera, restoreRoom, openLock, closeLock, lockSpin, lockTry, showEndPanel,
     update, updatePlayer, updateEnemies, updateBoss, nearestItem, nearestDoor, nearestSpot, objective,

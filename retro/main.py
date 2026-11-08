@@ -1607,7 +1607,8 @@ class Game:
         self.boss = b
         pyxel.playm(1, loop=True)
         pyxel.play(3, 7)
-        self.say("%s が あらわれた！" % self.st["boss"]["name"], 150)
+        self.say(("チャイムで おばけこうしゃが おきた！" if self.stage == 0
+                  else "%s が あらわれた！" % self.st["boss"]["name"]), 150)
 
     def boss_scale(self):
         p = self.proj(self.boss.x, self.boss.y, 0)
@@ -2446,10 +2447,10 @@ class Game:
     def draw_clear(self):
         t = self.t
         pyxel.dither(min(0.75, t / 40))
-        pyxel.rect(0, 36, W, 64, K)
+        pyxel.rect(0, 36, W, 88, K)
         pyxel.dither(1)
         pyxel.line(0, 36, W, 36, GO)
-        pyxel.line(0, 100, W, 100, GO)
+        pyxel.line(0, 124, W, 124, GO)
         s = "%sが" % self.st.get("back", self.st["name"])
         self.otext(W / 2 - self.font.text_width(s) / 2, 39, s, WH, K)
         self.big_text("もとに もどった！", 50, GO, PU)
@@ -2457,11 +2458,16 @@ class Game:
         s = "のこり %d かしょ   スコア %d" % (left, self.score)
         self.otext(W / 2 - self.font.text_width(s) / 2, 78, s, WH, K)
         if t > 60:
-            s = "つぎは %s" % STAGES[self.stage + 1]["name"]
-            self.otext(W / 2 - self.font.text_width(s) / 2, 89, s, CY_, K)
+            if self.stage == 0:   # こうしゃの かおを しずめても、なかの おばけは のこっている
+                s = "こうしゃの かおは しずまった！"
+                self.otext(W / 2 - self.font.text_width(s) / 2, 89, s, CY_, K)
+                s = "でも なかにも おばけ！ つぎは %s" % STAGES[1]["name"]
+            else:
+                s = "つぎは %s" % STAGES[self.stage + 1]["name"]
+            self.otext(W / 2 - self.font.text_width(s) / 2, 100 if self.stage == 0 else 89, s, CY_, K)
         if t > 150 and t % 60 < 40:
             s = "おして つぎの ステージへ"
-            self.otext(W / 2 - self.font.text_width(s) / 2, 106, s, WH, K)
+            self.otext(W / 2 - self.font.text_width(s) / 2, 112, s, WH, K)
 
     def bubble(self, s, cx, by, who=None):
         # ふきだし（下に しっぽ）。who が あれば 名前を そえる
