@@ -471,7 +471,7 @@ const SPOTS = {
     act() {
       if (G.fixed.includes('classroom')) return say('こくばん「たいいくかんの ばんごう 1ばんめ＝5」', 3);
       if (!has('eraser')) return say('こくばんが おばけの らくがきで いっぱいだ。けす ものが あれば…', 3);
-      restoreRoom('classroom', 'らくがきを けした！ 5ねん1くみが もとに もどった！');
+      restoreRoom('classroom', 'らくがきを けした！ 2ねん1くみが もとに もどった！');
     },
   },
   homework: {
@@ -623,7 +623,7 @@ function updateContinueUI() {
 
 /* ===== はじめ / おわり ===== */
 const INTRO_LINES = [
-  [0, '1996年 7月 18日（木）\n午後7時すぎ'],
+  [0, 'あめの よる。\n午後7時すぎ'],
   [1.6, '「あっ！ しゅくだい、\nつくえに わすれた！」\nあした 出す しゅくだいの ノート。'],
   [3.8, 'げんかんに 入った とたん――\nバタン！\n「ドアが しまった！ とじこめられた！？」'],
   [6.2, '「…えっ！？ なにか うごいてる！？」\nがっこうが、おばけに のっとられている。'],
@@ -633,7 +633,7 @@ const INTRO_END = 10.6;
 const END_LINES = [
   [0, 'がっこうが… ひかってる！\n「ぜんぶ もとに もどった！ やったー！」'],
   [2.8, 'ガチャッ。\n「ドアも あいた！ さて、かえろっと！」'],
-  [5.4, '……\nよるの 5ねん1くみ。\nつくえの なかに、しゅくだいが のこっていた。'],
+  [5.4, '……\nよるの 2ねん1くみ。\nつくえの なかに、しゅくだいが のこっていた。'],
   [8.6, 'つぎの あさ。\nせんせい「しゅくだいは？」'],
   [11.0, '「あっ！！ わすれた！」'],
 ];
@@ -661,7 +661,7 @@ function finishIntro() {
   $('intro').hidden = true;
   G.state = 'play';
   G.roomTitle = 2.6; G.roomTitleText = ROOMS[START.room].name;
-  say('ドアが あかない…。がっこうを もとに もどそう！ まずは 5ねん1くみへ。', 3.4);
+  say('ドアが あかない…。がっこうを もとに もどそう！ まずは 2ねん1くみへ。', 3.4);
 }
 function showLines(lines, t, stepKey) {
   let idx = 0;
@@ -872,7 +872,7 @@ function updateInvUI() {
 function objective() {
   const f = id => G.fixed.includes(id);
   if (G.fixed.length >= FIX_ROOMS.length) return 'げんかんの ドアへ！';
-  if (!f('classroom')) return has('eraser') ? 'こくばんの らくがきを けそう。' : '5ねん1くみの こくばんを もとに もどそう。';
+  if (!f('classroom')) return has('eraser') ? 'こくばんの らくがきを けそう。' : '2ねん1くみの こくばんを もとに もどそう。';
   if (!f('staff')) return !G.flags.staffOpen && !has('key_staff') ? 'しょくいんしつの かぎを さがそう。' : 'しょくいんしつの とけいを うごかそう。';
   return G.flags.gymOpen ? 'たいいくかんの おばけを しずかに させよう。' : 'たいいくかんの ばんごうを あつめよう（3けた）。';
 }

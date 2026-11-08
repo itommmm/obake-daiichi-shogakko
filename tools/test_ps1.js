@@ -33,7 +33,7 @@ window.runPS1Tests = function () {
   check('new game empty bag', G.bag.length === 0 && G.fixed.length === 0, { bag: G.bag, fixed: G.fixed });
   check('no water gun any more', typeof P.fire === 'undefined' && G.ammo === undefined);
   check('start position is not blocked', P.blocked(G.p.x, G.p.z) === false, G.p);
-  check('objective points to classroom', P.objective().indexOf('5ねん1くみ') >= 0, P.objective());
+  check('objective points to classroom', P.objective().indexOf('2ねん1くみ') >= 0, P.objective());
   clearKeys();
 
   // --- タンク操作 ---
@@ -55,7 +55,7 @@ window.runPS1Tests = function () {
   use('entrance', 'gate');
   check('locked-in door refuses', G.state === 'play' && G.msg.indexOf('あかない') >= 0, G.msg);
 
-  // --- 5ねん1くみ：しゅくだい（1回目）→ こくばんけし → こくばん ---
+  // --- 2ねん1くみ：しゅくだい（1回目）→ こくばんけし → こくばん ---
   use('classroom', 'homework');
   check('homework glimpse line', G.msg.indexOf('しゅくだいの ノート') >= 0 && G.msg.indexOf('あとで あとで') >= 0, G.msg);
   check('homework is not taken', !G.bag.some(id => id.indexOf('homework') >= 0) && G.flags.homework === true);

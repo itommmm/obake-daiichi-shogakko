@@ -94,10 +94,10 @@ function populateAllRooms() {
 }
 
 /* ============================================================
-   5ねん1くみ
+   2ねん1くみ
    ============================================================ */
 function buildClassroom() {
-  const R = roomBase('classroom', '5ねん1くみ', -4.5, 4.5, -3.5, 3.5, 3.2, { amb: 0x5a5d72, ambI: .5, fogD: .038 });
+  const R = roomBase('classroom', '2ねん1くみ', -4.5, 4.5, -3.5, 3.5, 3.2, { amb: 0x5a5d72, ambI: .5, fogD: .038 });
   const floor = tm(tiled(TEX.wood, 4, 3)); const wall = tm(tiled(TEX.wall, 4, 1));
   roomFloor(R, TEX.wood, 4, 3); roomCeiling(R, TEX.ceiling, 5, 4);
   roomWalls(R, wall, tm(tiled(TEX.wallGreen, 5, 1)));
@@ -180,7 +180,7 @@ function buildCorridor() {
   const d = ceilLamp(R, 0, 7.4, 0xd8e4bd, .40, 8);
   R.flickers.push({ light: b, base: .36, ph: 0.4 }, { light: d, base: .40, ph: 2.1 });
   // ドア
-  doorPanel(R, -1.64, 3, Math.PI / 2); addDoor(R, { x: -1.22, z: 3, label: '5ねん1くみへ', target: 'classroom', spawn: { x: 2.55, z: 2.65, a: Math.PI } });
+  doorPanel(R, -1.64, 3, Math.PI / 2); addDoor(R, { x: -1.22, z: 3, label: '2ねん1くみへ', target: 'classroom', spawn: { x: 2.55, z: 2.65, a: Math.PI } });
   doorPanel(R, 1.64, -3, -Math.PI / 2); addDoor(R, { x: 1.22, z: -3, label: 'しょくいんしつへ', target: 'staff', spawn: { x: -2.3, z: 2.45, a: Math.PI }, lock: 'key' });
   doorPanel(R, 1.64, 5, -Math.PI / 2); addDoor(R, { x: 1.22, z: 5, label: 'たいいくかんへ', target: 'gym', spawn: { x: 0, z: 7.5, a: Math.PI }, lock: 'code' });
   box(.06, .22, .16, bm(0x2a2e34), 1.6, 1.2, 5.65, R.scene); // ばんごうロック

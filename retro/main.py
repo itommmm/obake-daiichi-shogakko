@@ -486,7 +486,7 @@ STAGES = [
          line=("bucket", "isu", "randoseru"), v="bucket", circle="ball", dive="uwabaki",
          obst="cone", obst_with=("bucket", "randoseru"),
          mid=("bucket", "バケツだいおう", 20), scen=("locker", "lamp"),
-         boss=dict(name="おばけロッカー", hp=60, src=(96, 0), angry=None, eyes=((18, 24), (78, 24)),
+         boss=dict(name="ロッカーだいおう", hp=60, src=(96, 0), angry=None, eyes=((18, 24), (78, 24)),
                    minions=("bucket", "uwabaki", "isu"))),
     dict(name="おんがくしつ・りかしつ", back="りかしつ", hello="どんどん もどすぞ！", goal="りかしつの おくへ", tm=2, music=3, length=60 * 70, mid_at=60 * 35,
          pats=(("single", "pair", "line"), ("line", "circle", "pair", "v", "tire"),
@@ -1077,7 +1077,7 @@ class Game:
 
     def update_play(self):
         if self.stage == 1 and self.t == 140:
-            self.say("あ、5ねん1くみ… しゅくだい… あとで あとで！", 120)
+            self.say("あ、2ねん1くみ… しゅくだい… あとで あとで！", 120)
         spd = 0.5 if self.boss else 0.9 if self.phase == "mid" else 1.4
         self.cy -= spd
         self.scroll_world()
@@ -2356,7 +2356,7 @@ class Game:
             pyxel.rect(0, 16, W, 66, K)
         pyxel.line(0, 16, W, 16, VI)
         pyxel.line(0, 81, W, 81, VI)
-        s1 = "よるの がっこう レトロ"
+        s1 = "2ねん1くみ わすれものの よる"
         self.otext(W / 2 - self.font.text_width(s1) / 2, 20, s1, LV, K)
         # 大きなタイトル：画像バンク2の下に文字を書き、2倍で表示
         s2 = "おばけ第一小学校"
