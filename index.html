@@ -43,7 +43,7 @@ button{font-family:var(--body);cursor:pointer;-webkit-tap-highlight-color:transp
 button:focus-visible{outline:3px solid var(--cyan);outline-offset:3px}
 button:disabled{opacity:.5;cursor:wait}
 
-#skills{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 10px);display:flex;gap:clamp(8px,1.6vw,18px);z-index:5}
+#skills{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 30px);display:flex;gap:clamp(8px,1.6vw,18px);z-index:5}
 .sk{--cd:0;position:relative;width:clamp(58px,7.2vw,86px);aspect-ratio:1;border:none;background:none;padding:0;color:var(--chalk);touch-action:none}
 .sk .hex{position:absolute;inset:0;clip-path:polygon(50% 0,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%);background:linear-gradient(160deg,#3a2a66,#170c33);display:grid;place-items:center}
 .sk .hex::before{content:"";position:absolute;inset:3px;clip-path:inherit;background:radial-gradient(circle at 50% 35%,var(--glow),#1b0f3a 70%)}
@@ -115,6 +115,7 @@ button:disabled{opacity:.5;cursor:wait}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .stats div{background:#1c1040;border-radius:12px;padding:8px 4px;font-size:12px;color:#cdb8ff}
 .stats b{display:block;font:400 clamp(18px,2.8vw,26px)/1.2 var(--display);color:#fff;font-variant-numeric:tabular-nums}
+.stats .accuracy{display:block;margin-top:4px;font:700 12px/1.4 var(--body);color:#cdb8ff;white-space:nowrap}
 .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .sub2{border:2px solid var(--violet);background:#1c1040;color:#fff;border-radius:14px;padding:12px 18px;font:900 16px/1 var(--body)}
 #rotate{position:fixed;inset:0;z-index:30;display:none;place-items:center;text-align:center;background:var(--night);padding:24px;font:900 20px/1.6 var(--body)}
@@ -221,7 +222,7 @@ button:disabled{opacity:.5;cursor:wait}
     <div class="stats">
       <div>スコア<b id="rScore">0</b></div>
       <div>たいじした かず<b id="rKills">0</b></div>
-      <div>さいだいコンボ<b id="rCombo">0</b></div>
+      <div>さいだいコンボ<b id="rCombo">0</b><span class="accuracy" id="rAccuracy"></span></div>
     </div>
     <div class="best" id="rBest"></div>
     <div class="row"><button class="go" id="again">もういちど</button><button class="sub2" id="toTitle">タイトルへ</button></div>
@@ -1470,7 +1471,10 @@ function drawSchoolTricks(){
   if(state==='route'){ctx.fillStyle='rgba(8,4,20,.9)';ctx.fillRect(0,0,W,H);txt('どっちに よりみち？',W/2,H*.28,32*U,'#fff',FD,'center',4*U);for(const [x,title,reward]of[[.25,'1：りかしつ','ごほうび：ジャンボ'],[.75,'2：おんがくしつ','ごほうび：ワイド']]){ctx.strokeStyle='#5fe3ff';ctx.lineWidth=3*U;ctx.strokeRect(W*(x-.22),H*.4,W*.44,H*.35);txt(title,W*x,H*.52,24*U,'#ffd23f',FD,'center',3*U);txt(reward,W*x,H*.64,18*U,'#fff',FB,'center',3*U);}txt('タップ / 1・2 キー / ねらって うつ',W/2,H*.84,18*U,'#cfe9ff',FB,'center',3*U);drawReticle();return;}
   if(state!=='play')return;
   for(const e of G.enemies){if(e.dead)continue;if(bagOpen(e)){ctx.strokeStyle='#ffd23f';ctx.lineWidth=3*U;ctx.beginPath();ctx.arc(e.sx,e.sy-e.sr*.35,e.sr*.45,0,7);ctx.stroke();txt('なかを ねらえ！',e.sx,e.sy-e.sr*1.1,14*U,'#ffd23f',FB,'center',3*U);}if(e.merge>0||e.tower)txt(e.tower?'つくえタワー！':'がったいまで '+Math.ceil(e.merge),e.sx,e.sy-e.sr*1.25,16*U,'#ff8fd0',FB,'center',3*U);}
-  const g=G.gimmick,p=trickScreen();if(g&&p&&!g.used){ctx.strokeStyle='#5fe3ff';ctx.lineWidth=2*U;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,7);ctx.stroke();txt(g.kind==='balls'?'ボールかご':'じゃぐち',p.x,p.y-p.r-8*U,16*U,'#5fe3ff',FB,'center',3*U);txt('うつと おたすけ！',p.x,p.y+p.r+18*U,13*U,'#fff',FB,'center',3*U);}
+  const g=G.gimmick,p=trickScreen();if(g&&p&&!g.used){
+    const crowded=G.enemies.some(e=>!e.dead&&Math.hypot(e.sx-p.x,e.sy-p.y)<p.r+e.sr+24*U)||G.items.some(it=>!it.gone&&Math.hypot(it.sx-p.x,it.sy-p.y)<p.r+it.u+24*U);
+    ctx.save();ctx.globalAlpha=crowded?.35:.85;ctx.strokeStyle='#5fe3ff';ctx.lineWidth=2*U;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,7);ctx.stroke();ctx.restore();
+    if(!crowded&&((G.time>G.wave.time+G.diff.time-6)||Math.hypot(ptr.x-p.x,ptr.y-p.y)<p.r*1.5)){txt(g.kind==='balls'?'ボールかご':'じゃぐち',p.x,p.y-p.r-8*U,16*U,'#5fe3ff',FB,'center',3*U);txt('うつと おたすけ！',p.x,p.y+p.r+18*U,13*U,'#fff',FB,'center',3*U);}}
 }
 function setPlace(p){if(G.place!==p||!ROOM){G.place=p;if(TEX.bump)buildRoom(p);}}
 function pickType(types){let tot=0;for(const k in types)tot+=types[k];let r=Math.random()*tot;for(const k in types){r-=types[k];if(r<=0)return k;}return Object.keys(types)[0];}
@@ -1662,7 +1666,7 @@ function finish(win,msg){
   let best=0;try{best=+localStorage.getItem('obake1-best')||0;if(G.score>best)localStorage.setItem('obake1-best',G.score);}catch(e){}
   const rank=!win?(G.score>=140000?'B':'C'):G.score>=185000?'S':G.score>=175000?'A':'B';
   $('result').dataset.r=win?'win':'lose';$('rTitle').textContent=win?'ぜんぶ たいじ！':msg;$('rRank').textContent=rank;
-  $('rScore').textContent=G.score.toLocaleString();$('rKills').textContent=G.totalKills;$('rCombo').textContent=G.maxCombo+(G.finalBonus?'（めいちゅう '+G.finalBonus.acc+'%）':'');
+  $('rScore').textContent=G.score.toLocaleString();$('rKills').textContent=G.totalKills;$('rCombo').textContent=G.maxCombo;$('rAccuracy').textContent=G.finalBonus?'めいちゅう '+G.finalBonus.acc+'%':'';
   $('rBest').textContent=G.score>best?'ハイスコア こうしん！':`ハイスコア ${best.toLocaleString()}`;
   $('result').hidden=false;if(win)SFX.clear();
 }

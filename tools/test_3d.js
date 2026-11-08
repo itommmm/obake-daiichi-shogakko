@@ -6,6 +6,10 @@ window.runGameplayTests = function () {
   newGame(false);
   $('title').hidden = true;
   state = 'play';
+  showHUD(true);
+  if (innerHeight > 500) {
+    check('skill labels remain inside viewport', [...document.querySelectorAll('.sk .lbl')].every(el => el.getBoundingClientRect().bottom <= innerHeight));
+  }
   G.enemies = [];
   const bag = spawn('randoseru', 0, .5);
   bag.ph = 0; bag.t = .2; bag.appear = 1; screenOf(bag);
@@ -74,6 +78,10 @@ window.runGameplayTests = function () {
   check('boss announces attack before emitting hazards', !!boss.nextAttack && G.enemies.length === 1);
   kAI(boss, 1.3, true);
   check('announced boss attack executes', !boss.nextAttack && !!boss.last);
+  G.maxCombo = 123; G.shotN = 123; G.hitShotN = 121;
+  finish(false, 'やられた');
+  check('accuracy appears separately from combo', $('rCombo').textContent === '123' && $('rAccuracy').textContent === 'めいちゅう 98%');
+  check('accuracy label stays on one line', $('rAccuracy').scrollWidth <= $('rAccuracy').clientWidth);
   state = 'pause'; ptr.down = false;
   return { count: passed.length, passed };
 };
