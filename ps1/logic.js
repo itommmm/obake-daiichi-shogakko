@@ -108,7 +108,7 @@ function resetWorld() {
 
 /* ===== カメラ ===== */
 function makeGameCamera() {
-  if (!gameCam) gameCam = new THREE.PerspectiveCamera(55, 4 / 3, .05, 70);
+  if (!gameCam) gameCam = new THREE.PerspectiveCamera(60, 4 / 3, .05, 70);
 }
 function applyCam(c) {
   if (!c) return;
@@ -118,8 +118,38 @@ function applyCam(c) {
   gameCam.updateProjectionMatrix();
   activeCam = gameCam;
 }
-function updateCamera(force) {
+// Roblox/Minecraft風：視点角は移動と独立。壁・机の後ろにはカメラを置かない。
+// 横方向を少しずつ試して最初の衝突直前までカメラを寄せる。
+function followCamera(force, dt) {
+  const p = G.p, yaw = G.camYaw, pitch = G.camPitch;
+  const distance = 3.15, horizontal = distance * Math.cos(pitch);
+  const bx = -Math.sin(yaw) * horizontal, bz = -Math.cos(yaw) * horizontal;
+  let free = 1;
+  for (let i = 1; i <= 36; i++) {
+    const t = i / 36;
+    if (blocked(p.x + bx * t, p.z + bz * t)) { free = (i - 1) / 36; break; }
+  }
+  const factor = Math.max(.04, free - .025);
+  const desired = new THREE.Vector3(
+    p.x + bx * factor,
+    clamp(1.10 + distance * Math.sin(pitch) * factor, 1.17, activeRoom.h - .23),
+    p.z + bz * factor
+  );
+  if (force || lastCamDef !== 'follow') {
+    gameCam.position.copy(desired);
+    gameCam.fov = 65;
+    gameCam.updateProjectionMatrix();
+    lastCamDef = 'follow';
+  } else {
+    gameCam.position.lerp(desired, Math.min(1, (dt || 1 / 60) * 13));
+    if (blocked(gameCam.position.x, gameCam.position.z)) gameCam.position.copy(desired);
+  }
+  gameCam.lookAt(p.x, 1.08, p.z);
+  activeCam = gameCam;
+}
+function updateCamera(force, dt) {
   if (!activeRoom) return;
+  if (G.mode === 'modern') { followCamera(!!force, dt); return; }
   let c = null;
   if (activeRoom.id === 'gym' && G.bossFight && activeRoom.bossCam) c = activeRoom.bossCam;
   else {
@@ -138,6 +168,7 @@ function enterRoom(id, spawn, silent) {
   G.room = R.id;
   activeRoom = R;
   G.p.x = spawn.x; G.p.z = spawn.z; G.p.a = spawn.a == null ? Math.PI : spawn.a;
+  G.camYaw = G.p.a; G.camPitch = .34;
   G.p.walk = 0; G.p.moving = 0;
   G.projectiles = []; G.fx3 = []; G.sparks = [];
   G.prompt = '';
@@ -198,34 +229,36 @@ function updatePlayer(dt) {
   if (!activeRoom || G.state !== 'play') return;
   const p = G.p;
   const up = inputDown('up'), down = inputDown('down'), left = inputDown('left'), right = inputDown('right');
-  const run = !!(G.keys.ShiftLeft || G.keys.ShiftRight);
+  const joyX = G.touch.joyX || 0, joyY = G.touch.joyY || 0;
+  const run = !!(G.keys.ShiftLeft || G.keys.ShiftRight) ||
+    (G.mode === 'modern' && Math.hypot(joyX, joyY) > .92);
   let moving = 0;
-  {
-    if (G.mode === 'tank') {
-      if (left) p.a += 2.25 * dt;
-      if (right) p.a -= 2.25 * dt;
-      let f = (up ? 1 : 0) - (down ? 1 : 0);
-      if (f) {
-        const sp = (run ? 2.65 : 1.55) * f;
-        const nx = p.x + Math.sin(p.a) * sp * dt;
-        const nz = p.z + Math.cos(p.a) * sp * dt;
-        const before = p.x + p.z;
-        tryMove(Math.sin(p.a) * sp * dt, Math.cos(p.a) * sp * dt);
-        moving = Math.abs((p.x + p.z) - before) > .0005 ? 1 : 0;
-      }
-    } else {
-      let ix = (right ? 1 : 0) - (left ? 1 : 0);
-      let iz = (up ? 1 : 0) - (down ? 1 : 0);
-      if (ix || iz) {
-        activeCam.getWorldDirection(V3); V3.y = 0; V3.normalize();
-        const fx = V3.x, fz = V3.z, rx = -fz, rz = fx;
-        let mx = fx * iz + rx * ix, mz = fz * iz + rz * ix;
-        const l = Math.hypot(mx, mz) || 1; mx /= l; mz /= l;
-        p.a = Math.atan2(mx, mz);
-        const sp = run ? 2.65 : 1.55;
-        tryMove(mx * sp * dt, mz * sp * dt);
-        moving = 1;
-      }
+  if (G.mode === 'tank') {
+    // 元の固定カメラ／タンク操作。切り替えて遊ぶ場合のみ使う。
+    if (left) p.a += 2.25 * dt;
+    if (right) p.a -= 2.25 * dt;
+    const f = (up ? 1 : 0) - (down ? 1 : 0);
+    if (f) {
+      const sp = (run ? 2.65 : 1.55) * f;
+      const beforeX = p.x, beforeZ = p.z;
+      tryMove(Math.sin(p.a) * sp * dt, Math.cos(p.a) * sp * dt);
+      moving = Math.hypot(p.x - beforeX, p.z - beforeZ) > .0005 ? 1 : 0;
+    }
+  } else {
+    // 前後左右はカメラに対する方向。固定カメラの切り替わりには影響されない。
+    let ix = (right ? 1 : 0) - (left ? 1 : 0) + joyX;
+    let iz = (up ? 1 : 0) - (down ? 1 : 0) - joyY;
+    const length = Math.hypot(ix, iz);
+    if (length > .12) {
+      ix /= Math.max(1, length); iz /= Math.max(1, length);
+      const fx = Math.sin(G.camYaw), fz = Math.cos(G.camYaw);
+      const rx = fz, rz = -fx;
+      const mx = fx * iz + rx * ix, mz = fz * iz + rz * ix;
+      const beforeX = p.x, beforeZ = p.z;
+      const sp = run ? 2.8 : 1.9;
+      tryMove(mx * sp * dt, mz * sp * dt);
+      moving = Math.hypot(p.x - beforeX, p.z - beforeZ) > .0005 ? 1 : 0;
+      if (moving) p.a = Math.atan2(mx, mz);
     }
   }
   p.moving = moving;
@@ -244,7 +277,7 @@ function updatePlayer(dt) {
     G.footT -= dt;
     if (G.footT <= 0) { G.footT = run ? .28 : .42; SFX.step(); }
   } else G.footT = 0;
-  updateCamera(false);
+  updateCamera(false, dt);
 }
 
 /* ===== おばけ ===== */
@@ -535,6 +568,7 @@ function interact() {
 
 /* ===== ばんごうロック ===== */
 function openLock(door) {
+  ModernControls.release(); // マウスロックを解除し、暗証番号ボタンを操作可能に
   G.state = 'lock'; G.keys = Object.create(null); G.touch = Object.create(null);
   G.lock = { door, digits: [0, 0, 0], col: 0 };
   $('lock').hidden = false; pauseVeil.style.opacity = '1';
@@ -717,6 +751,7 @@ function advanceIntro() {
 function updateIntro(dt) { G.introT += dt; }
 // エンディング：もどった → かえる → つくえの しゅくだい → つぎの あさ「あっ！！ わすれた！」→ おしまい
 function finishGame() {
+  ModernControls.release(); // エンディングのボタンをクリックできるように
   G.state = 'ending'; G.endT = 0; G.endStep = 0;
   G.keys = Object.create(null);
   try { localStorage.removeItem(SAVE_KEY); } catch (_) {}
@@ -745,6 +780,7 @@ function retry() {
   if (!loadGame()) startNewGame(false);
 }
 function toTitle() {
+  ModernControls.release();
   ComicHorror.clearVisual();
   G.state = 'title'; G.lock = null; G.keys = Object.create(null); G.touch = Object.create(null);
   hideAllOverlays();
@@ -832,13 +868,15 @@ function updateSparks(dt) {
   G.sparks = G.sparks.filter(s => s.t < s.life);
 }
 function updatePrompt() {
-  const it = nearestItem();
-  if (it) { G.prompt = `[E] ${it.def.label || 'しらべる'}`; return; }
-  const sp = nearestSpot();
-  if (sp && SPOTS[sp.id]) { G.prompt = `[E] ${SPOTS[sp.id].label()}`; return; }
-  const door = nearestDoor();
-  if (door) { G.prompt = `[E] ${door.label}`; return; }
-  G.prompt = '';
+  const it = nearestItem(), sp = nearestSpot(), door = nearestDoor();
+  if (it) G.prompt = `[E] ${it.def.label || 'しらべる'}`;
+  else if (sp && SPOTS[sp.id]) G.prompt = `[E] ${SPOTS[sp.id].label()}`;
+  else if (door) G.prompt = `[E] ${door.label}`;
+  else G.prompt = '';
+  const action = $('tAct');
+  const near = !!(it || (sp && SPOTS[sp.id]) || door);
+  action.classList.toggle('ready', near);
+  action.textContent = near ? 'しらべる！' : 'しらべる';
 }
 
 /* ===== 明かりの ちらつき ===== */
@@ -867,6 +905,7 @@ function keyName(code) {
 }
 function openInventory() {
   if (G.state !== 'play') return;
+  ModernControls.release();
   G.state = 'inventory'; G.keys = Object.create(null); G.touch = Object.create(null);
   $('inv').hidden = false; pauseVeil.style.opacity = '1';
   updateInvUI();
@@ -884,11 +923,11 @@ function updateInvUI() {
   $('invRoom').textContent = (ROOMS[G.room] || {}).name || '？';
   $('invTime').textContent = fmtTime(G.time);
   $('invObjective').textContent = objective();
-  $('btnControl').textContent = G.mode === 'tank' ? 'タンク（ホラー風）' : 'モダン（カメラ基準）';
+  $('btnControl').textContent = G.mode === 'modern' ? 'マイクラ風（おすすめ）' : 'クラシック（タンク）';
   $('btnSound').textContent = G.sound ? 'オン' : 'オフ';
   $('btnFx').textContent = G.fx ? 'オン' : 'オフ';
   $('btnHerb').disabled = G.herbs <= 0;
-  $('btnMode').textContent = `そうさ：${G.mode === 'tank' ? 'タンク' : 'モダン'}`;
+  $('btnMode').textContent = `そうさ：${G.mode === 'modern' ? 'マイクラ風' : 'クラシック'}`;
   $('btnTitleSound').textContent = `おと：${G.sound ? 'オン' : 'オフ'}`;
   $('tMute').textContent = G.sound ? '♪' : '×';
 }
@@ -900,8 +939,16 @@ function objective() {
   return G.flags.gymOpen ? 'たいいくかんの おばけを しずかに させよう。' : 'たいいくかんの ばんごうを あつめよう（3けた）。';
 }
 function setMode(mode) {
+  if (mode !== 'tank' && mode !== 'modern') return;
+  ModernControls.release();
+  G.keys = Object.create(null); G.touch = Object.create(null);
   G.mode = mode;
-  try { localStorage.setItem('obake-ps1-mode', mode); } catch (_) {}
+  G.camYaw = G.p.a;
+  G.camPitch = .34;
+  lastCamDef = null;
+  $('stage').classList.toggle('mode-modern',mode === 'modern');
+  try { localStorage.setItem('obake-ps1-controls-v3', mode); } catch (_) {}
+  updateCamera(true);
   updateInvUI();
 }
 function toggleSound() {
@@ -964,6 +1011,7 @@ function bindInput() {
 
   const stage = $('stage');
   stage.addEventListener('contextmenu', e => e.preventDefault());
+  ModernControls.bind();
 
   const bindHold = (id, on, off) => {
     const el = $(id);
@@ -1091,7 +1139,7 @@ function init() {
     G, ROOMS, startNewGame, advanceIntro, finishIntro, loadGame, saveGame, hasSave, resetWorld,
     enterRoom, changeRoom, updateTransition, interact, pickupItem, useHerb,
     hurtPlayer, updateCamera, restoreRoom, openLock, closeLock, lockSpin, lockTry, showEndPanel,
-    comic: ComicHorror, showHint,
+    comic: ComicHorror, modernControls: ModernControls, showHint,
     update, updatePlayer, updateEnemies, updateBoss, nearestItem, nearestDoor, nearestSpot, objective,
     FIX_ROOMS, GYM_CODE, SPOTS,
     blocked, tryMove, setMode, openInventory, closeInventory, finishGame,

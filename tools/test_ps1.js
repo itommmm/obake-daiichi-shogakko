@@ -27,6 +27,9 @@ window.runPS1Tests = function () {
 
   // --- 初期状態：げんかんで とじこめられて はじまる ---
   P.startNewGame(false);
+  P.setMode('modern');
+  check('modern controls are the default', G.mode === 'modern' && document.getElementById('stage').classList.contains('mode-modern'));
+  check('joystick and look zone exist', !!document.getElementById('joystick') && !!document.getElementById('lookZone'));
   check('new game starts in play', G.state === 'play', G.state);
   check('new game starts in entrance', G.room === 'entrance', G.room);
   check('new game full hp', G.hp === 4, G.hp);
@@ -36,7 +39,8 @@ window.runPS1Tests = function () {
   check('objective points to classroom', P.objective().indexOf('2ねん1くみ') >= 0, P.objective());
   clearKeys();
 
-  // --- タンク操作 ---
+  // --- 旧タンク操作：設定から切り替えた時だけ動作する ---
+  P.setMode('tank');
   place('classroom', 2.9, 2.2, Math.PI);
   const z0 = G.p.z;
   G.keys.up = true; step(0.5); G.keys.up = false;
@@ -44,6 +48,7 @@ window.runPS1Tests = function () {
   const a0 = G.p.a;
   G.keys.left = true; step(0.3); G.keys.left = false;
   check('tank left turns', G.p.a > a0 + 0.2, G.p.a - a0);
+  P.setMode('modern');
 
   // --- 当たり判定 ---
   check('teacher desk blocks', P.blocked(0, -2.5) === true);
@@ -113,11 +118,15 @@ window.runPS1Tests = function () {
   check('lock can be cancelled', G.state === 'play' && document.getElementById('lock').hidden);
 
   // --- ロッカーだいおう（たおせない）→ ふえ ---
+  // クラシックのボス演出用固定カメラも残す
+  P.setMode('tank');
   at('gym', 0, 3.4);
   const boss = P.room().enemies.find(e => e.id === 'g_boss');
   step(0.2);
   check('gym boss wakes up', boss.awake === true && G.bossFight === true, { awake: boss.awake, fight: G.bossFight });
-  check('boss fight camera is used', P.camera().position.x > 4, P.camera().position.toArray());
+  check('classic boss camera is used', P.camera().position.x > 4, P.camera().position.toArray());
+  P.setMode('modern');
+  check('modern boss uses follow camera', G.mode === 'modern' && !P.blocked(P.camera().position.x, P.camera().position.z));
   G.bag = G.bag.filter(id => id !== 'whistle');
   use('gym', 'stage');
   check('stage needs the whistle', !G.fixed.includes('gym'), G.fixed);
@@ -213,8 +222,9 @@ window.runPS1Tests = function () {
   check('optional hint shows the eraser route', P.showHint().includes('こくばんけし'));
   P.closeInventory();
 
-  // --- カメラの 固定切りかえ ---
+  // --- クラシックの固定カメラは引き続き使える ---
   P.startNewGame(false);
+  P.setMode('tank');
   place('corridor', 0, 9.4, Math.PI); P.updateCamera(true);
   const southCam = P.camera().position.clone();
   place('corridor', 0, 2.0, Math.PI); P.updateCamera(true);
@@ -222,6 +232,7 @@ window.runPS1Tests = function () {
   place('corridor', 0, -6.0, Math.PI); P.updateCamera(true);
   const northCam = P.camera().position.clone();
   check('camera switches by zone', southCam.z !== midCam.z && midCam.z !== northCam.z);
+  P.setMode('modern');
 
   // --- すべての ドアが つながる ---
   for (const rid of Object.keys(P.ROOMS)) {
@@ -255,14 +266,31 @@ window.runPS1Tests = function () {
     for (const door of R.doors) check(`door ${rid}/${door.label} reachable`, reach(door.x, door.z, 1.4), door.label);
   }
 
-  // --- モダン操作 ---
+  // --- Roblox／Minecraft風の追従カメラと移動 ---
   P.startNewGame(false);
   P.setMode('modern');
   place('classroom', 0, 1.9, Math.PI);
+  P.updateCamera(true);
+  const beforeCam = P.camera().position.clone();
   const px0 = G.p.x, pz0 = G.p.z;
   G.keys.up = true; step(0.4); G.keys.up = false;
   check('modern up moves relative to camera', Math.hypot(G.p.x - px0, G.p.z - pz0) > 0.2);
+  check('camera follows player', P.camera().position.distanceTo(beforeCam) > .15);
+  check('modern camera stays in room bounds', !P.blocked(P.camera().position.x, P.camera().position.z));
+  const yaw0 = G.camYaw, pitch0 = G.camPitch;
+  P.modernControls.rotate(80, -45);
+  check('mouse swipe rotates viewpoint', Math.abs(G.camYaw - yaw0) > .2 && G.camPitch < pitch0);
+  G.keys.right = true;
+  const x0 = G.p.x, zz0 = G.p.z;
+  step(0.3); G.keys.right = false;
+  check('modern strafe works at rotated camera', Math.hypot(G.p.x-x0, G.p.z-zz0) > .18);
+  const stick = P.modernControls.stick(28,-35,100);
+  check('virtual stick returns continuous axes', Math.abs(stick.x) > .1 && Math.abs(stick.y) > .1);
+  P.modernControls.zeroStick();
+  check('virtual stick resets after release', !G.touch.joyX && !G.touch.joyY);
   P.setMode('tank');
+  check('legacy fixed camera returned', G.mode === 'tank');
+  P.setMode('modern');
 
   // --- 画面 ---
   check('no shooting buttons', !document.getElementById('tFire') && !document.getElementById('tAim'));

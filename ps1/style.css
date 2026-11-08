@@ -235,3 +235,34 @@ button:focus-visible{outline:2px solid var(--paper);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){
   #booOverlay.active .boo-burst{animation:none!important;transform:scale(1)!important}
 }
+
+/* Minecraft/Roblox風タッチ操作。旧4方向ボタンはクラシック時だけ表示 */
+#touch #lookZone{position:absolute;left:42%;right:0;top:16%;bottom:0;pointer-events:auto;touch-action:none;z-index:1}
+#touch #joystick{
+ position:absolute;left:clamp(10px,3vw,22px);bottom:clamp(10px,3vh,20px);
+ width:clamp(84px,24vw,110px);height:clamp(84px,24vw,110px);
+ border:2px solid rgba(238,226,203,.7);background:rgba(17,14,28,.45);
+ border-radius:50%;z-index:3;pointer-events:auto;touch-action:none;
+ box-shadow:0 0 0 5px rgba(10,8,16,.25),inset 0 0 0 1px rgba(255,255,255,.1)
+}
+#joystick::before,#joystick::after{position:absolute;color:#c9bdaf;pointer-events:none;font-size:12px}
+#joystick::before{content:"▲";top:2px;left:calc(50% - 5px);opacity:.6}
+#joystick::after{content:"▼";bottom:2px;left:calc(50% - 5px);opacity:.6}
+#touch #joyKnob{
+ position:absolute;left:calc(50% - 20px);top:calc(50% - 20px);
+ width:40px;height:40px;border:2px solid #eee4c5;border-radius:50%;
+ background:rgba(240,229,198,.75);box-shadow:0 2px 7px rgba(0,0,0,.45);
+ pointer-events:none;will-change:transform
+}
+#stage.mode-modern #tUp,#stage.mode-modern #tDown,#stage.mode-modern #tLeft,#stage.mode-modern #tRight{display:none}
+#stage:not(.mode-modern) #joystick,#stage:not(.mode-modern) #lookZone{display:none}
+#stage.mode-modern #tAct{
+ right:clamp(8px,2vw,18px);bottom:clamp(9px,3vh,20px);
+ width:clamp(78px,22vw,104px);height:clamp(55px,16vw,68px);
+ border-radius:18px;z-index:4;font-size:clamp(10px,2.8vw,14px);
+ background:rgba(111,75,31,.82);border:2px solid #ffe09a;
+ box-shadow:0 2px 0 #3d2c19
+}
+#stage.mode-modern #tAct.ready{background:rgba(165,107,38,.96);border-color:#fff5bd}
+#stage.mode-modern #tItem,#stage.mode-modern #tMute{z-index:4;min-height:30px;min-width:38px}
+@media (pointer:coarse){#touch{display:block}}
