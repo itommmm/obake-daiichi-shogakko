@@ -486,7 +486,7 @@ STAGES = [
          line=("bucket", "isu", "randoseru"), v="bucket", circle="ball", dive="uwabaki",
          obst="cone", obst_with=("bucket", "randoseru"),
          mid=("bucket", "バケツだいおう", 20), scen=("locker", "lamp"),
-         boss=dict(name="おばけロッカー", hp=60, src=(96, 0), angry=None, eyes=((18, 24), (78, 24)),
+         boss=dict(name="ロッカーだいおう", hp=60, src=(96, 0), angry=None, eyes=((18, 24), (78, 24)),
                    minions=("bucket", "uwabaki", "isu"))),
     dict(name="おんがくしつ・りかしつ", goal="りかしつの おくへ", tm=2, music=3, length=60 * 70, mid_at=60 * 35,
          pats=(("single", "pair", "line"), ("line", "circle", "pair", "v", "tire"),
@@ -2312,7 +2312,7 @@ class Game:
             pyxel.rect(0, 16, W, 66, K)
         pyxel.line(0, 16, W, 16, VI)
         pyxel.line(0, 81, W, 81, VI)
-        s1 = "よるの がっこう レトロ"
+        s1 = "2ねん1くみ わすれものの よる"
         self.otext(W / 2 - self.font.text_width(s1) / 2, 20, s1, LV, K)
         # 大きなタイトル：画像バンク2の下に文字を書き、2倍で表示
         s2 = "おばけ第一小学校"
@@ -2406,7 +2406,7 @@ class Game:
         s = "スコア %d" % self.score
         self.otext(W / 2 - self.font.text_width(s) / 2, 72, s, WH, K)
         if t > 60:
-            s = "つぎは %s" % STAGES[self.stage + 1]["name"]
+            s = ("なかにも おばけ！ つぎは %s" if self.stage == 0 else "つぎは %s") % STAGES[self.stage + 1]["name"]
             self.otext(W / 2 - self.font.text_width(s) / 2, 85, s, CY_, K)
         if t > 150 and t % 60 < 40:
             s = "おして つぎの ステージへ"
@@ -2428,7 +2428,7 @@ class Game:
         else:
             pyxel.blt(kx, ky, 1, 16, 16, 16, 24, 0)
         if t > 170:
-            s = "あー よかった"
+            s = "あー よかった… あっ わすれもの！"
             tw = self.font.text_width(s)
             bx, by = W / 2 - tw / 2 - 6, ky - 22
             pyxel.rect(bx, by, tw + 12, 15, WH)

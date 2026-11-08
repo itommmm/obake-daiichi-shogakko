@@ -92,10 +92,10 @@ function populateAllRooms() {
 }
 
 /* ============================================================
-   5ねん1くみ
+   2ねん1くみ
    ============================================================ */
 function buildClassroom() {
-  const R = roomBase('classroom', '5ねん1くみ', -4.5, 4.5, -3.5, 3.5, 3.2, { amb: 0x5a5d72, ambI: .5, fogD: .038 });
+  const R = roomBase('classroom', '2ねん1くみ', -4.5, 4.5, -3.5, 3.5, 3.2, { amb: 0x5a5d72, ambI: .5, fogD: .038 });
   const floor = tm(tiled(TEX.wood, 4, 3)); const wall = tm(tiled(TEX.wall, 4, 1));
   roomFloor(R, TEX.wood, 4, 3); roomCeiling(R, TEX.ceiling, 5, 4);
   roomWalls(R, wall, tm(tiled(TEX.wallGreen, 5, 1)));
@@ -137,7 +137,7 @@ function buildClassroom() {
   // もの
   addItemDef(R, { id: 'charm_class', type: 'charm', x: 0, z: -2.68, y: .88, label: 'おふだを とる' });
   addItemDef(R, { id: 'herb_class', type: 'herb', x: -3.55, z: 2.55, y: .05, label: 'やくそうを とる' });
-  addItemDef(R, { id: 'note_class', type: 'note', x: -.2, z: -3.0, y: .15, label: 'こくばんを よむ', text: 'こくばんの うらに、だれかの 字で「おふだは 3まい。げんかんで まってる」と ある。' });
+  addItemDef(R, { id: 'note_class', type: 'note', x: -.2, z: -3.0, y: .15, label: 'こくばんを よむ', text: 'こくばんの うらに「おふだは 3まい。そろえたら げんかんへ」と ある。' });
   // おばけ
   addEnemyDef(R, { id: 'c_uwabaki', type: 'uwabaki', x: -2.7, z: -1.5, wake: 5.0 });
   addEnemyDef(R, { id: 'c_randoseru', type: 'randoseru', x: 1.9, z: -1.9, wake: 6.5 });
@@ -172,7 +172,7 @@ function buildCorridor() {
   const d = ceilLamp(R, 0, 7.4, 0xd8e4bd, .40, 8);
   R.flickers.push({ light: b, base: .36, ph: 0.4 }, { light: d, base: .40, ph: 2.1 });
   // ドア
-  doorPanel(R, -1.64, 3, Math.PI / 2); addDoor(R, { x: -1.22, z: 3, label: '5ねん1くみへ', target: 'classroom', spawn: { x: 2.55, z: 2.65, a: Math.PI } });
+  doorPanel(R, -1.64, 3, Math.PI / 2); addDoor(R, { x: -1.22, z: 3, label: '2ねん1くみへ', target: 'classroom', spawn: { x: 2.55, z: 2.65, a: Math.PI } });
   doorPanel(R, 1.64, -3, -Math.PI / 2); addDoor(R, { x: 1.22, z: -3, label: 'しょくいんしつへ', target: 'staff', spawn: { x: -2.3, z: 2.45, a: Math.PI } });
   doorPanel(R, 1.64, 5, -Math.PI / 2); addDoor(R, { x: 1.22, z: 5, label: 'たいいくかんへ', target: 'gym', spawn: { x: 0, z: 7.5, a: Math.PI } });
   doorPanel(R, 0, 10.94, Math.PI); addDoor(R, { x: 0, z: 10.55, label: 'げんかんへ', target: 'entrance', spawn: { x: 1.6, z: 2.0, a: Math.PI } });
@@ -183,7 +183,7 @@ function buildCorridor() {
   // もの
   addItemDef(R, { id: 'ammo_corridor', type: 'ammo', x: 1.1, z: -8.4, y: .05, amount: 6, label: 'みずの たまを とる' });
   addItemDef(R, { id: 'herb_corridor', type: 'herb', x: -1.1, z: 8.2, y: .05, label: 'やくそうを とる' });
-  addItemDef(R, { id: 'note_corridor', type: 'note', x: 1.2, z: -7.2, y: .1, label: 'けいじばんを よむ', text: '「よる 7じ いこう、2かいの ろうかに でないこと。おばけが でます。」' });
+  addItemDef(R, { id: 'note_corridor', type: 'note', x: 1.2, z: -7.2, y: .1, label: 'けいじばんを よむ', text: '「よるの チャイムが なってから、がっこうの ものが かってに うごいている。」' });
   addEnemyDef(R, { id: 'h_ghost', type: 'ghost', x: 0, z: -8.6, wake: 7.0 });
   addEnemyDef(R, { id: 'h_uwabaki', type: 'uwabaki', x: .9, z: -1.2, wake: 5.0 });
   addEnemyDef(R, { id: 'h_randoseru', type: 'randoseru', x: -.75, z: 6.6, wake: 6.0 });
@@ -236,7 +236,7 @@ function buildStaffroom() {
   // もの
   addItemDef(R, { id: 'charm_staff', type: 'charm', x: 2.8, z: -2.36, y: .72, label: 'おふだを とる' });
   addItemDef(R, { id: 'ammo_staff', type: 'ammo', x: 0, z: .3, y: .72, amount: 6, label: 'みずの たまを とる' });
-  addItemDef(R, { id: 'note_staff', type: 'note', x: -.5, z: -2.86, y: .1, label: 'けいじを よむ', text: '「おふだを 3まい はれば、げんかんの かぎが ひらく。ぜったいに 1まいも なくすな。」' });
+  addItemDef(R, { id: 'note_staff', type: 'note', x: -.5, z: -2.86, y: .1, label: 'けいじを よむ', text: '「おふだを 3まい そろえると、がっこうが しずまり、げんかんの かぎが ひらく。」' });
   addEnemyDef(R, { id: 's_chalk', type: 'chalk', x: 2.1, z: -1.7, wake: 6.2 });
   addEnemyDef(R, { id: 's_ghost', type: 'ghost', x: -2.7, z: -1.4, wake: 5.5 });
   return R;
@@ -334,7 +334,7 @@ function buildEntrance() {
   // カメラ
   addCam(R, { pos: [4.4, 2.7, 3.8], look: [-.6, .9, -2.6], zone: { x0: -9, x1: 9, z0: -9, z1: 9 } });
   // もの
-  addItemDef(R, { id: 'note_entrance', type: 'note', x: -3.9, z: -1.2, y: .1, label: 'おしらせを よむ', text: '「おふだを 3まい はると、校門の かぎが ひらきます。あかるい ほうへ にげて。」' });
+  addItemDef(R, { id: 'note_entrance', type: 'note', x: -3.9, z: -1.2, y: .1, label: 'おしらせを よむ', text: '「おふだを 3まい そろえたら 校門へ。おばけも しずかに なり、あさが きます。」' });
   R.gate = true;
   R.gateSpot = { x: 0, z: -3.25 };
   return R;

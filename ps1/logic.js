@@ -635,10 +635,10 @@ function updateContinueUI() {
 
 /* ===== はじめ / おわり ===== */
 const INTRO_LINES = [
-  [0, '1996年 7月 18日（木）\n午後7時すぎ'],
-  [1.5, '5ねん1くみの 教室。\nだれも いない はずの 学校に、\nまだ 明かりが ついている。'],
-  [3.4, '「おふだを 3まい はれば、\nげんかんの かぎが ひらく」\n……そんな うわさを、\nきいたことが ある。'],
-  [5.4, 'こわいけど、いこう。\n夜の 学校へ。'],
+  [0, 'あめの よる。\nわすれものを とりに きた。'],
+  [1.5, '2ねん1くみで チャイムが！\nランドセルが うごいてる！？'],
+  [3.4, 'がっこうが おばけに！？\nおふだ 3まいで しずめよう。'],
+  [5.4, 'みずでっぽうで まもろう。\nげんかんへ いこう。'],
 ];
 function startNewGame(withIntro) {
   initAudio();
@@ -654,7 +654,7 @@ function startNewGame(withIntro) {
     $('introLine').style.opacity = '1';
   } else {
     $('intro').hidden = true;
-    G.roomTitle = 2.4; G.roomTitleText = '5ねん1くみ';
+    G.roomTitle = 2.4; G.roomTitleText = '2ねん1くみ';
   }
   updateContinueUI(); updateInvUI();
   saveGame();
@@ -662,7 +662,7 @@ function startNewGame(withIntro) {
 function finishIntro() {
   $('intro').hidden = true;
   G.state = 'play';
-  G.roomTitle = 2.6; G.roomTitleText = '5ねん1くみ';
+  G.roomTitle = 2.6; G.roomTitleText = '2ねん1くみ';
   say('3まいの おふだを さがそう。', 2.4);
 }
 function updateIntro(dt) {
