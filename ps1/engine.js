@@ -1,12 +1,12 @@
 /* ============================================================
    おばけ第一小学校 PS1版 : エンジン / 見た目 / 音
-   固定カメラ・タンク操作・ローポリ・ディザ＋頂点のゆれ
+   固定カメラ・タンク操作・ローポリ・ディザ＋頂点のゆれ（なぞとき だっしゅつ）
    ============================================================ */
 'use strict';
 
 const $ = id => document.getElementById(id);
 const V = { W: 320, H: 240 };
-const SAVE_KEY = 'obake-daiichi-ps1-v1';
+const SAVE_KEY = 'obake-daiichi-ps1-v2';
 const TAU = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -16,15 +16,15 @@ const dist2 = (ax, az, bx, bz) => Math.hypot(ax - bx, az - bz);
 /* ===== 状態 ===== */
 const G = {
   state: 'title', t: 0, time: 0,
-  p: { x: 2.1, z: 1.4, a: Math.PI, walk: 0, moving: 0 },
-  hp: 4, maxHp: 4, ammo: 12, herbs: 0, charms: 0,
-  room: 'classroom',
-  shots: 0, hits: 0, damage: 0,
-  aiming: false, aimT: 0, fireCd: 0, recoil: 0,
+  p: { x: 0, z: -2.4, a: 0, walk: 0, moving: 0 },
+  hp: 4, maxHp: 4, herbs: 0,
+  room: 'entrance',
+  bag: [], fixed: [], flags: {}, damage: 0,
+  lock: null, endStep: -1,
   invuln: 0, hurt: 0, flash: 0,
   msg: '', msgT: 0, prompt: '', roomTitle: 0, roomTitleText: '',
   autosave: 0, footT: 0, heartT: 0,
-  target: null, boss: null, bossFight: false,
+  boss: null, bossFight: false,
   trans: null, introT: 0, introStep: -1, deadT: 0, endT: 0,
   taken: [], dead: [], bossDead: false,
   mode: 'tank',
@@ -223,10 +223,27 @@ function buildTextures() {
     g.fillStyle = 'rgba(235,240,220,.72)'; g.font = '9px sans-serif';
     g.fillText('7/18  きょうの めあて', 7, 14);
     g.font = '8px sans-serif'; g.fillStyle = 'rgba(235,240,220,.58)';
-    g.fillText('・よるの 学校は はやく かえろう', 8, 30);
-    g.fillText('・おばけを みつけても しずかに', 8, 43);
-    g.strokeStyle = 'rgba(235,240,220,.25)'; g.beginPath(); g.moveTo(70, 50); g.lineTo(116, 38); g.stroke();
+    g.fillText('・しゅくだいを わすれずに', 8, 30);
+    g.fillStyle = 'rgba(255,226,140,.85)';
+    g.fillText('たいいくかんの ばんごう 1ばんめ＝5', 8, 46);
     noise(g, w, h, 100, .14, '#dbe8d8');
+  });
+  TEX.boardScribble = canvasTex(128, 64, (g, w, h) => {
+    g.fillStyle = '#20372d'; g.fillRect(0, 0, w, h);
+    g.strokeStyle = 'rgba(240,240,255,.8)'; g.lineWidth = 2;
+    for (let i = 0; i < 9; i++) { g.beginPath(); g.moveTo(rnd(0, w), rnd(0, h)); g.bezierCurveTo(rnd(0, w), rnd(0, h), rnd(0, w), rnd(0, h), rnd(0, w), rnd(0, h)); g.stroke(); }
+    for (const [x, y] of [[24, 30], [64, 24], [104, 36]]) {
+      g.fillStyle = 'rgba(240,240,255,.85)'; g.beginPath(); g.arc(x, y, 11, Math.PI, 0); g.lineTo(x + 11, y + 12); g.lineTo(x - 11, y + 12); g.fill();
+      g.fillStyle = '#20372d'; g.fillRect(x - 5, y - 3, 3, 4); g.fillRect(x + 2, y - 3, 3, 4);
+    }
+    g.fillStyle = 'rgba(255,120,120,.9)'; g.font = '9px sans-serif';
+    g.fillText('おばけの がっこう だぞ〜', 14, 58);
+  });
+  TEX.clock = canvasTex(32, 32, (g, w, h) => {
+    g.fillStyle = '#e8e2cc'; g.beginPath(); g.arc(16, 16, 15, 0, TAU); g.fill();
+    g.strokeStyle = '#3a3226'; g.lineWidth = 2; g.stroke();
+    g.fillStyle = '#3a3226';
+    for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; g.fillRect(16 + Math.sin(a) * 12 - 1, 16 - Math.cos(a) * 12 - 1, 2, 2); }
   });
   TEX.locker = canvasTex(32, 64, (g, w, h) => {
     g.fillStyle = '#6f7880'; g.fillRect(0, 0, w, h);
@@ -364,6 +381,10 @@ const SFX = {
   boss() { noiseHit(.8, .30, 150, 'lowpass'); tone(60, 1.1, 'sawtooth', .12, -18); },
   win() { [523, 659, 784, 1046].forEach((f, i) => tone(f, .35, 'sine', .06, 0, i * .16)); },
   camera() { noiseHit(.04, .05, 1600, 'highpass'); },
+  whistle() { tone(2300, .7, 'square', .05, 120); tone(2350, .7, 'sine', .04, 80, .02); },
+  slam() { noiseHit(.5, .4, 200, 'lowpass'); tone(55, .6, 'sawtooth', .14, -20); },
+  unlock() { tone(520, .06, 'square', .05); tone(780, .08, 'square', .05, 0, .08); tone(1040, .2, 'sine', .05, 0, .16); },
+  fixed() { [392, 523, 659, 784, 1046].forEach((f, i) => tone(f, .4, 'triangle', .06, 0, i * .12)); },
   splash() { noiseHit(.12, .10, 900, 'bandpass'); tone(520, .1, 'sine', .03, -300); },
 };
 
@@ -563,8 +584,28 @@ function buildItem(type) {
       leaf.position.y = .22; leaf.rotation.z = (i - 1.5) * .45; leaf.rotation.y = i * 1.2; g.add(leaf);
     }
     const pot = new THREE.Mesh(new THREE.CylinderGeometry(.12, .09, .14, 6), pm(0x8a5a3a)); pot.position.y = .06; g.add(pot);
+  } else if (type === 'eraser') {
+    const b = new THREE.Mesh(new THREE.BoxGeometry(.3, .07, .12), pm(0x3d4a8a)); b.position.y = .06; g.add(b);
+    const f = new THREE.Mesh(new THREE.BoxGeometry(.3, .04, .12), bm(0xd8d4c4)); f.position.y = .005; g.add(f);
+  } else if (type === 'key') {
+    const r = new THREE.Mesh(new THREE.TorusGeometry(.07, .022, 4, 8), bm(0xe8c45a, { emissive: 0x7a5a1a }));
+    r.position.y = .14; g.add(r);
+    const s = new THREE.Mesh(new THREE.BoxGeometry(.035, .2, .03), bm(0xe8c45a)); s.position.y = -.01; g.add(s);
+    const t = new THREE.Mesh(new THREE.BoxGeometry(.07, .03, .03), bm(0xe8c45a)); t.position.set(.04, -.08, 0); g.add(t);
+    g.userData.spin = true;
+  } else if (type === 'battery') {
+    const c = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, .22, 6), pm(0xc8a43a)); c.position.y = .12; g.add(c);
+    const top = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, .07, 6), pm(0x2a2a30)); top.position.y = .2; g.add(top);
+  } else if (type === 'whistle') {
+    const b = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, .12, 7), bm(0xc8ccd4)); b.rotation.z = Math.PI / 2; b.position.y = .08; g.add(b);
+    const m = new THREE.Mesh(new THREE.BoxGeometry(.12, .05, .05), bm(0xaab0ba)); m.position.set(.1, .1, 0); g.add(m);
+    const cord = new THREE.Mesh(new THREE.TorusGeometry(.1, .01, 3, 10), pm(0xc83a32)); cord.rotation.x = Math.PI / 2; cord.position.y = .03; g.add(cord);
   } else {
     const p = new THREE.Mesh(new THREE.BoxGeometry(.3, .38, .02), pm(0xd8d0b8)); p.position.y = .22; p.rotation.x = -.25; g.add(p);
+  }
+  if (type !== 'note' && type !== 'herb') {
+    const halo = new THREE.Mesh(new THREE.PlaneGeometry(.7, .7), bm(0xffd76a, { transparent: true, opacity: .16, depthWrite: false, side: THREE.DoubleSide }));
+    halo.rotation.x = -Math.PI / 2; halo.position.y = .01; g.add(halo); g.userData.halo = halo;
   }
   return g;
 }

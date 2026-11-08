@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>おばけ第一小学校 PS1版</title>
-<meta name="description" content="固定カメラとタンク操作で 夜の学校を さまよう、PS1風の サバイバルホラー。">
+<meta name="description" content="わすれものを とりに きたら、がっこうが おばけに…！ 固定カメラで 夜の学校を しらべる、PS1風の なぞとき だっしゅつ。">
 <meta name="theme-color" content="#07060a">
 <link rel="icon" href="assets/icon_32.png" sizes="32x32">
 <link rel="apple-touch-icon" href="assets/icon_180.png">
@@ -28,8 +28,6 @@
       <button class="tbtn" id="tDown" aria-label="さがる">▼</button>
       <button class="tbtn" id="tLeft" aria-label="ひだりを むく">◀</button>
       <button class="tbtn" id="tRight" aria-label="みぎを むく">▶</button>
-      <button class="tbtn" id="tAim" aria-label="ねらう">ねらう</button>
-      <button class="tbtn" id="tFire" aria-label="うつ">うつ</button>
       <button class="tbtn" id="tAct" aria-label="しらべる">しらべる</button>
       <button class="tbtn" id="tItem" aria-label="もちもの">もちもの</button>
       <button class="tbtn" id="tMute" aria-label="おとの オンオフ">♪</button>
@@ -37,9 +35,9 @@
 
     <section id="title">
       <div class="tw">
-        <div class="tag">PlayStation 1996 &nbsp;/&nbsp; Survival Horror</div>
+        <div class="tag">PlayStation 1996 &nbsp;/&nbsp; Mystery Escape</div>
         <h1 class="logo"><span>おばけ</span><span class="red">第一小学校</span></h1>
-        <div class="sub">〜 夜の 学校で かくれんぼ 〜</div>
+        <div class="sub">〜 わすれものを とりに きたら、がっこうが おばけに…！ 〜</div>
         <div class="menu">
           <button id="btnNew">はじめから</button>
           <button id="btnContinue" disabled>つづきから</button>
@@ -67,13 +65,13 @@
         <h2>もちもの <small>PAUSE</small></h2>
         <div class="statgrid">
           <span>たいりょく</span><b id="invHp">♥♥♥♥</b>
-          <span>みず（たま）</span><b id="invAmmo">12</b>
+          <span>もちもの</span><b id="invBag">なし</b>
           <span>やくそう</span><b id="invHerb">0</b>
-          <span>おふだ</span><b id="invCharm">0 / 3</b>
+          <span>もとに もどした へや</span><b id="invFixed">0 / 3</b>
           <span>いまの ばしょ</span><b id="invRoom">5ねん1くみ</b>
           <span>あそんだ じかん</span><b id="invTime">00:00</b>
         </div>
-        <p id="invObjective">3まいの おふだを さがそう。</p>
+        <p id="invObjective">5ねん1くみの こくばんを もとに もどそう。</p>
         <div class="row">
           <button id="btnResume" class="primary">つづける</button>
           <button id="btnHerb">やくそうを つかう</button>
@@ -84,9 +82,26 @@
         <div class="setting"><span>画面の ゆれ・ノイズ</span><button id="btnFx">オン</button></div>
         <div class="controls">
           <b>↑↓</b> すすむ／さがる　<b>←→</b> まわる（タンク）<br>
-          <b>スペース</b> ねらう　<b>J／クリック</b> うつ　<b>E</b> しらべる<br>
+          <b>E／Enter／スペース</b> しらべる・とる・つかう<br>
           <b>I／Esc</b> もちもの　<b>H</b> やくそう　<b>M</b> おと
         </div>
+      </div>
+    </section>
+
+    <section id="lock" class="overlay" hidden>
+      <div class="panel">
+        <h2>ばんごうロック</h2>
+        <p id="lockMsg">たいいくかんの ばんごうロック</p>
+        <div class="dials">
+          <div class="dial"><button id="lockU0" aria-label="1つめを ふやす">▲</button><b id="lockD0">0</b><button id="lockN0" aria-label="1つめを へらす">▼</button></div>
+          <div class="dial"><button id="lockU1" aria-label="2つめを ふやす">▲</button><b id="lockD1">0</b><button id="lockN1" aria-label="2つめを へらす">▼</button></div>
+          <div class="dial"><button id="lockU2" aria-label="3つめを ふやす">▲</button><b id="lockD2">0</b><button id="lockN2" aria-label="3つめを へらす">▼</button></div>
+        </div>
+        <div class="row">
+          <button id="btnLockOk" class="primary">あける</button>
+          <button id="btnLockCancel">やめる</button>
+        </div>
+        <div class="controls"><b>←→</b> えらぶ　<b>↑↓／すうじ</b> かえる　<b>Enter</b> あける　<b>Esc</b> やめる</div>
       </div>
     </section>
 
@@ -104,15 +119,15 @@
     <section id="ending" class="overlay" hidden>
       <div class="panel">
         <h2>ENDING</h2>
-        <div class="big">おばけたちの しずかな 夜</div>
-        <p id="endText">おふだを ぜんぶ はった。校門の かぎが、しずかに ひらく。</p>
+        <div class="big">おしまい</div>
+        <p id="endText">がっこうは もとに もどった。<br>でも しゅくだいは、つくえの なかに のこったまま。</p>
         <div class="statgrid">
           <span>クリア じかん</span><b id="endTime">00:00</b>
-          <span>うった みず</span><b id="endShots">0</b>
+          <span>びっくりした かず</span><b id="endHurt">0</b>
           <span>たいりょく</span><b id="endHp">4</b>
-          <span>あつめた おふだ</span><b>3 / 3</b>
+          <span>もとに もどした へや</span><b>3 / 3</b>
         </div>
-        <p style="font-size:10px;color:#8e8798">「また あした、学校で。」</p>
+        <p style="font-size:10px;color:#8e8798">「あしたは わすれないぞ…たぶん。」</p>
         <div class="row">
           <button id="btnEndAgain" class="primary">もういちど</button>
           <button id="btnEndTitle">タイトルへ</button>
