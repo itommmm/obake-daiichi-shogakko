@@ -5,6 +5,19 @@
 
 **あそぶ：** https://itommmm.github.io/obake-daiichi-shogakko/ （iPhoneはSafariで開いて横向き）
 
+## 開発・引き継ぎ用ドキュメント
+
+| ファイル | 役割 |
+|---|---|
+| [PRD.md](PRD.md) | 作るもの・誰が遊ぶか・受入条件 |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | 3作品の技術スタック・ファイル構成・データフロー |
+| [DESIGN.md](DESIGN.md) | 配色・書体・コンポーネント・操作性 |
+| [RULES.md](RULES.md) | コーディング方針とAIが変更してはいけないこと |
+| [TASKS.md](TASKS.md) | 優先順位付きの、小さな未完了タスク |
+| [PROGRESS.md](PROGRESS.md) | 実装済み・未検証・既知の問題・次の1手 |
+
+**進め方：** [TASKS.md](TASKS.md) から1件選び、検査した結果を [PROGRESS.md](PROGRESS.md) に記録する。3作品共通の物語は [docs/STORY_BIBLE.md](docs/STORY_BIBLE.md) が正本。以下のREADMEは機能説明と開発履歴も含むため、過去の記述は現行仕様と異なる場合がある。
+
 ## ストーリー（3D版・レトロ版・PS1版 共通）
 
 **わすれものを とりに きたら、がっこうが おばけに…！**
