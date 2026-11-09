@@ -199,7 +199,8 @@ window.runPS1Tests = function () {
   G.hp = 4; G.invuln = 99;
   step(0.7);
   check('ghost winds up before a scare', ghost.windup > 0 || ghost.cd > 0);
-  G.invuln = 0; ghost.cd = 0; ghost.stagger = 0;
+  // 1回目で もう おどかして 後ろに さがっているので、もう一度 そばに おいてから 2回目を ためす
+  G.invuln = 0; ghost.cd = 0; ghost.stagger = 0; ghost.x = 0; ghost.z = -0.9;
   step(0.8);
   check('ghost contact never decreases hp', G.hp === 4 && G.state === 'play', { hp:G.hp, state:G.state });
   check('ghost backs off after a scare', ghost.stagger > 0 || ghost.cd > 0);
