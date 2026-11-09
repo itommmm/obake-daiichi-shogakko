@@ -249,7 +249,7 @@ const AdventureUI = (() => {
     if(tray.dataset.value===key)return;
     tray.dataset.value=key;
     tray.replaceChildren();
-    const names={eraser:'けしゴム',key_staff:'かぎ',battery:'でんち',whistle:'ふえ',leaf:'はっぱ'};
+    const names={...ITEM_NAMES,leaf:'はっぱ'};   // メッセージや ヒントと 同じ よびかた
     if(!codes.length){const empty=document.createElement('span');empty.textContent='もちもの なし';tray.append(empty);}
     else for(const id of codes){
       const chip=document.createElement('span');
@@ -278,7 +278,7 @@ const AdventureUI = (() => {
       activeCam.getWorldDirection(forward);
       if(forward.dot(delta)<=.1)continue;
       const p=projectToScreen(entry.x,entry.y,entry.z);
-      if(!p.ok||p.x<17||p.x>303||p.y<37||p.y>200)continue;
+      if(!p.ok||p.x<17||p.x>V.W-17||p.y<37||p.y>V.H-40)continue;
       visible.add(entry.key);
       let button=markers.get(entry.key);
       if(!button){
@@ -293,8 +293,8 @@ const AdventureUI = (() => {
       button.title=entry.label;
       button.dataset.short=Array.from(entry.label).slice(0,9).join('');
       button.setAttribute('aria-label',entry.label+'まで いって しらべる');
-      button.style.left=(p.x/320*100).toFixed(2)+'%';
-      button.style.top=(p.y/240*100).toFixed(2)+'%';
+      button.style.left=(p.x/V.W*100).toFixed(2)+'%';
+      button.style.top=(p.y/V.H*100).toFixed(2)+'%';
       button.classList.toggle('near',distance<=entry.reach);
       button.classList.toggle('spot',entry.type==='spot');
       button.classList.toggle('selected',!!navigation && navigation.entry.key===entry.key);

@@ -308,6 +308,11 @@ const TYPES={
 };
 // ほぞん（★と ずかん）。localStorage が つかえなくても うごく
 const SAVE={get(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
+// ずかんの数は メモリで数え、面クリア・おわり・タイトルへ・ページを とじる ときに まとめて保存する（たおすたびに保存しない）
+let ZUKAN_DATA=null;
+function zukanData(){return ZUKAN_DATA||(ZUKAN_DATA=SAVE.get('obake1-zukan',{}));}
+function saveZukan(){if(G.zDirty&&ZUKAN_DATA){SAVE.set('obake1-zukan',ZUKAN_DATA);G.zDirty=0;}}
+addEventListener('pagehide',()=>saveZukan());
 // おばけずかん：[しゅるい, なまえ, たおしかた]
 const ZUKAN=[['randoseru','ランドセロ','ふたが あいたら いっぱつ'],['isu','いすわらし','つくえと がったいする前に うて'],['tsukue','つくえんぼ','いすと がったいすると タワーに'],['keshigomu','けしゴムン','ダッシュが はやい'],
  ['sheet','シーツおばけ','ふわふわ ただよう'],['pencup','ふでたてくん','たおすと ペンが とびちる'],['pen','ペンペン','ちいさくて すばやい'],['scissors','チョッキン','ジグザグに せまる'],['globe','ちきゅうぎごろう','ころがって くる'],['flask','フラスコン','ばくはつで まわりも たおす'],
@@ -353,9 +358,9 @@ let state='title';
 const G={t:0,enemies:[],parts:[],texts:[],souls:[],items:[],tracers:[],fallen:[],place:'classroom',shake:0,recoil:0,hurt:0,flash:0,bgmAcc:0,bgmStep:0};
 const effectsMedia=matchMedia('(prefers-reduced-motion: reduce)');
 let gentleEffects=effectsMedia.matches;
-try{const saved=localStorage.getItem('obake1-gentle-effects');if(saved!==null)gentleEffects=saved==='1';}catch(_){}
+{const saved=SAVE.get('obake1-gentle-effects',null);if(saved!==null)gentleEffects=String(saved)==='1';}   // 前の '1'/'0' の保存もそのまま読める
 function syncEffects(){document.documentElement.classList.toggle('gentle-effects',gentleEffects);$('bEffects').textContent='ゆれ・ピカピカ：'+(gentleEffects?'ひかえめ':'ふつう');$('bEffects').setAttribute('aria-pressed',String(gentleEffects));}
-function toggleEffects(){gentleEffects=!gentleEffects;try{localStorage.setItem('obake1-gentle-effects',gentleEffects?'1':'0');}catch(_){}syncEffects();}
+function toggleEffects(){gentleEffects=!gentleEffects;SAVE.set('obake1-gentle-effects',gentleEffects?1:0);syncEffects();}
 syncEffects();
 const ptr={x:0,y:0,down:false,id:null};
 let modeKey='normal';
@@ -1745,9 +1750,10 @@ function waveClear(){
   const nx=WAVES[G.waveIdx+1];if(nx&&nx.boss&&G.hearts<G.maxHearts){G.hearts=G.maxHearts;G.clearInfo.push('ほけんしつで ぜんかいふく！');}else if(G.hearts<G.maxHearts&&nx){G.hearts++;G.clearInfo.push('ハート +1');}
   if(G.waveIdx===2&&G.route){G.routeReward=G.route==='music'?'wide':'jumbo';G.clearInfo.push('よりみち ごほうび！ つぎのWAVEで '+POW[G.routeReward].name);}
   if(G.newZ){G.clearInfo.push('ずかんに あたらしい おばけ！ +'+G.newZ);G.newZ=0;}
-  state='clear';G.clearT=G.clearT0=G.waveIdx+1<WAVES.length?(up?3.2:2.7)+(G.waveIdx===0?1:0):4.5;SFX.clear();
+  saveZukan();state='clear';G.clearT=G.clearT0=G.waveIdx+1<WAVES.length?(up?3.2:2.7)+(G.waveIdx===0?1:0):4.5;SFX.clear();
 }
 function finish(win,msg){
+  saveZukan();
   state='result';showHUD(false);ptr.down=false;
   // さいごの ボーナス：実際に当たった発射回数÷実際の発射回数 と 最大コンボ
   const acc=Math.min(1,(G.hitShotN||0)/Math.max(1,G.shotN||0));const accB=Math.round(acc*20000/100)*100,comboB=G.maxCombo*150;
@@ -1822,7 +1828,7 @@ function kill(e){
     else if(G.lightT>0&&!G.lightWaza&&inLight(e)){G.lightWaza=1;waza(e.sx,e.sy);}
     if(G.trait==='oto'){ring(e.sx,e.sy,'#e0a8ff',3);for(const o of G.enemies)if(!o.dead&&o!==e&&!o.T.boss&&Math.hypot(o.sx-e.sx,o.sy-e.sy)<e.u*3+o.sr)o.stun=Math.max(o.stun,1.1);}
   }
-  {const z=SAVE.get('obake1-zukan',{});if(!z[e.type])G.newZ=(G.newZ||0)+1;z[e.type]=(z[e.type]||0)+1;SAVE.set('obake1-zukan',z);}
+  {const z=zukanData();if(!z[e.type])G.newZ=(G.newZ||0)+1;z[e.type]=(z[e.type]||0)+1;G.zDirty=1;}
   G.combo++;G.comboT=1.8;G.maxCombo=Math.max(G.maxCombo,G.combo);
   const mul=1+Math.min(3,Math.floor(G.combo/5)*.5);const pts=Math.round(e.T.pts*mul);G.score+=pts;
   G.sp=Math.min(100,G.sp+(e.T.minor?2:7)+Math.min(5,G.combo*.3));
@@ -2206,7 +2212,7 @@ document.querySelectorAll('.mode').forEach(o=>o.setAttribute('aria-pressed',o.da
 function begin(ev){initAudio();const op=!(ev&&ev.currentTarget&&ev.currentTarget.id==='again');$('title').hidden=true;$('result').hidden=true;$('pause').hidden=true;G.enemies=[];newGame(op);
   try{if(coarse&&document.documentElement.requestFullscreen&&!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});}catch(e){}}
 $('start').addEventListener('click',begin);$('zukanBtn').addEventListener('click',openZukan);$('zClose').addEventListener('click',()=>{$('zukan').hidden=true;});$('again').addEventListener('click',begin);
-function toTitle(){state='title';G.enemies=[];G.souls=[];G.items=[];G.boss=null;G.wave=null;showHUD(false);$('pause').hidden=true;$('result').hidden=true;$('title').hidden=false;showBest();}
+function toTitle(){saveZukan();state='title';G.enemies=[];G.souls=[];G.items=[];G.boss=null;G.wave=null;showHUD(false);$('pause').hidden=true;$('result').hidden=true;$('title').hidden=false;showBest();}
 $('toTitle').addEventListener('click',toTitle);$('quit').addEventListener('click',toTitle);$('resume').addEventListener('click',togglePause);
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&(state==='play'||state==='intro'))togglePause();});
 const ZSNAP={};
@@ -2219,7 +2225,7 @@ function snapModel(type){if(ZSNAP[type])return ZSNAP[type];const S=160,cv=docume
     renderer.setRenderTarget(null);renderer.setClearColor(cc,ca);rt.dispose();CUR.forEach(x=>x.dispose());
     const g=cv.getContext('2d'),im=g.createImageData(S,S);for(let y=0;y<S;y++)im.data.set(px.subarray((S-1-y)*S*4,(S-y)*S*4),y*S*4);g.putImageData(im,0,0);}catch(e){console.warn(e);}
   return ZSNAP[type]=cv;}
-function openZukan(){const z=SAVE.get('obake1-zukan',{}),grid=$('zGrid');grid.textContent='';let n=0;
+function openZukan(){const z=zukanData(),grid=$('zGrid');grid.textContent='';let n=0;
   for(const [t,name,how] of ZUKAN){const seen=z[t]>0;if(seen)n++;const d=document.createElement('div');d.className='zc'+(seen?'':' no');
     if(ZIMG[t]){const im=new Image();im.src='assets/'+ZIMG[t]+'.webp';im.alt='';d.appendChild(im);}else{const src=snapModel(t),cv=document.createElement('canvas');cv.width=cv.height=src.width;cv.getContext('2d').drawImage(src,0,0);d.appendChild(cv);}
     const b=document.createElement('div');b.textContent=seen?name:'？？？';d.appendChild(b);

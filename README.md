@@ -464,7 +464,7 @@ iPhoneでゲームを動かし、画面をLGテレビ（AirPlay対応）やMacBo
 | `ps1/rooms.js` | 5部屋の形・家具・ドア（かぎ／ばんごう）・固定カメラ・アイテム・しらべる ばしょ・おばけの配置・当たり判定 |
 | `ps1/logic.js` | ゲーム進行、なぞとき（`SPOTS`・へやを もどす・ばんごうロック）、タンク／モダン操作、おばけAI、イントロ／エンディング、HUD、セーブ、`window.PS1` |
 | `ps1/style.css` | 4:3ステージ、タイトル、もちもの、タッチ操作、CRT風の見た目 |
-| `tools/test_ps1.js` | ブラウザ用の回帰テスト（`window.runPS1Tests()`、112項目） |
+| `tools/test_ps1.js` | ブラウザ用の回帰テスト（`window.runPS1Tests()`、165項目） |
 
 - 確認：ローカルHTTPサーバーで `ps1.html` を開き、`tools/test_ps1.js` を script として読みこんで `window.runPS1Tests()` を実行する。なぞときを はじめから さいごまで（しゅくだい → こくばん → かぎ → とけい → ばんごうロック → ふえ → げんかん → エンディング）、ドアの全遷移、もの・しらべる ばしょの到達性、タンク操作、おばけの予告攻撃、セーブ／ロード、イントロ、モダン操作まで確認する
 - デバッグ：`window.PS1` に `G`（状態）、`room()`、`enterRoom()`、`update(dt)`、`capture()`、`three()` を公開している。ブラウザのrAFが止まる環境では `PS1.update(1/60)` を手で回してから `PS1.capture()` で画面を取れる
