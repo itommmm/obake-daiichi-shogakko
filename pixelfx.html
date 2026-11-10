@@ -145,6 +145,11 @@ button:disabled{opacity:.5;cursor:wait}
 .gentle-effects .sk.ready,.gentle-effects .ghosts img{animation:none}
 
 /* ===== PIXEL GUI: Only this alternative Three.js page. ===== */
+#title{background:#090d21}
+#titlePixelBg{position:fixed;inset:0;width:100%;height:100%;z-index:0;image-rendering:pixelated;pointer-events:none}
+#titleFx{z-index:1}
+#title>.card{z-index:2}
+
 .palette-btn{min-height:44px;padding:7px 10px;border-color:#69e7ff;color:#eefaff;background:#1d3445;box-shadow:3px 3px 0 #08091d;font:700 14px/1.35 var(--body)}
 .palette-btn:hover:not(:disabled){background:#25475c;border-color:#bcf4ff}
 .palette-btn:active:not(:disabled){transform:translate(2px,2px);box-shadow:1px 1px 0 #08091d}
@@ -399,6 +404,7 @@ button:disabled{opacity:.55}
 </div>
 
 <section class="screen" id="title">
+  <canvas id="titlePixelBg" aria-hidden="true"></canvas>
   <canvas id="titleFx" aria-hidden="true"></canvas>
   <div class="card">
     <div class="logo">
@@ -868,6 +874,36 @@ const boomL=new THREE.PointLight(0x4dff9a,0,7,2);scene.add(boomL);
 const kidSpot=new THREE.SpotLight(0xffe3b8,0,12,.38,.6,1.2);scene.add(kidSpot,kidSpot.target);
 const kidFill=new THREE.PointLight(0xc8a8ff,0,4,2);scene.add(kidFill);
 
+
+// Title illustration is downsampled to the same virtual pixel grid as the 3D view.
+// Existing local asset is retained unmodified; the original CSS background is the fallback.
+const pixelTitleCanvas=$('titlePixelBg');
+const pixelTitleContext=pixelTitleCanvas.getContext('2d');
+const pixelTitleImage=new Image();
+let pixelTitleReady=false;
+function renderPixelTitle(){
+ if(!pixelTitleReady||!pixelTitleContext)return;
+ const cssW=Math.max(1,innerWidth),cssH=Math.max(1,innerHeight);
+ const logicalH=QL[Q.level].pxH,logicalW=Math.max(1,Math.round(logicalH*cssW/cssH));
+ if(pixelTitleCanvas.width!==logicalW)pixelTitleCanvas.width=logicalW;
+ if(pixelTitleCanvas.height!==logicalH)pixelTitleCanvas.height=logicalH;
+ pixelTitleContext.clearRect(0,0,logicalW,logicalH);
+ pixelTitleContext.imageSmoothingEnabled=true;
+ const scale=Math.max(logicalW/pixelTitleImage.naturalWidth,logicalH/pixelTitleImage.naturalHeight);
+ const imageW=pixelTitleImage.naturalWidth*scale,imageH=pixelTitleImage.naturalHeight*scale;
+ pixelTitleContext.drawImage(pixelTitleImage,(logicalW-imageW)*.5,(logicalH-imageH)*.3,imageW,imageH);
+ const shade=pixelTitleContext.createLinearGradient(0,0,0,logicalH);
+ shade.addColorStop(0,'rgba(6,3,16,.20)');
+ shade.addColorStop(.4,'rgba(6,3,16,.38)');
+ shade.addColorStop(1,'rgba(6,3,16,.86)');
+ pixelTitleContext.fillStyle=shade;
+ pixelTitleContext.fillRect(0,0,logicalW,logicalH);
+}
+pixelTitleImage.onload=()=>{pixelTitleReady=true;renderPixelTitle();};
+pixelTitleImage.onerror=()=>{pixelTitleReady=false;pixelTitleCanvas.style.display='none';};
+pixelTitleImage.decoding='async';
+pixelTitleImage.src='assets/title_bg.webp';
+
 /* 画質・固定カラーパレット */
 
 // Custom night-school palettes, nested 16 -> 32 -> 64 colors. No external assets/dependencies.
@@ -980,6 +1016,7 @@ function applyQuality(){
   renderer.setPixelRatio(1);renderer.setSize(logicalW,logicalH,false);
   composer.setPixelRatio(1);composer.setSize(logicalW,logicalH);
   applyPalette();
+  renderPixelTitle();
   bloom.enabled=false;
   const wantSh=Q.level<2;if(renderer.shadowMap.enabled!==wantSh){renderer.shadowMap.enabled=wantSh;scene.traverse(o=>{if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.needsUpdate=true);});}
   moon.shadow.mapSize.set(q.sh,q.sh);if(moon.shadow.map){moon.shadow.map.dispose();moon.shadow.map=null;}
@@ -1078,8 +1115,8 @@ function makeTextures(){
    ジオメトリ・素材のヘルパー
    ====================================================================== */
 const GC={};const geo=(k,f)=>GC[k]||(GC[k]=f());
-const RB=(w,h,d,r)=>geo(`rb${w},${h},${d},${r}`,()=>new THREE.RoundedBoxGeometry(w,h,d,3,r));
-const SPH=new THREE.SphereGeometry(1,20,14),BOX=new THREE.BoxGeometry(1,1,1),CYL=new THREE.CylinderGeometry(1,1,1,22),CONE=new THREE.ConeGeometry(.5,1,4),PLANE=new THREE.PlaneGeometry(1,1);
+const RB=(w,h,d,r)=>geo(`rb${w},${h},${d},${r}`,()=>new THREE.RoundedBoxGeometry(w,h,d,2,r));
+const SPH=new THREE.SphereGeometry(1,12,8),BOX=new THREE.BoxGeometry(1,1,1),CYL=new THREE.CylinderGeometry(1,1,1,12),CONE=new THREE.ConeGeometry(.5,1,4),PLANE=new THREE.PlaneGeometry(1,1);
 const SHARED=new Set([SPH,BOX,CYL,CONE,PLANE]);
 function std(c,r,m,o){return new THREE.MeshStandardMaterial(Object.assign({color:new THREE.Color(c),roughness:r,metalness:m||0,flatShading:true,envMapIntensity:(m||0)>.5?.55:.07},o||{}));}
 function basic(r,g,b,o){return new THREE.MeshBasicMaterial(Object.assign({color:new THREE.Color(r,g,b)},o||{}));}
