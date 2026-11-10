@@ -7,9 +7,9 @@
 if(typeof THREE==="undefined"||typeof scene==="undefined"||!THREE.InstancedMesh)return;
 const meshGeo=new THREE.TetrahedronGeometry(1,0);
 const config={
- hit:{color:0x9aada3,velocity:2.3,count:8,life:.42,size:.05},
- poof:{color:0x7e6f84,velocity:2,count:16,life:.85,size:.085},
- pickup:{color:0xc2aa77,velocity:2.5,count:12,life:.75,size:.065}
+ hit:{color:0xa7b9a5,velocity:1.8,count:6,life:.38,size:.048},
+ poof:{color:0x85877a,velocity:1.45,count:11,life:.72,size:.078},
+ pickup:{color:0xc0b38e,velocity:1.8,count:8,life:.63,size:.058}
 };
 const pools={};
 const dummy=new THREE.Object3D();
