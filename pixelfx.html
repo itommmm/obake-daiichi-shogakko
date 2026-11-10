@@ -1235,13 +1235,21 @@ function face(g,o){
   if(es){
     // Deep asymmetrical eye sockets and tiny clouded pupils.
     // No over-bright candy-colored spherical cartoon eyes.
-    const socket=mstd('#181d1a',.98,0),iris=mbasic(.78,.81,.68);
+    const socket=mstd('#181d1a',.98,0),iris=mbasic(1.02,.99,.8);
+    /* 暗い教室で敵を見失わないように、**目だけ**が淡く光る。
+       199X の絵的做法どおり、光はスプライト（加算）で tiny な点として置く。
+       体は起こさない（影とシルエットはそのまま残す）。 */
+    const glow=mbasic(1.1,1.02,.72,{map:TEX.glow,transparent:true,opacity:.72,blending:THREE.AdditiveBlending,depthWrite:false});
     for(const sd of[-1,1]){
       const k=sd<0?eL:eR;
       const yy=y+(sd<0?es*.10:-es*.09)*k;
       add(g,SPH,socket,x0+sd*ex*k,yy,z,0,0,0,es*.97*k,es*.87*k,es*.34).castShadow=false;
-      add(g,SPH,iris,x0+sd*ex*k+sd*es*.10,yy-es*.10,z+es*.32,0,0,0,es*.24*k,es*.16*k,es*.13).castShadow=false;
+      add(g,SPH,iris,x0+sd*ex*k+sd*es*.10,yy-es*.10,z+es*.32,0,0,0,es*.28*k,es*.19*k,es*.15).castShadow=false;
       add(g,BOX,socket,x0+sd*ex*k,yy+es*.70,z+es*.21,0,0,sd*.15,es*1.94*k,es*.32*k,es*.15).castShadow=false;
+      const gl2=new THREE.Sprite(glow);
+      gl2.position.set(x0+sd*ex*k+sd*es*.10,yy-es*.10,z+es*.34);
+      gl2.scale.setScalar(es*2.0*k);
+      g.add(gl2);
     }
   }
   if(!o.mw)return null;
@@ -1459,7 +1467,7 @@ function makeEnemy3D(e){
   CUR=[];const m=MODEL[e.type]();const root=new THREE.Group();root.add(m.g);
   // Everyday classroom items look wrong through shape and lighting, not added fantasy spikes.
   if(!e.T.boss)m.g.rotation.z=Math.sin(e.ph||0)*.028;
-  const auraM=new THREE.SpriteMaterial({map:TEX.aura,color:e.T.boss?new THREE.Color(.45,.29,.25):e.type==='flask'?new THREE.Color(.32,.47,.36):new THREE.Color(.38,.45,.36),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,opacity:.065});
+  const auraM=new THREE.SpriteMaterial({map:TEX.aura,color:e.T.boss?new THREE.Color(.45,.29,.25):e.type==='flask'?new THREE.Color(.32,.47,.36):new THREE.Color(.38,.45,.36),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,opacity:.095});
   const asp=new THREE.Sprite(auraM);const as=e.type==='kousha'?4.4:3.6;asp.scale.set(as,as*(e.type==='kousha'?.7:1),1);asp.position.z=-.3;root.add(asp);
   const blob=new THREE.Mesh(PLANE,new THREE.MeshBasicMaterial({map:TEX.blob,transparent:true,depthWrite:false,opacity:.8,color:0x000000}));blob.rotation.x=-Math.PI/2;scene.add(blob);
   root.userData={e,P:m.P,mats:CUR,aura:auraM,blob,die:0,emis:''};scene.add(root);e.o=root;LIVE.push(root);return root;
@@ -1482,11 +1490,13 @@ function sync3D(dt){
     if(u.P.arms)u.P.arms.forEach((a,k)=>{a.rotation.z=(k?-1:1)*Math.sin(e.t*5+k)*.35;a.rotation.x=Math.sin(e.t*3+k)*.2;});
     const want=e.flash>0?'f':inLight(e)?'l':'';if(want!==u.emis){u.emis=want;for(const m of u.mats){if(!m.isMeshStandardMaterial)continue;if(m.userData.e0===undefined){m.userData.e0=m.emissive.clone();m.userData.ei=m.emissiveIntensity;}
       if(want==='f'){m.emissive.setRGB(.72,.73,.62);m.emissiveIntensity=.38;}else if(want==='l'){m.emissive.setRGB(.55,.59,.45);m.emissiveIntensity=.20;}else{m.emissive.copy(m.userData.e0);m.emissiveIntensity=m.userData.ei;}}}
-    u.aura.opacity=.045*e.appear*(e.T.ghost?.4+e.vis*.6:1);
+    u.aura.opacity=.07*e.appear*(e.T.ghost?.4+e.vis*.6:1);
     const b=u.blob;b.visible=true;b.position.set(p.x,.006,p.z);const bs=p.s*2.2*(1+e.h*.6);b.scale.set(bs,bs*.8,1);b.material.opacity=.75*clamp(1-e.h*.9,.25,1)*e.appear;
   }
   const near=G.enemies.filter(e=>!e.dead&&e.o).sort((a,b)=>a.z-b.z);const na=QL[Q.level].aura;
-  auraL.forEach((l,i)=>{const e=near[i];if(e&&i<na){const p=placeOf(e);l.position.set(p.x,p.y+.1,p.z+.35);l.intensity=(e.T.boss?1.12:.74)*e.appear;l.color.set(e.T.boss?0xc3aa90:e.type==='flask'?0x9db6a1:0xafbea8);}else l.intensity=0;});
+  auraL.forEach((l,i)=>{const e=near[i];if(e&&i<na){const p=placeOf(e);
+      /* 灯りを敵の「手前・やや上」に置く。敵の中に置くと内側からの光になり顔が黒く沈むため。 */
+      l.position.set(p.x,p.y+.14,p.z+.7);l.intensity=(e.T.boss?1.45:1.15)*e.appear;l.color.set(e.T.boss?0xc3aa90:e.type==='flask'?0x9db6a1:0xafbea8);}else l.intensity=0;});
   syncSouls();syncItems();
 }
 const SOUL_O=[],ITEM_O=[];

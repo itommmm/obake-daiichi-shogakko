@@ -36,7 +36,7 @@
     satCapShadowViolet: 0.55, // boss 部屋のみ
 
     // キャラの自発光（現行は一律 .20。影が浅くなる原因）
-    emissiveFloor: 0.08,
+    emissiveFloor: 0.11,
     emissiveEye: 0.26,
 
     // 光の帯（窓から差す god ray）— 画面下に光だまりを作らない
