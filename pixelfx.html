@@ -2165,35 +2165,72 @@ const HORROR_HUD_COLOR={'#5fe3ff':'#9dbbb7','#ff5fb8':'#b88181','#ffd23f':'#c9b2
 function txt(s,x,y,size,col,font,align,stroke){ctx.font=`${size}px ${font||FB}`;ctx.textAlign=align||'left';ctx.textBaseline='middle';if(stroke){ctx.lineWidth=stroke;ctx.strokeStyle='#11191c';ctx.lineJoin='bevel';ctx.strokeText(s,x,y);}ctx.fillStyle=HORROR_HUD_COLOR[col]||col;ctx.fillText(s,x,y);}
 function ghostIcon(x,y,s,col){ctx.save();ctx.fillStyle=col||'#fff';ctx.beginPath();ctx.arc(x,y-s*.2,s*.6,Math.PI,0);ctx.lineTo(x+s*.6,y+s*.55);for(let i=0;i<3;i++)ctx.lineTo(x+s*.6-(i+.5)*s*.4,y+s*(i%2?.55:.3));ctx.lineTo(x-s*.6,y+s*.55);ctx.closePath();ctx.fill();ctx.fillStyle='#1a0b25';ctx.beginPath();ctx.arc(x-s*.2,y-s*.15,s*.1,0,7);ctx.arc(x+s*.2,y-s*.15,s*.1,0,7);ctx.fill();ctx.restore();}
 function drawHUD(){
-  const u=U,top=SA.t+12*u;
-  const pw=[200*u,200*u,180*u],gap=12*u,tw=pw[0]+pw[1]+pw[2]+gap*2;let x=W/2-tw/2;const ph=54*u;
-  panel(x,top,pw[0],ph,'#5fe3ff');const tm=Math.ceil(G.time),mm=Math.floor(tm/60),ss=String(tm%60).padStart(2,'0');
-  txt('タイム',x+16*u,top+ph/2,15*u,'#cfe9ff',FB);txt(`${mm}:${ss}`,x+pw[0]-14*u,top+ph/2,30*u,G.time<10&&Math.sin(G.t*10)>0?'#ff5fb8':'#fff',FD,'right');
-  x+=pw[0]+gap;panel(x,top,pw[1],ph,'#a65cff');ghostIcon(x+24*u,top+ph/2,26*u,'#d9b8ff');
-  if(G.wave&&G.wave.boss){txt('ボス',x+48*u,top+ph/2,15*u,'#e8dcff',FB);txt(G.boss?Math.max(0,Math.ceil(G.boss.hp/G.boss.max*100))+'%':'—',x+pw[1]-14*u,top+ph/2,28*u,'#ff8fd0',FD,'right');}
-  else{txt('のこり',x+48*u,top+ph/2,15*u,'#e8dcff',FB);const rem=Math.max(0,G.goal-G.kills);ctx.font=`${16*u}px ${FD}`;const w2=ctx.measureText(`/${G.goal}`).width;txt(`/${G.goal}`,x+pw[1]-14*u,top+ph/2+4*u,16*u,'#fff',FD,'right');txt(String(rem),x+pw[1]-18*u-w2,top+ph/2,30*u,'#ff8fd0',FD,'right');}
-  x+=pw[1]+gap;panel(x,top,pw[2],ph,'#ffd23f');ctx.fillStyle='#ffd23f';star(x+24*u,top+ph/2,13*u);txt('コンボ',x+44*u,top+ph/2,15*u,'#fff2c0',FB);txt(String(G.combo),x+pw[2]-14*u,top+ph/2,30*u,G.combo>=10?'#ffd23f':'#fff',FD,'right');
-  if(G.techGoal){const k=Math.min(G.tech||0,G.techGoal);txt('わざ '+'★'.repeat(k)+'☆'.repeat(G.techGoal-k),W/2,top+ph+16*u,15*u,k>=G.techGoal?'#ffd23f':'#e8dcff',FB,'center',4*u);}
-  if(G.boss&&!G.boss.dead){const bw=Math.min(520*u,W*.6),bxp=W/2-bw/2,by=top+ph+12*u;txt(G.boss.T.name||'ボス',W/2,by+6*u,14*u,'#ffd1ec',FB,'center',4*u);rr(bxp,by+16*u,bw,14*u,7*u,'rgba(0,0,0,.6)');rr(bxp,by+16*u,bw*Math.max(0,G.boss.hp/G.boss.max),14*u,7*u,'#ff4fb0');}
-  const rw=170*u,rx=W-SA.r-rw-14*u;ctx.save();ctx.translate(rx+rw/2,top+30*u);ctx.rotate(-.02);rr(-rw/2,-26*u,rw,52*u,6*u,'#ece6f6');ctx.restore();
-  txt(G.diff?G.diff.label:'',rx+rw/2,top+18*u,17*u,'#1a0b25',FB,'center');
-  txt(`WAVE ${G.waveIdx+1} / ${WAVES.length}`,rx+rw/2,top+64*u,17*u,'#fff',FD,'center',4*u);
-  if(G.chime){const cx=W-SA.r-120*u,cy=top+128*u;ctx.save();ctx.translate(cx,cy);ctx.rotate(-.08);rr(-110*u,-28*u,220*u,56*u,10*u,'#d81b48');txt('チャイムで ふっかつ！',0,-2*u,18*u,'#fff',FD,'center',4*u);ctx.restore();
-    ctx.save();ctx.translate(cx-130*u,cy-4*u);ctx.rotate(Math.sin(G.t*14)*.35);ctx.fillStyle='#ffd23f';ctx.shadowColor='#ffd23f';ctx.shadowBlur=16*u;ctx.beginPath();ctx.moveTo(-22*u,18*u);ctx.quadraticCurveTo(-20*u,-24*u,0,-24*u);ctx.quadraticCurveTo(20*u,-24*u,22*u,18*u);ctx.closePath();ctx.fill();ctx.beginPath();ctx.arc(0,22*u,6*u,0,7);ctx.fill();ctx.restore();
-    txt(String(Math.ceil(G.chime.t)),cx,cy+48*u,30*u,'#ffd23f',FD,'center',5*u);txt('たおしても 時間で ふっかつ！',cx,cy+78*u,12*u,'#fff',FB,'center',4*u);}
-  const lx=SA.l+18*u,ly=H-SA.b-62*u;ctx.save();ctx.translate(lx+36*u,ly);ctx.rotate(-.06);ctx.shadowColor='rgba(0,0,0,.5)';ctx.shadowBlur=8*u;rr(-36*u,-32*u,72*u,64*u,8*u,'#fbfaf4');ctx.shadowBlur=0;ctx.strokeStyle='#d22a3c';ctx.lineWidth=3*u;ctx.stroke();
-    rr(-36*u,-32*u,72*u,17*u,[8*u,8*u,0,0],'#2a5ad8');txt('2ねん1くみ',0,-23*u,10*u,'#fff',FB,'center');txt('おばけ',0,-2*u,14*u,'#1a0b25',FB,'center');txt('たいじたい',0,15*u,11*u,'#1a0b25',FB,'center');
-    ctx.strokeStyle='#c3c9d4';ctx.lineWidth=2.5*u;ctx.beginPath();ctx.moveTo(-22*u,-37*u);ctx.lineTo(22*u,-37*u);ctx.stroke();ctx.restore();
-  for(let i=0;i<G.maxHearts;i++){const hx=lx+96*u+i*40*u,hy=ly-12*u;ctx.save();if(i<G.hearts){ctx.shadowBlur=0;heart(hx,hy,18*u,'#bd8682');}else heart(hx,hy,18*u,'rgba(255,255,255,.15)');ctx.restore();}
-  const sw=Math.max(150*u,G.maxHearts*40*u-8*u);rr(lx+78*u,ly+16*u,sw,13*u,7*u,'rgba(0,0,0,.6)');const sg=ctx.createLinearGradient(lx+78*u,0,lx+78*u+sw,0);sg.addColorStop(0,'#7a3dff');sg.addColorStop(1,'#e08bff');rr(lx+78*u,ly+16*u,sw*G.sp/100,13*u,7*u,sg);
-  if(G.sp>=100&&Math.sin(G.t*8)>0)txt('C で スペシャル！',lx+78*u,ly+44*u,14*u,'#e8c8ff',FB,'left',4*u);
-  const aw=230*u,ah=62*u,ax=W-SA.r-aw-16*u,ay=H-SA.b-ah-14*u;panel(ax,ay,aw,ah,'#5fe3ff');
-  {const tx=ax+14*u,ty=ay+10*u,tw2=50*u,th=ah-20*u,lv=G.reload>0?1-G.reload/1.1:G.ammo/maxAmmo();rr(tx,ty,tw2,th,8*u,'rgba(190,230,255,.15)');ctx.save();rr(tx,ty,tw2,th,8*u);ctx.clip();const wg=ctx.createLinearGradient(0,ty,0,ty+th);wg.addColorStop(0,'#7cc8ff');wg.addColorStop(1,'#1a6aff');ctx.fillStyle=wg;const wy=ty+th*(1-lv)+Math.sin(G.t*6)*1.5*u;ctx.beginPath();ctx.moveTo(tx,wy);for(let i=0;i<=8;i++)ctx.lineTo(tx+tw2*i/8,wy+Math.sin(G.t*5+i)*1.5*u);ctx.lineTo(tx+tw2,ty+th);ctx.lineTo(tx,ty+th);ctx.fill();ctx.restore();ctx.strokeStyle='#9fefff';ctx.lineWidth=2*u;rr(tx,ty,tw2,th,8*u);ctx.stroke();}
-  if(G.reload>0){txt('みずを いれてる…',ax+aw-14*u,ay+ah/2,16*u,'#9fefff',FB,'right');}
-  {const lv=G.wlv||1;rr(ax+aw-62*u,ay-20*u,58*u,22*u,11*u,lv>=4?'#ff5fb8':lv>=3?'#ffd23f':lv>=2?'#5fe3ff':'#4b3487');txt('Lv'+lv,ax+aw-33*u,ay-9*u,14*u,lv>=2?'#1a0b25':'#fff',FD,'center');}
-  if(G.pow&&G.pow.t>0){const P=POW[G.pow.kind],bw=150*u,bx=ax+aw-bw-70*u,by=ay-18*u;rr(bx,by,bw,16*u,8*u,'rgba(0,0,0,.55)');rr(bx,by,bw*G.pow.t/G.pow.max,16*u,8*u,P.col);txt(P.name+' '+Math.ceil(G.pow.t),bx+bw/2,by+8*u,12*u,'#1a0b25',FB,'center');}
-  if(G.pow&&G.pow.kind==='rapid'&&G.pow.t>0){txt('むげん',ax+aw-14*u,ay+ah/2-8*u,22*u,'#ffd23f',FD,'right');txt('みずでっぽう',ax+aw-14*u,ay+ah/2+17*u,12*u,'#cfe9ff',FB,'right');}
-  else{txt(`${G.ammo}/${maxAmmo()}`,ax+aw-14*u,ay+ah/2-8*u,26*u,G.ammo<6?'#ff8fd0':'#fff',FD,'right');txt('みずでっぽう',ax+aw-14*u,ay+ah/2+17*u,12*u,'#cfe9ff',FB,'right');}
+  // Single narrow 199X status strip. Keep the 3D playfield clear, including on iPhone landscape.
+  const u=U,top=SA.t+8*u;
+  const w=Math.max(150,Math.min(W-SA.l-SA.r-18*u,700*u));
+  const x=(W-w)*.5,h=Math.max(32,44*u);
+  const labelSize=Math.max(11,14*u),valueSize=Math.max(15,23*u),subSize=Math.max(10,13*u);
+  const label='#adb7a4',value='#e7e7d7',warn='#d1a695',accent='#c9ba8f';
+  ctx.save();
+  ctx.fillStyle='rgba(11,17,15,.78)';ctx.fillRect(x,top,w,h);
+  ctx.strokeStyle='rgba(147,160,139,.65)';ctx.lineWidth=Math.max(1,u);ctx.strokeRect(x,top,w,h);
+  ctx.fillStyle='#a8b39c';ctx.fillRect(x,top,Math.max(18*u,w*.075),Math.max(2,u*2));
+  const a=x+w*.315,b=x+w*.68;
+  ctx.fillStyle='rgba(134,147,132,.42)';ctx.fillRect(a,top+7*u,Math.max(1,u),h-14*u);
+  ctx.fillRect(b,top+7*u,Math.max(1,u),h-14*u);
+  const mid=top+h*.52;
+  const tm=Math.max(0,Math.ceil(G.time)),timeTxt=Math.floor(tm/60)+':'+String(tm%60).padStart(2,'0');
+  txt('じかん',x+8*u,mid,labelSize,label,FB);
+  txt(timeTxt,a-9*u,mid,valueSize,tm<=10?warn:value,FD,'right');
+  const isBoss=!!(G.wave&&G.wave.boss);
+  txt(isBoss?'ボス':'のこり',a+9*u,mid,labelSize,label,FB);
+  const remaining=isBoss?(G.boss?Math.max(0,Math.ceil(G.boss.hp/G.boss.max*100))+'%':'—'):
+    Math.max(0,G.goal-G.kills)+'/'+G.goal;
+  txt(remaining,b-8*u,mid,valueSize,isBoss?warn:value,FD,'right');
+  txt('コンボ',b+8*u,mid,labelSize,label,FB);
+  txt(String(G.combo||0),x+w-9*u,mid,valueSize,G.combo>=10?accent:value,FD,'right');
+  ctx.restore();
+  // Minimal secondary line; never three more solid arcade panels.
+  const subY=top+h+11*u;
+  if(G.techGoal)txt('わざ '+Math.min(G.tech||0,G.techGoal)+'/'+G.techGoal,
+    x+4*u,subY,subSize,label,FB);
+  txt('WAVE '+(G.waveIdx+1)+'/'+WAVES.length,x+w-4*u,subY,subSize,label,FB,'right');
+  if(G.boss&&!G.boss.dead){
+    const bw=Math.min(w*.64,330*u),px=x+(w-bw)*.5,py=top+h+24*u;
+    ctx.fillStyle='rgba(12,18,16,.86)';ctx.fillRect(px,py,bw,Math.max(6,8*u));
+    ctx.fillStyle='#aa897c';ctx.fillRect(px,py,bw*clamp(G.boss.hp/G.boss.max,0,1),Math.max(6,8*u));
+    txt(G.boss.T.name||'ボス',px+bw*.5,py+18*u,Math.max(11,13*u),value,FB,'center');
+  }
+  // Timed warnings remain legible but no longer dominate the 3D scene.
+  if(G.chime){
+    const cy=H*.245;
+    ctx.fillStyle='rgba(21,24,18,.89)';ctx.fillRect(W/2-120*u,cy-17*u,240*u,34*u);
+    ctx.strokeStyle='#b6a27f';ctx.strokeRect(W/2-120*u,cy-17*u,240*u,34*u);
+    txt('チャイム ふっかつ '+Math.ceil(G.chime.t),W/2,cy,Math.max(13,17*u),accent,FB,'center');
+  }
+  // Compact player health and spell status at the bottom left.
+  const left=SA.l+Math.max(10,14*u),lower=H-SA.b-Math.max(43,58*u);
+  txt('2ねん1くみ',left,lower,subSize,label,FB);
+  const heartStep=Math.max(19,26*u),heartSize=Math.max(9,12*u);
+  for(let i=0;i<G.maxHearts;i++)heart(left+heartSize+i*heartStep,lower+18*u,heartSize,
+    i<G.hearts?'#b98e86':'rgba(175,180,165,.23)');
+  const sw=Math.max(100*u,G.maxHearts*heartStep);
+  const sy=lower+35*u;
+  ctx.fillStyle='rgba(8,14,12,.8)';ctx.fillRect(left,sy,sw,Math.max(5,7*u));
+  ctx.fillStyle=G.sp>=100?'#c1af8a':'#718c82';
+  ctx.fillRect(left,sy,sw*clamp(G.sp/100,0,1),Math.max(5,7*u));
+  if(G.sp>=100)txt('スペシャル OK',left,sy-10*u,Math.max(10,12*u),accent,FB);
+  // Right bottom: ammunition, reload and power-up feedback.
+  const right=W-SA.r-Math.max(10,15*u),ay=H-SA.b-Math.max(41,55*u);
+  const alabel=Math.max(11,14*u),anum=Math.max(16,25*u);
+  txt('みずでっぽう Lv'+(G.wlv||1),right,ay,alabel,label,FB,'right');
+  if(G.reload>0)txt('みずを いれてる…',right,ay+25*u,Math.max(12,16*u),accent,FB,'right');
+  else if(G.pow&&G.pow.kind==='rapid'&&G.pow.t>0)
+    txt('むげん',right,ay+25*u,anum,accent,FD,'right');
+  else txt(G.ammo+'/'+maxAmmo(),right,ay+25*u,anum,G.ammo<6?warn:value,FD,'right');
+  if(G.pow&&G.pow.t>0){
+    txt(POW[G.pow.kind].name+' '+Math.ceil(G.pow.t),right,ay-17*u,alabel,accent,FB,'right');
+  }
 }
 function aimOff(){ // 照準が画面の外を向いているか（向きの操作のとき）
   if(GYRO.remote)return Math.abs(GYRO.rx||0)>1.02||Math.abs(GYRO.ry||0)>1.02;
