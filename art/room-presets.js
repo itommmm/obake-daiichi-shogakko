@@ -439,7 +439,8 @@
   ART.lighting.presets = {
     /* 教室: 暖色の蛍光灯 + 寒色の月。既存の基準値から動かさない。 */
     classroom: {
-      exposure: 0.89,
+      exposure: 0.93,
+      contrast: 1.06,
       tint: [0.88, 0.90, 0.80],
       vignette: 1.30,
       grain: 0.026,
@@ -455,7 +456,8 @@
 
     /* boss: 影にだけ赤紫を残す。紫は key と fill に置き、面の広い所には置かない。 */
     boss: {
-      exposure: 0.80,
+      exposure: 0.83,
+      contrast: 1.12,
       tint: [0.86, 0.83, 0.88],
       vignette: 1.44,
       grain: 0.030,
@@ -471,7 +473,8 @@
 
     /* 廊下: 奥长大。密度を上げて奥を消し、蛍光灯は寒色寄りに寄せる。 */
     hallway: {
-      exposure: 0.84,
+      exposure: 0.88,
+      contrast: 1.06,
       tint: [0.86, 0.92, 0.84],
       vignette: 1.36,
       grain: 0.028,
@@ -487,7 +490,8 @@
 
     /* 科学室: 暖色の蛍光灯と寒色の作業灯を並べる。 */
     science: {
-      exposure: 0.84,
+      exposure: 0.88,
+      contrast: 1.06,
       tint: [0.86, 0.93, 0.86],
       vignette: 1.32,
       grain: 0.026,
@@ -503,7 +507,8 @@
 
     /* 下駄箱: 幅24m。霧を薄くして奥行きを保つ。 */
     getabako: {
-      exposure: 0.84,
+      exposure: 0.88,
+      contrast: 1.08,
       tint: [0.90, 0.89, 0.82],
       vignette: 1.28,
       grain: 0.026,
@@ -520,7 +525,8 @@
     /* 体育館: 舞台照明。紫と緑のスポットを使えるので key だけを寒色にし、
      * practical を紫/緑の対にして軸(土+灰青)にはみ出させない。 */
     gym: {
-      exposure: 0.88,
+      exposure: 0.92,
+      contrast: 1.04,
       tint: [0.87, 0.92, 0.82],
       vignette: 1.34,
       grain: 0.024,
@@ -536,7 +542,8 @@
 
     /* 運動場: 屋外。蛍光灯は落とし、月と半球光で形だけ作る。 */
     yard: {
-      exposure: 0.90,
+      exposure: 0.94,
+      contrast: 1.02,
       tint: [0.86, 0.92, 0.86],
       vignette: 1.24,
       grain: 0.022,
@@ -552,7 +559,8 @@
 
     /* bossyard: 夜空は紫。(key を紫へ寄せ、地平の土は残す) */
     bossyard: {
-      exposure: 0.84,
+      exposure: 0.88,
+      contrast: 1.06,
       tint: [0.86, 0.84, 0.90],
       vignette: 1.40,
       grain: 0.028,

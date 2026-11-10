@@ -679,9 +679,9 @@ const composer=new THREE.EffectComposer(renderer,rt);
 composer.addPass(new THREE.RenderPass(scene,camera));
 const bloom=new THREE.UnrealBloomPass(new THREE.Vector2(256,256),.10,.12,1.35);composer.addPass(bloom);
 const GradeShader={
-  uniforms:{tDiffuse:{value:null},uTime:{value:0},uExposure:{value:.92},uVig:{value:1.26},uGrain:{value:.031},uTint:{value:new THREE.Vector3(.90,.91,.77)},uHurt:{value:0}},
+  uniforms:{tDiffuse:{value:null},uTime:{value:0},uExposure:{value:.92},uVig:{value:1.26},uGrain:{value:.031},uContrast:{value:1.0},uTint:{value:new THREE.Vector3(.90,.91,.77)},uHurt:{value:0}},
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-  fragmentShader:`uniform sampler2D tDiffuse;uniform float uTime,uExposure,uVig,uGrain,uHurt;uniform vec3 uTint;varying vec2 vUv;
+  fragmentShader:`uniform sampler2D tDiffuse;uniform float uTime,uExposure,uVig,uGrain,uHurt,uContrast;uniform vec3 uTint;varying vec2 vUv;
   vec3 aces(vec3 x){return clamp((x*(2.51*x+.03))/(x*(2.43*x+.59)+.14),0.,1.);}
   float rand(vec2 c){return fract(sin(dot(c,vec2(12.9898,78.233)))*43758.5453);}
   // Ordered dither, quantized to 15-bit 5:5:5 output.
@@ -702,6 +702,7 @@ const GradeShader={
     vec2 d=vUv-.5;float v=1.-dot(d,d)*uVig;c*=clamp(v,0.,1.);
     float e=smoothstep(.25,.75,length(d*vec2(1.2,1.)));c=mix(c,vec3(.8,.48,.37),e*uHurt*.42);
     c=pow(c,vec3(1./2.2));
+    c=clamp((c-.5)*uContrast+.5,0.,1.);
     c+=(rand(vUv*vec2(913.,577.)+fract(uTime))-.5)*uGrain;
     float b=(bayer4(gl_FragCoord.xy)-7.5)/16.;
     c=floor(clamp(c+vec3(b/31.),0.,1.)*31.+.5)/31.;
@@ -917,7 +918,7 @@ function buildRoom(place){
   ROOM=new THREE.Group();scene.add(ROOM);STATIC=new THREE.Group();scene.add(STATIC);GYM=null;FLUOR=[];CHALKFACE=null;DUST=null;RAYS=[];YARD_TEX=null;SKYMAT=null;G.scroll=0;
   const R=ROOMS[place],hw=R.halfW,ch=R.ceil,back=zD(R.zb)-.12,front=1.2;
   const Bt=new Batch();
-  /* 共通美术仕様（art/room-presets.js）の素材セット。
+  /* 共通美術仕様（art/room-presets.js）の素材セット。
      読めないときは従来のまま（描画は壊れない）。extra は旧コードがインラインで
      作っていた素材（窓ガラス・靴・幕など）の差し替え口。 */
   const ARTROOM=(window.ART&&ART.materials&&ART.materials.room)?ART.materials.room(place):null;
@@ -1166,8 +1167,11 @@ function arms(g,y,sp,big){
     for(let f=-1;f<=1;f++)add(a,BOX,m,.42+f*.05,.56-Math.abs(f)*.03,.12,0,0,-f*.4,.028,.085,.028);
     res.push(a);}return res;
 }
+/* art/ の Model Factory があればそちらへ委譲し、無ければ従来の模型を使う。
+   委譲先の P（動く部位の名前）は ANIM / sync3D との契約なので変えない。 */
+function artModel(type,legacy){const A=window.ART;if(A&&A.models&&A.models[type]){const m=A.models[type]();if(m)return m;}return legacy();}
 const MODEL={
-  /* ランドセロは共通美术仕様（art/model-factory.js）に委譲する。
+  /* ランドセロは共通美術仕様（art/model-factory.js）に委譲する。
      P.mouth / P.flap / P.arms は ANIM と sync3D が掴む名前なので契約として維持する。
      art/ が読めていないときは従来のモデルをそのまま使う（描画が壊れない）。 */
   randoseru(){const A=window.ART;if(A&&A.models&&A.models.randoseru){const m=A.models.randoseru();if(m)return m;}return MODEL.randoseruLegacy();},
@@ -1179,30 +1183,35 @@ const MODEL={
     for(const sx of[-.6,.6])add(g,RB(.16,1.4,.12,.05),edge,sx,-.05,-.56);
     face(g,{y:.45,z:.6,ex:.36,es:.17});P.mouth=face(g,{my:-.48,mz:.51,mw:.5,mh:.26,tongue:1});
     P.arms=arms(g,-.1,.86);return{g,P};},
-  isu(){const g=new THREE.Group(),P={};const wood=mstd('#ffffff',.5,0,{map:TEX.woodS}),met=mstd('#c3c9d4',.25,1);
+  isu(){return artModel('isu',MODEL.isuLegacy);},
+  isuLegacy(){const g=new THREE.Group(),P={};const wood=mstd('#ffffff',.5,0,{map:TEX.woodS}),met=mstd('#c3c9d4',.25,1);
     add(g,RB(1.36,.82,.14,.05),wood,0,.6,-.3);add(g,RB(1.4,.14,1.1,.05),wood,0,-.05,0);
     for(const sx of[-.58,.58]){for(const sz of[-.45,.45])add(g,CYL,met,sx,-.58,sz,0,0,0,.05,1.0,.05);add(g,CYL,met,sx,.3,-.37,0,0,0,.045,.75,.045);}
     P.mouth=face(g,{y:.72,z:-.22,ex:.28,es:.14,my:.48,mw:.38,mh:.13});P.arms=arms(g,.2,.72);return{g,P};},
-  tsukue(){const g=new THREE.Group(),P={};const wood=mstd('#ffe6c8',.48,0,{map:TEX.woodS}),dk=mstd('#2c2434',.6,0),met=mstd('#c3c9d4',.25,1);
+  tsukue(){return artModel('tsukue',MODEL.tsukueLegacy);},
+  tsukueLegacy(){const g=new THREE.Group(),P={};const wood=mstd('#ffe6c8',.48,0,{map:TEX.woodS}),dk=mstd('#2c2434',.6,0),met=mstd('#c3c9d4',.25,1);
     add(g,RB(2.2,.12,1.2,.03),wood,0,.66,0);add(g,RB(1.9,.58,1.0,.04),dk,0,.3,0);
     for(const sx of[-.95,.95])for(const sz of[-.5,.5])add(g,CYL,met,sx,-.35,sz,0,0,0,.05,1.3,.05);
     P.mouth=face(g,{y:.45,z:.51,ex:.42,es:.15,my:.24,mw:.6,mh:.14});P.arms=arms(g,.3,1.12);
     P.paper=add(g,PLANE,mstd('#ffffff',.9,0,{map:TEX.test,side:THREE.DoubleSide}),.55,1.15,.2,-.3,0,.2,.45,.56,1);return{g,P};},
-  keshigomu(){const g=new THREE.Group(),P={};const rub=mstd('#f4f3f8',.85,0,{bumpMap:TEX.bump,bumpScale:.01}),sl=mstd('#ffffff',.6,0,{map:TEX.sleeve});
+  keshigomu(){return artModel('keshigomu',MODEL.keshigomuLegacy);},
+  keshigomuLegacy(){const g=new THREE.Group(),P={};const rub=mstd('#f4f3f8',.85,0,{bumpMap:TEX.bump,bumpScale:.01}),sl=mstd('#ffffff',.6,0,{map:TEX.sleeve});
     add(g,RB(1.9,1.2,.95,.14),rub,0,0,0);add(g,RB(1.3,1.25,1.0,.04),sl,.25,0,0);
     P.mouth=face(g,{x:.25,y:.3,z:.5,ex:.2,es:.13,my:-.12,mw:.34,mh:.13});P.arms=arms(g,0,.96);return{g,P};},
   pencup(){const g=new THREE.Group(),P={};const met=mstd('#a7aabb',.32,.9,{bumpMap:TEX.brush,bumpScale:.01});
     add(g,CYL,met,0,-.2,0,0,0,0,.62,1.4,.62);add(g,geo('rim',()=>new THREE.TorusGeometry(.62,.04,8,32)),met,0,.5,0,Math.PI/2);add(g,CYL,mstd('#1a1a22',.8,0),0,.48,0,0,0,0,.58,.02,.58);
     const cs=['#ee3333','#3366ff','#22bb55','#ffcc22'];P.pens=[];cs.forEach((c,i)=>{const p=new THREE.Group();p.position.set(-.3+i*.2,.5,(i%2?.15:-.15));p.rotation.z=(i-1.5)*.2;g.add(p);add(p,CYL,mstd(c,.35,0),0,.45,0,0,0,0,.07,.9,.07);add(p,CONE,mstd('#f0d0a0',.6,0),0,.98,0,0,0,0,.14,.18,.14);P.pens.push(p);});
     P.mouth=face(g,{y:.08,z:.62,ex:.24,es:.13,my:-.25,mw:.34,mh:.15});P.arms=arms(g,-.1,.62);return{g,P};},
-  pen(){const g=new THREE.Group(),P={};const c=(window.ART&&ART.hash)?(['#4a6668','#3f5c45','#7a4a44','#6b6250'][Math.floor(ART.hash('pen'+CUR.length)*4)%4]):'#ee3333';
+  pen(){return artModel('pen',MODEL.penLegacy);},
+  penLegacy(){const g=new THREE.Group(),P={};const c=(window.ART&&ART.hash)?(['#4a6668','#3f5c45','#7a4a44','#6b6250'][Math.floor(ART.hash('pen'+CUR.length)*4)%4]):'#ee3333';
     add(g,CYL,mstd(c,.3,0),0,.1,0,0,0,0,.18,1.4,.18);add(g,CONE,mstd('#f0d0a0',.6,0),0,-.75,0,Math.PI,0,0,.36,.35,.36);face(g,{y:.4,z:.17,ex:.09,es:.08});return{g,P};},
   scissors(){const g=new THREE.Group(),P={};const met=mstd('#dfe3ec',.16,1),red=mstd('#d6283c',.3,0);
     const bl=geo('blade',()=>{const s=new THREE.Shape();s.moveTo(-.1,0);s.lineTo(.1,0);s.lineTo(0,1.2);s.closePath();return new THREE.ExtrudeGeometry(s,{depth:.04,bevelEnabled:true,bevelSize:.01,bevelThickness:.01,bevelSegments:1});});
     P.blades=[];for(const sd of[-1,1]){const b=new THREE.Group();g.add(b);add(b,bl,met,0,0,sd*.03);add(b,geo('torus3',()=>new THREE.TorusGeometry(.24,.07,10,28)),red,sd*.3,-.55,0);P.blades.push(b);}
     add(g,CYL,met,0,0,.05,Math.PI/2,0,0,.08,.14,.08);
     P.eyes=[];for(const sd of[-1,1]){const e=new THREE.Group();g.add(e);face(e,{x:sd*.3,y:-.55,z:.06,ex:0,es:.13});P.eyes.push(e);}return{g,P};},
-  globe(){const g=new THREE.Group(),P={};P.ball=add(g,SPH,mstd('#ffffff',.38,0,{map:TEX.globe}),0,0,0,0,0,0,.85);
+  globe(){return artModel('globe',MODEL.globeLegacy);},
+  globeLegacy(){const g=new THREE.Group(),P={};P.ball=add(g,SPH,mstd('#ffffff',.38,0,{map:TEX.globe}),0,0,0,0,0,0,.85);
     add(g,geo('arc',()=>new THREE.TorusGeometry(1,.035,8,40,3.4)),mstd('#b08a3c',.3,1),0,0,0,0,Math.PI/2,-.9);add(g,CYL,mstd('#6a4a2a',.5,0),0,-1.0,0,0,0,0,.45,.12,.45);
     P.mouth=face(g,{y:-.05,z:.82,ex:.3,es:.15,my:-.3,mz:.8,mw:.38,mh:.13});return{g,P};},
   sheet(){const g=new THREE.Group(),P={};
@@ -1210,17 +1219,20 @@ const MODEL={
       const l=new THREE.LatheGeometry(pts,40);const p=l.attributes.position;for(let i=0;i<p.count;i++){if(p.getY(i)<-.85){const a=Math.atan2(p.getZ(i),p.getX(i));p.setY(i,p.getY(i)+Math.sin(a*6)*.09);}}l.computeVertexNormals();return l;});
     P.body=mstd('#dfe3d8',.85,0,{transparent:true,opacity:.9,emissive:new THREE.Color('#8aa0a0'),emissiveIntensity:.22,side:THREE.DoubleSide});add(g,lg,P.body,0,0,0);
     const bk=mbasic(.01,0,.02,{transparent:true});P.dark=bk;for(const sd of[-1,1])add(g,SPH,bk,sd*.25,.3,.66,0,0,0,.12,.18,.06).castShadow=false;add(g,SPH,bk,0,-.08,.72,0,0,0,.13,.17,.06).castShadow=false;return{g,P};},
-  flask(){const g=new THREE.Group(),P={};const gl=mstd('#d8fff0',.04,0,{transparent:true,opacity:.3,envMapIntensity:1.6,depthWrite:false});
+  flask(){return artModel('flask',MODEL.flaskLegacy);},
+  flaskLegacy(){const g=new THREE.Group(),P={};const gl=mstd('#d8fff0',.04,0,{transparent:true,opacity:.3,envMapIntensity:1.6,depthWrite:false});
     add(g,SPH,mbasic(.5,2.4,1.1),0,.12,0,0,0,0,.52,.42,.52).castShadow=false;add(g,SPH,gl,0,.22,0,0,0,0,.64);add(g,CYL,gl,0,.95,0,0,0,0,.18,.75,.18);add(g,CYL,mstd('#a0763c',.8,0),0,1.38,0,0,0,0,.21,.16,.21);
     P.bub=[];for(let i=0;i<4;i++)P.bub.push(add(g,SPH,mbasic(1.5,3,2),rnd(-.25,.25),0,rnd(-.2,.2),0,0,0,.05));
     P.mouth=face(g,{y:.32,z:.6,ex:.2,es:.12,eye:[4,4,1.2],my:.08,mw:.26,mh:.1});return{g,P};},
-  ball(){const g=new THREE.Group(),P={};P.ball=add(g,SPH,mstd('#ffffff',.72,0,{map:TEX.ball,bumpMap:TEX.bump,bumpScale:.03}),0,0,0,0,0,0,.9);
+  ball(){return artModel('ball',MODEL.ballLegacy);},
+  ballLegacy(){const g=new THREE.Group(),P={};P.ball=add(g,SPH,mstd('#ffffff',.72,0,{map:TEX.ball,bumpMap:TEX.bump,bumpScale:.03}),0,0,0,0,0,0,.9);
     P.mouth=face(g,{y:.2,z:.87,ex:.3,es:.14,my:-.2,mz:.86,mw:.36,mh:.14,tongue:1});return{g,P};},
   tobibako(){const g=new THREE.Group(),P={};const wood=mstd('#ffffff',.55,0,{map:TEX.woodS});
     for(let i=0;i<4;i++){const w=1.9+i*.08;add(g,RB(w,.34,1.1+i*.04,.03),wood,0,.26-i*.36,0);}
     add(g,RB(1.96,.36,1.1,.15),mstd('#efe8d6',.85,0,{bumpMap:TEX.bump,bumpScale:.02}),0,.6,0);add(g,RB(.84,.28,.05,.12),mstd('#0a0410',.9,0),0,-.1,.6);
     P.mouth=face(g,{y:.28,z:.56,ex:.4,es:.14,my:-.06,mz:.63,mw:.36,mh:.13});P.arms=arms(g,.1,1.08);return{g,P};},
-  paper(){const g=new THREE.Group(),P={};const pg=geo('plane3',()=>{const v=[0,.9,0,-.9,-.6,0,0,-.3,.1, 0,.9,0,0,-.3,.1,.9,-.6,0, 0,.9,0,0,-.3,.1,0,-.5,-.25];const b=new THREE.BufferGeometry();b.setAttribute('position',new THREE.Float32BufferAttribute(v,3));b.computeVertexNormals();return b;});
+  paper(){return artModel('paper',MODEL.paperLegacy);},
+  paperLegacy(){const g=new THREE.Group(),P={};const pg=geo('plane3',()=>{const v=[0,.9,0,-.9,-.6,0,0,-.3,.1, 0,.9,0,0,-.3,.1,.9,-.6,0, 0,.9,0,0,-.3,.1,0,-.5,-.25];const b=new THREE.BufferGeometry();b.setAttribute('position',new THREE.Float32BufferAttribute(v,3));b.computeVertexNormals();return b;});
     add(g,pg,mstd('#f6f4ee',.8,0,{side:THREE.DoubleSide}),0,0,0,-.5);face(g,{y:.1,z:.12,ex:.2,es:.09,eye:EYE_P});return{g,P};},
   uwabaki(){const g=new THREE.Group(),P={};const wh=mstd('#f6f6f8',.75,0,{bumpMap:TEX.bump,bumpScale:.008}),rub=mstd('#e8e8ec',.5,0),bl=mstd((window.ART&&ART.hash)?(ART.hash('uwabaki')<.5?'#4a6668':'#7a4a44'):'#2a5ad8',.45,0);
     add(g,RB(.95,.18,1.9,.08),rub,0,-.62,0);add(g,RB(.86,.62,1.7,.24),wh,0,-.24,-.05);add(g,RB(.9,.5,.62,.2),bl,0,-.3,.66);
@@ -1260,15 +1272,15 @@ const MODEL={
     P.body=new THREE.Group();g.add(P.body);
     add(P.body,RB(3.2,1.6,.6,.04),wall,0,-.2,0);add(P.body,BOX,roof,0,.63,0,0,0,0,3.34,.07,.7);add(P.body,BOX,frame,0,-.34,.31,0,0,0,3.2,.03,.02);add(P.body,BOX,frame,0,.12,.31,0,0,0,3.2,.03,.02);
     P.wins=[];const wm=[];for(let r=0;r<3;r++)for(let c=0;c<8;c++){const x=-1.35+c*.386,y=.32-r*.44;if(r===0&&(c===2||c===5))continue;if(r===2&&(c===3||c===4))continue;
-      add(P.body,BOX,frame,x,y,.305,0,0,0,.27,.27,.01).castShadow=false;const m=mbasic(.35,.18,.8);m.userData.k=Math.random()*6;const w=add(P.body,PLANE,m,x,y,.312,0,0,0,.23,.23,1);w.castShadow=false;P.wins.push(m);}
+      add(P.body,BOX,frame,x,y,.305,0,0,0,.27,.27,.01).castShadow=false;const m=mbasic(.42,.3,.62);m.userData.k=Math.random()*6;const w=add(P.body,PLANE,m,x,y,.312,0,0,0,.23,.23,1);w.castShadow=false;P.wins.push(m);}
     P.eyes=[];const pink=mbasic(...EYE_P);const tri=geo('ktri',()=>{const sh=new THREE.Shape();sh.moveTo(-.2,.05);sh.lineTo(.26,.16);sh.lineTo(.22,-.16);sh.lineTo(-.16,-.14);sh.closePath();return new THREE.ExtrudeGeometry(sh,{depth:.04,bevelEnabled:false});});
     for(const sd of[-1,1]){const eg=new THREE.Group();eg.position.set(sd*.58,.3,.31);P.body.add(eg);add(eg,BOX,dk,0,0,-.01,0,0,0,.6,.42,.02);const t=add(eg,tri,pink,0,0,0);t.scale.set(sd*-1.1,1.1,1);t.castShadow=false;
       const pu=add(eg,SPH,dk,0,-.02,.05,0,0,0,.06,.09,.02);eg.userData.pu=pu;P.eyes.push(eg);}
     P.mouthG=new THREE.Group();P.mouthG.position.set(0,-.72,.3);P.body.add(P.mouthG);
-    add(P.mouthG,BOX,dk,0,0,-.02,0,0,0,.86,.5,.06);P.inner=add(P.mouthG,PLANE,mbasic(2.6,.3,1.4),0,0,.015,0,0,0,.8,.42,1);P.inner.castShadow=false;
+    add(P.mouthG,BOX,dk,0,0,-.02,0,0,0,.86,.5,.06);P.inner=add(P.mouthG,PLANE,mbasic(1.15,.34,.52),0,0,.015,0,0,0,.8,.42,1);P.inner.castShadow=false;
     const teeth=mstd('#f6f3ea',.35,0);P.mt=new THREE.Group();P.mb=new THREE.Group();P.mouthG.add(P.mt,P.mb);
     for(let i=0;i<6;i++){const x=-.33+i*.132;add(P.mt,CONE,teeth,x,.17,.04,Math.PI,0,0,.12,.18,.07);add(P.mb,CONE,teeth,x,-.17,.04,0,0,0,.11,.16,.07);}
-    P.tongue=new THREE.Group();P.mouthG.add(P.tongue);add(P.tongue,RB(.34,.07,1,.03),mstd('#ff4f8f',.35,0,{emissive:new THREE.Color('#ff2f70'),emissiveIntensity:.35}),0,-.12,.5);P.tongue.scale.z=.001;
+    P.tongue=new THREE.Group();P.mouthG.add(P.tongue);add(P.tongue,RB(.34,.07,1,.03),mstd('#8d4438',.42,0,{emissive:new THREE.Color('#5e2a38'),emissiveIntensity:.22}),0,-.12,.5);P.tongue.scale.z=.001;
     // 時計塔
     add(P.body,RB(.56,.62,.5,.03),wall,0,.95,0);const pr=add(P.body,CONE,roof,0,1.45,0,0,Math.PI/4,0,.9,.36,.9);
     add(P.body,CYL,mstd('#ffffff',.4,0,{map:TEX.clock,emissive:new THREE.Color('#ffd88a'),emissiveIntensity:.25}),0,1.02,.26,Math.PI/2,0,0,.18,.02,.18);
@@ -1285,7 +1297,7 @@ const MODEL={
     for(let i=0;i<4;i++)add(g,BOX,dk,0,.82-i*.07,.53,0,0,0,1.0,.035,.02);
     const pink=mbasic(...EYE_P);const tri=geo('tri',()=>{const s=new THREE.Shape();s.moveTo(0,0);s.lineTo(.42,.18);s.lineTo(.36,-.12);s.closePath();return new THREE.ExtrudeGeometry(s,{depth:.04,bevelEnabled:false});});
     for(const sd of[-1,1]){const t=add(g,tri,pink,sd*.12,.55,.52);t.scale.x=sd;t.castShadow=false;}
-    add(g,BOX,dk,0,-.25,.5,0,0,0,1.0,.75,.06);P.inner=add(g,PLANE,mbasic(2.6,.3,1.3),0,-.25,.535,0,0,0,.92,.66,1);P.inner.castShadow=false;
+    add(g,BOX,dk,0,-.25,.5,0,0,0,1.0,.75,.06);P.inner=add(g,PLANE,mbasic(1.15,.34,.52),0,-.25,.535,0,0,0,.92,.66,1);P.inner.castShadow=false;
     const teeth=mstd('#f6f3ea',.35,0);P.top=new THREE.Group();P.bot=new THREE.Group();g.add(P.top,P.bot);
     for(let i=0;i<6;i++){const x=-.4+i*.16;add(P.top,CONE,teeth,x,.04,.56,Math.PI,0,0,.15,.22,.08);add(P.bot,CONE,teeth,x,-.54,.56,0,0,0,.14,.2,.08);}
     for(let i=0;i<4;i++)add(g,PLANE,mstd('#ffffff',.9,0,{map:TEX.test,side:THREE.DoubleSide}),-.5+i*.34,-.78+(i%2)*.1,.535,0,0,(i-1.5)*.22,.28,.34,1);

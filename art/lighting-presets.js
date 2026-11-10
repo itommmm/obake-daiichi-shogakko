@@ -86,6 +86,7 @@
       if (grade.uniforms.uExposure) grade.uniforms.uExposure.value = p.exposure;
       if (grade.uniforms.uVig) grade.uniforms.uVig.value = p.vignette;
       if (grade.uniforms.uGrain) grade.uniforms.uGrain.value = p.grain;
+      if (grade.uniforms.uContrast) grade.uniforms.uContrast.value = p.contrast == null ? 1.0 : p.contrast;
       /* uTint は update3D が毎フレーム書くので、ここでは触らない（tint() を参照） */
     }
 

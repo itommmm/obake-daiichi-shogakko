@@ -24,6 +24,7 @@
 
     // 画面全体
     exposure: 0.86,          // grade.uExposure（現行 .92 より沈める）
+    contrast: 1.12,          // grade.uContrast（暗部を潰さないための表示空間のS字）
     tint: [0.88, 0.90, 0.80],// grade.uTint
     vignette: 1.30,
     grain: 0.026,
