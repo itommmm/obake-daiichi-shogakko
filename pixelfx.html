@@ -1856,7 +1856,6 @@ function startWave(i){
   G.enemies=[];G.souls=[];G.items=[];G.fallen=[];G.tracers=[];G.spawnT=1.4;G.chimeT=w.boss?999:18;G.chime=null;
   G.blackT=w.blackout?9:Infinity;G.black=0;G.ammo=maxAmmo();G.reload=0;G.combo=0;G.comboT=0;G.lightT=0;G.spT=0;G.inv=0;G.noHit=true;G.boss=null;G.rage=0;G.tech=0;G.techGoal=w.boss?2:3;G.lightWaza=0;G.slow=0;G.hitStop=0;
   setPlace(w.place);state='intro';G.introT=i===0?2.2:1.6;if(GYRO.on)gyroCenter(true);SFX.sting();showHUD(true);
-  buildSchoolTrick(w);
   if(i===3&&G.routeReward){G.pow={kind:G.routeReward,t:10,max:10};G.routeReward=null;}
 }
 // わざ：おばけごとの とくべつな たおしかた。★3つめの じょうけん
@@ -1866,29 +1865,6 @@ function waza(x,y){G.tech=(G.tech||0)+1;G.sp=Math.min(100,G.sp+12);G.hitStop=.09
 // ボスの チャンス：ガードが とけた時などに すこし スローになり、ダメージ 2ばい
 function bossChance(e,t){e.chance=t;e.chWaza=0;G.slow=.5;addText(W/2,H*.36,'いまだ！ うて！','#ffd23f',58);[880,1175,1760].forEach((f,i)=>tone(f,.14,'square',.06,1,i*.05));}
 function bagOpen(e){return e.type==='randoseru'&&(e.t+e.ph)%3.2<1.1;}
-function buildSchoolTrick(w){
-  const old=G.gimmick;if(old&&old.root){old.root.removeFromParent();for(const m of old.mats)m.dispose();}
-  G.gimmick=null;if(w.boss)return;
-  const root=new THREE.Group(),mats=[],balls=[];
-  /* 「わざ」の装置。3D と同じ色軸に置く（生の青・ネオン色を混ぜない）。 */
-  const material=c=>{const col=new THREE.Color(c);if(window.ART&&ART.clampSaturation)ART.clampSaturation(col);
-    const m=new THREE.MeshStandardMaterial({color:col,roughness:.45});mats.push(m);return m;};
-  const metal=material('#6f9aa4'),kind=w.place==='gym'?'balls':'water';
-  // 敵と同じ遭遇座標に置き、背景のループ移動で照準とずれないようにする。
-  root.position.set(xW(-.65,.5),0,zD(.5));STATIC.add(root);
-  if(kind==='balls'){
-    for(const x of[-.4,.4])for(const z of[-.25,.25])add(root,CYL,metal,x,.45,z,0,0,0,.035,.9,.035);
-    for(const y of[.18,.5,.85]){add(root,BOX,metal,0,y,-.25,0,0,0,.85,.035,.035);add(root,BOX,metal,0,y,.25,0,0,0,.85,.035,.035);for(const x of[-.4,.4])add(root,BOX,metal,x,y,0,0,0,0,.035,.035,.5);}
-    for(let i=0;i<6;i++){const m=add(root,geo('trickBall',()=>new THREE.SphereGeometry(.16,12,8)),material(['#c6b78d','#c9a39e','#e2e5d2'][i%3]),(i%3-1)*.25,.35+Math.floor(i/3)*.3,0);balls.push(m);}
-  }else{
-    add(root,BOX,material('#2f3a42'),0,.35,0,0,0,0,.6,.7,.45);
-    add(root,CYL,metal,0,.9,0,0,0,0,.07,.5,.07);add(root,CYL,metal,.17,1.1,0,0,0,Math.PI/2,.07,.4,.07);
-    add(root,BOX,material('#ffd23f'),0,1.2,0,0,0,0,.35,.05,.07);
-  }
-  G.gimmick={used:false,t:0,kind,root,mats,balls};
-}
-function trickScreen(){const g=G.gimmick;if(!g||!g.root)return null;const p=proj(g.root.position.x,g.root.position.y+.9,g.root.position.z);return{x:p[0],y:p[1],r:Math.max(30*U,Math.min(55*U,H*.065))};}
-function updateSchoolTrick(dt){const g=G.gimmick;if(!g||!g.used)return;g.t+=dt;if(g.kind==='balls'){g.root.rotation.z=-Math.min(1,g.t)*.7;g.balls.forEach((b,i)=>{b.position.x+=(i%2?1:-1)*dt*.8;b.position.y=Math.max(.16,b.position.y-dt);b.position.z+=dt*(.5+i*.12);b.rotation.x+=dt*4;});}else if(g.t<2.5){const p=trickScreen();if(p)splash(p.x+rnd(-45,45)*U,p.y+rnd(-70,50)*U,2);}}
 function updateMerges(dt){
   for(const e of G.enemies){
     if(e.dead||e.type!=='tsukue'||e.tower)continue;
@@ -1905,10 +1881,6 @@ function drawSchoolTricks(){
   if(state==='route'){ctx.fillStyle=horrorFXColor('rgba(8,4,20,.9)');ctx.fillRect(0,0,W,H);txt('どっちに よりみち？',W/2,H*.28,32*U,'#fff',FD,'center',4*U);for(const [x,title,trait,how,col]of[[.25,'1：りかしつ','こおる みず','あたった おばけが おそくなる','#9fefff'],[.75,'2：おんがくしつ','おとの わ','たおすと まわりの おばけが とまる','#e0a8ff']]){ctx.strokeStyle=horrorFXColor(col);ctx.lineWidth=3*U;ctx.strokeRect(W*(x-.22),H*.4,W*.44,H*.35);txt(title,W*x,H*.49,24*U,'#ffd23f',FD,'center',3*U);txt('とくせい：'+trait,W*x,H*.59,22*U,col,FD,'center',3*U);txt(how,W*x,H*.66,15*U,'#fff',FB,'center',3*U);}txt('タップ / 1・2 キー / ねらって うつ',W/2,H*.84,18*U,'#cfe9ff',FB,'center',3*U);drawReticle();return;}
   if(state!=='play')return;
   for(const e of G.enemies){if(e.dead)continue;if(bagOpen(e)){ctx.strokeStyle=horrorFXColor('#ffd23f');ctx.lineWidth=3*U;ctx.beginPath();ctx.arc(e.sx,e.sy-e.sr*.35,e.sr*.45,0,7);ctx.stroke();txt('なかを ねらえ！',e.sx,e.sy-e.sr*1.1,14*U,'#ffd23f',FB,'center',3*U);}if(e.merge>0||e.tower)txt(e.tower?'つくえタワー！':'がったいまで '+Math.ceil(e.merge),e.sx,e.sy-e.sr*1.25,16*U,'#ff8fd0',FB,'center',3*U);}
-  const g=G.gimmick,p=trickScreen();if(g&&p&&!g.used){
-    const crowded=G.enemies.some(e=>!e.dead&&Math.hypot(e.sx-p.x,e.sy-p.y)<p.r+e.sr+24*U)||G.items.some(it=>!it.gone&&Math.hypot(it.sx-p.x,it.sy-p.y)<p.r+it.u+24*U);
-    ctx.save();ctx.globalAlpha=crowded?.35:.85;ctx.strokeStyle=horrorFXColor('#5fe3ff');ctx.lineWidth=2*U;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,7);ctx.stroke();ctx.restore();
-    if(!crowded&&((G.time>G.wave.time+G.diff.time-6)||Math.hypot(ptr.x-p.x,ptr.y-p.y)<p.r*1.5)){txt((g.kind==='balls'?'ボールかご':'じゃぐち')+'を うて！',p.x,p.y-p.r-8*U,16*U,'#5fe3ff',FB,'center',3*U);}}
 }
 function setPlace(p){if(G.place!==p||!ROOM){G.place=p;if(TEX.bump)buildRoom(p);}}
 function pickType(types){let tot=0;for(const k in types)tot+=types[k];let r=Math.random()*tot;for(const k in types){r-=types[k];if(r<=0)return k;}return Object.keys(types)[0];}
@@ -1930,7 +1902,6 @@ function update(dt){
   if(state==='pause')return;
   updFx(dt);
   if(state==='route')return;
-  if(state==='play'||state==='intro')updateSchoolTrick(dt);
   if(state==='title'){demo(dt);return;}
   if(state==='opening'){opUpdate(dt);return;}
   if(state==='ending'){endUpdate(dt);return;}
@@ -2129,7 +2100,6 @@ function fire(){
   if(G.ammo<=0&&pw!=='rapid'){startReload();return;}
   G.shotN++;let hitSomething=false;
   if(pw!=='rapid')G.ammo--;G.fireCd=L.cd*(pw==='rapid'?.6:1);G.recoil=1;SFX.shoot();
-  const trick=G.gimmick,tp=trickScreen();if(trick&&tp&&!trick.used&&Math.hypot(ptr.x-tp.x,ptr.y-tp.y)<tp.r){trick.used=true;G.hitShotN++;G.tracers.push({x0:muzzle()[0],y0:muzzle()[1],x1:ptr.x,y1:ptr.y,t:.13,max:.13,w:2});for(const e of [...G.enemies])if(!e.dead&&!e.T.boss){e.stun=2;damage(e,trick.kind==='balls'?3:2);splash(e.sx,e.sy,20);}addText(W/2,H*.4,trick.kind==='balls'?'ボールが ゴロゴロ！':'みずが プシャー！','#5fe3ff',36);SFX.boom();waza(tp.x,tp.y);if(G.ammo<=0)startReload();return;}
   const mz=muzzle();
   const asst=GYRO.on?1.75:coarse?1.3:1.08; // 傾き操作は細かく合わせにくいので当たり判定を広げる
   for(const s of G.souls){if(Math.hypot(s.sx-ptr.x,s.sy-ptr.y)<s.u*1.6*asst*(pw==='wide'?2:1)){hitSomething=true;s.hit=true;spark(s.sx,s.sy,'#9fefff',14);SFX.soul();G.score+=50;addText(s.sx,s.sy,'じょうぶつ！','#9fefff',18);}}
@@ -2239,60 +2209,11 @@ function updFx(dt){
    ・校庭／最終ボス：画面いっぱいの 雨と 地面の しぶき、外灯の ランタン
    画質「低」では 雨つぶ・火の粉の数を へらす */
 let WX=null;
-function pumpkinTex(){
-  if(TEX.pumpkin)return TEX.pumpkin;
-  const c=document.createElement('canvas');c.width=256;c.height=128;const g=c.getContext('2d');
-  // うすい 皮（暗いオレンジ）。顔の 穴だけ 明るく（発光マップとして使う）
-  g.fillStyle='#3a1606';g.fillRect(0,0,256,128);
-  for(let i=0;i<8;i++){g.fillStyle=i%2?'#4a1c08':'#341204';g.fillRect(i*32,0,16,128);}
-  const fx=64,fy=64; // 顔は u=0.25 の位置（＝+Z 方向、カメラの方）
-  g.fillStyle='#ffd25a';
-  const tri=(x,y,s,up)=>{g.beginPath();g.moveTo(x-s,y+(up?s*.6:-s*.6));g.lineTo(x+s,y+(up?s*.6:-s*.6));g.lineTo(x,y+(up?-s*.8:s*.8));g.closePath();g.fill();};
-  tri(fx-17,fy-14,10,true);tri(fx+17,fy-14,10,true);tri(fx,fy+2,6,true);
-  g.beginPath();g.moveTo(fx-26,fy+14);for(let i=0;i<=8;i++){const x=fx-26+i*6.5;g.lineTo(x,fy+14+(i%2?10:0));}g.lineTo(fx+26,fy+30);g.lineTo(fx-26,fy+30);g.closePath();g.fill();
-  const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;TEX.pumpkin=t;return t;
-}
 function buildWX(place,hw,back,ch){
   const outdoor=place==='yard'||place==='bossyard';
   const q=Q.level||0,lowQ=q>=2;
-  WX={place,outdoor,lan:[],t:0,thunderT:rnd(5,10),sparks:null,smoke:[],rain:null,splash:[]};
-  // ランタンの 置き場所
-  let spots;
-  if(outdoor)spots=[[-4.2,0,-7],[4.2,0,-9],[-4.6,0,-15],[4.4,0,-17]];
-  else if(place==='gym')spots=[[-1.9,0,-2.6],[2.1,0,-3.8],[-2.6,0,-5.2]];
-  else if(place==='hallway')spots=[[-hw+.3,0,-3.2],[hw-.3,0,-6.5]];
-  else if(place==='science')spots=[[-1.25,.92,-2.9],[1.3,.92,-4.2],[-1.3,.92,-5.6]];
-  else spots=[[-Math.min(hw-.4,1.75),0,-2.3],[Math.min(hw-.4,2.05),0,-3.5],[-(hw-.5),0,back+1.3]];
-  const LC=(window.ART&&ART.lighting&&ART.lighting.lantern)?ART.lighting.lantern:null;
-  const skin=new THREE.MeshStandardMaterial({color:new THREE.Color(LC?LC.skin:'#e8701a'),roughness:.6,metalness:0,emissive:new THREE.Color(1,.62,.25),emissiveMap:pumpkinTex(),emissiveIntensity:LC?LC.emissive:2.2,envMapIntensity:.05});
-  roomMats.push(skin);
-  for(const [x,y,z] of spots){
-    const grp=new THREE.Group();grp.position.set(x,y,z);
-    if(outdoor){ // 外灯：細い柱の上に ランタン
-      const pole=new THREE.Mesh(CYL,rm('#2a2630',.6,.5));pole.scale.set(.06,2.2,.06);pole.position.y=1.1;grp.add(pole);
-      const cap=new THREE.Mesh(BOX,rm('#1c1a22',.5,.6));cap.scale.set(.32,.08,.32);cap.position.y=2.42;grp.add(cap);
-    }
-    const p=new THREE.Mesh(SPH,skin);p.scale.set(.2,.16,.2);p.position.y=outdoor?2.2:.16;p.rotation.y=Math.atan2(-x,-z)*.9;p.castShadow=false;grp.add(p);
-    const stem=new THREE.Mesh(CYL,rm('#3a5a20',.8,0));stem.scale.set(.025,.06,.025);stem.position.y=p.position.y+.17;grp.add(stem);
-    const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:TEX.glow,color:new THREE.Color(...(LC?LC.glow:[2.4,1.1,.35])),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:.55}));
-    roomMats.push(glow.material);glow.scale.setScalar(outdoor?2.2:1.3);glow.position.y=p.position.y;grp.add(glow);
-    ROOM.add(grp);WX.lan.push({grp,glow,p,ph:rnd(0,9)});
-  }
-  // 1つめの ランタンに 本物の 暖色ライト（fl2）を 置く。体育館は 色つき照明のまま
-  if(place!=='gym'&&WX.lan[0]){const L0=WX.lan[0].grp.position,py=WX.lan[0].p.position.y+.15;
-    fl2.userData.p=[L0.x,py,L0.z];fl2.color.set(LC?LC.light:0xff8a3a);fl2.userData.base=outdoor?LC.baseOut:LC.base;fl2.distance=outdoor?LC.distOut:LC.dist;fl2.userData.fire=true;
-    if(outdoor){fl1.userData.p=[WX.lan[1].grp.position.x,2.35,WX.lan[1].grp.position.z];fl1.color.set(LC?LC.lightOut:0xff9a4a);fl1.userData.base=LC.baseOut;fl1.distance=LC.distOut;fl1.userData.fire=true;}
-    else fl1.userData.fire=false;}
-  else{fl1.userData.fire=fl2.userData.fire=false;}
-  // 火の粉
-  const ns=lowQ?40:90,sp=new Float32Array(ns*3);WX.sp=[];
-  for(let i=0;i<ns;i++){WX.sp.push({k:i%WX.lan.length,y:rnd(0,1),x:rnd(-.06,.06),z:rnd(-.06,.06),v:rnd(.25,.6),w:rnd(0,6)});}
-  const sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.BufferAttribute(sp,3));
-  const sm=new THREE.PointsMaterial({color:new THREE.Color(3,1.4,.4),size:outdoor?.05:.03,map:TEX.glow,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending});
-  roomMats.push(sm);WX.sparks=new THREE.Points(sg,sm);WX.sparks.frustumCulled=false;ROOM.add(WX.sparks);
-  // けむり
-  for(let i=0;i<(lowQ?4:8);i++){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:TEX.blob||TEX.glow,color:new THREE.Color(.55,.5,.7),transparent:true,depthWrite:false,opacity:0}));
-    roomMats.push(s.material);ROOM.add(s);WX.smoke.push({s,k:i%WX.lan.length,t:rnd(0,3),dur:rnd(2.5,4)});}
+  /* かぼちゃランタンの照明と煙は撤去（scene は 3D の LowPoly に統一するため）。 */
+  WX={place,outdoor,t:0,thunderT:rnd(5,10),rain:null,splash:[]};
   // 雨（外のステージだけ。カメラの まわりの箱の中を ふりつづける）
   if(outdoor){
     const nr=lowQ?260:q===1?550:900,pos=new Float32Array(nr*6);WX.rd=[];
@@ -2304,18 +2225,7 @@ function buildWX(place,hw,back,ch){
 }
 function updateWX(dt){
   if(!WX)return;const t=(WX.t+=dt);
-  // ランタンの 火の ゆらぎ（ふたつの 波＋ときどき ふっと 弱まる）
-  let fire=1;
-  for(const L of WX.lan){const f=.75+.18*Math.sin(t*9+L.ph)+.12*Math.sin(t*23+L.ph*2)+(Math.random()<.02?-.35:0);L.glow.material.opacity=.42*f+.1;L.glow.scale.setScalar((WX.outdoor?2.2:1.3)*(.92+.1*f));L.p.material.emissiveIntensity=2.2*f;fire=f;}
-  for(const l of[fl1,fl2])if(l.userData.fire)l.intensity=(l.userData.base||1)*(.7+.35*fire)*(G.black>0&&state==='play'?.6:1);
-  // 火の粉
-  if(WX.sparks&&WX.lan.length){const a=WX.sparks.geometry.attributes.position;
-    for(let i=0;i<WX.sp.length;i++){const s=WX.sp[i],L=WX.lan[s.k];s.y+=s.v*dt;s.w+=dt*3;if(s.y>1.1){s.y=0;s.x=rnd(-.06,.06);s.z=rnd(-.06,.06);}
-      const P=L.grp.position,by=L.p.position.y+.12;a.setXYZ(i,P.x+s.x+Math.sin(s.w)*.05*s.y,by+s.y*(WX.outdoor?1.4:.9),P.z+s.z+Math.cos(s.w*.7)*.04*s.y);}
-    a.needsUpdate=true;}
-  // けむり：ふわっと のぼって ひろがって 消える
-  for(const m of WX.smoke){m.t+=dt;if(m.t>m.dur){m.t=0;m.dur=rnd(2.5,4);}const L=WX.lan[m.k];if(!L)continue;const k=m.t/m.dur,P=L.grp.position;
-    m.s.position.set(P.x+Math.sin(m.t*1.3+m.k)*.12*k,L.p.position.y+.25+k*(WX.outdoor?1.6:1.1),P.z);m.s.scale.setScalar(.25+k*.8);m.s.material.opacity=Math.sin(k*Math.PI)*.16;}
+  /* ランタンの火と煙は撤去済み（WX.lan / WX.sparks / WX.smoke を持たない） */
   // 雨：少し 風に ながされて ななめに ふる。地面に ついたら 上へもどる（しぶきは 2D で えがく）
   if(WX.rain){const a=WX.rain.geometry.attributes.position,cx=camera.position.x,cz=camera.position.z,wind=-1.6;
     for(let i=0;i<WX.rd.length;i++){const d=WX.rd[i];d.y-=d.v*dt;d.x+=wind*dt;if(d.y<0){if(Math.random()<.25&&WX.splash.length<40)WX.splash.push({x:cx+d.x,z:cz+d.z,t:0});d.y=rnd(6,8);d.x=rnd(-9,9);d.z=rnd(-18,.5);}

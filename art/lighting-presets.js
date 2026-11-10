@@ -28,17 +28,6 @@
     return preset('classroom');
   };
 
-  /* ランタン（かぼちゃ）：暗い室内で唯一の「暖かい実光源」。
-     原色の橙はネオンに近くなるので、錆びた銅の軸へ寄せる。
-     ここが「1部屋1つの暖色アクセント」になる。 */
-  ART.lighting.lantern = {
-    light: '#b8814a', base: 1.05, dist: 6,
-    lightOut: '#c08a52', baseOut: 1.45, distOut: 9,
-    skin: '#bd6a2e', emissive: 1.35,
-    glow: [1.35, 0.78, 0.34],
-    spark: [1.5, 0.9, 0.45],
-  };
-
   ART.lighting.tint = function (place) {
     const p = preset(place);
     return p && p.tint ? p.tint : [0.87, 0.91, 0.75];
@@ -74,8 +63,6 @@
     }
     for (const [light, cfg] of [[fl1, p.fl1], [fl2, p.fl2]]) {
       if (!light) continue;
-      /* ランタンの火は buildWX が管理与逐次更新する。役割が違うので触らない。 */
-      if (light.userData && light.userData.fire) continue;
       light.color.set(cfg.color);
       light.userData.base = cfg.intensity;
       light.intensity = cfg.intensity;
