@@ -647,9 +647,9 @@ function bgm(dt){
   // ふだんの ステージ：WAVEが進むほど 少しだけ テンポが上がる
   const st=.26-Math.min(.06,(G.waveIdx||0)*.01);G.bgmAcc+=dt;
   while(G.bgmAcc>=st){G.bgmAcc-=st;const i=G.bgmStep++%64;
-    const m=LULLABY[i%32];if(m&&(i<32||i%2===0))mbox(N(m),0,.045);
-    const b=CREEP[i%16];if(b){tone(N(b-12),.7,'sawtooth',.06,1,0,{bus:'mus',lp:260,q:6});tone(N(b-24),.6,'sine',.12,.95,0,{bus:'mus'});}
-    if(i%32===24)noise(1.2,.035,0,200,{to:2500,att:.9,bus:'mus'});
+    const m=LULLABY[i%32];if(m&&(i%8===0||i%16===11))mbox(N(m),0,.022);
+    const b=CREEP[i%16];if(b&&i%4===0){tone(N(b-12),1.1,'sawtooth',.028,1,0,{bus:'mus',lp:205,q:4});tone(N(b-24),1.1,'sine',.055,.95,0,{bus:'mus'});}
+    if(i%32===24)noise(1.7,.015,0,180,{to:1800,att:.9,bus:'mus'});
     // てきが 近いほど 心臓のような 低音が まざる
     if(state==='play'&&i%4===2){let near=0;for(const e of G.enemies)if(!e.dead&&!e.T.boss&&e.z<.3)near++;if(near)hbeat(0,.05+Math.min(.1,near*.03));}
   }
