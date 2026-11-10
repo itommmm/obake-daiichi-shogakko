@@ -283,7 +283,9 @@ function drawPanel(ctx,x,y,w,h,color,u=1){
  r(ctx,X+p,Y+H-2*p,p,p,P.purple);
  r(ctx,X+2*p,Y+2*p,Math.min(W*.23,48*u),p,P.cyan);
 }
+const spriteAtlas=new Map();
 function setAsset(name,canvas){
+ spriteAtlas.set(name,canvas);
  document.documentElement.style.setProperty(name,'url("'+canvas.toDataURL("image/png")+'")');
 }
 function installStyle(){
@@ -328,5 +330,5 @@ function loop(now){
 installStyle();
 renderAll(0);
 requestAnimationFrame(loop);
-window.ObakePixelUI=Object.freeze({drawPanel,drawIcon,renderAll});
+window.ObakePixelUI=Object.freeze({drawPanel,drawIcon,renderAll,getSprite:name=>spriteAtlas.get(name)});
 })();
