@@ -296,5 +296,5 @@ function applyTitleIcons(){
    if(img&&canvas){img.src=canvas.toDataURL("image/png");img.style.imageRendering="pixelated";}
  }
 }
-window.ObakePixelArt=Object.freeze({getSpriteTexture,redrawTextures,applyTitleIcons});
+window.ObakePixelArt=Object.freeze({getCanvas,getSpriteTexture,redrawTextures,applyTitleIcons});
 })();
