@@ -25,6 +25,7 @@
     <div id="poiLayer" hidden aria-label="しらべられる ばしょ"></div>
     <div id="quickBar" hidden aria-label="すぐ つかえる メニュー">
       <button id="quickHint" type="button" aria-label="つぎに することの ヒント">？ ヒント</button>
+      <span id="quickGoal" class="quick-goal" title="いま すべきこと"></span>
       <div id="quickItems" aria-live="polite">もちもの なし</div>
       <button id="quickBag" type="button">かばん</button>
     </div>
@@ -59,8 +60,8 @@
           <div class="hint" id="continueHint">セーブデータなし</div>
           <button id="btnMode">そうさ：スティック</button>
         </div>
-        <p class="warn">※ おばけは おどかすだけ。ゲームオーバーなし！<br>PC：WASD／矢印で移動。スマホ：左のスティックで移動。視点は固定。</p>
-        <div class="press">PRESS ANY KEY</div>
+        <p class="warn"><span class="warn-face" role="img" aria-label="おばけは おどかすだけ。ゲームオーバーなし！" title="おばけは おどかすだけ。ゲームオーバーなし！">☺</span></p>
+        <div class="press">ENTER / SPACE / E / タップ で はじめる</div>
         <div class="titleFoot">
           <span>© 1996 OBAKE DAIICHI</span>
           <a href="index.html">3D版へ</a>
@@ -94,7 +95,7 @@
 
     <section id="inv" class="overlay" hidden>
       <div class="panel">
-        <h2>もちもの <small>PAUSE</small></h2>
+        <h2>もちもの</h2>
         <div class="statgrid">
           <span>びっくりした かず</span><b id="invHp">0かい</b>
           <span>もちもの</span><b id="invBag">なし</b>
@@ -112,13 +113,7 @@
         </div>
         <div class="setting"><span>そうさ</span><button id="btnControl">スティック移動（おすすめ）</button></div>
         <div class="setting"><span>おと</span><button id="btnSound">オン</button></div>
-        <div class="setting"><span>画面の ゆれ・ノイズ</span><button id="btnFx">オン</button></div>
-        <div class="controls">
-          <b>WASD／矢印</b> 画面の上下左右に あるく<br>
-          <b>スマホ</b> 左スティックで あるく（視点は固定）<br>
-          <b>E／Enter／スペース</b> しらべる・とる・つかう<br>
-          <b>I／Esc</b> もちもの　<b>H</b> はっぱ　<b>M</b> おと
-        </div>
+        <div class="setting"><span>画面の ゆれ</span><button id="btnFx">オン</button></div>
       </div>
     </section>
 
@@ -134,18 +129,6 @@
         <div class="row">
           <button id="btnLockOk" class="primary">あける</button>
           <button id="btnLockCancel">やめる</button>
-        </div>
-        <div class="controls"><b>←→</b> えらぶ　<b>↑↓／すうじ</b> かえる　<b>Enter</b> あける　<b>Esc</b> やめる</div>
-      </div>
-    </section>
-
-    <section id="over" class="overlay" hidden>
-      <div class="panel">
-        <h2>GAME OVER</h2>
-        <p id="overText">おばけに つかまってしまった…</p>
-        <div class="row">
-          <button id="btnRetry" class="primary">さいごの セーブから</button>
-          <button id="btnOverTitle">タイトルへ</button>
         </div>
       </div>
     </section>
@@ -178,11 +161,11 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
-<script src="ps1/engine.js?v=20261108stick"></script>
-<script src="ps1/comic-horror.js?v=20261108stick"></script>
-<script src="ps1/controls.js?v=20261108stick"></script>
-<script src="ps1/rooms.js?v=20261108fixedaxis"></script>
-<script src="ps1/adventure-ui.js?v=20261109gui1"></script>
-<script src="ps1/logic.js?v=20261109gui1"></script>
+<script src="ps1/engine.js?v=20261110ux1"></script>
+<script src="ps1/comic-horror.js?v=20261110ux1"></script>
+<script src="ps1/controls.js?v=20261110ux1"></script>
+<script src="ps1/rooms.js?v=20261110ux1"></script>
+<script src="ps1/adventure-ui.js?v=20261110ux1"></script>
+<script src="ps1/logic.js?v=20261110ux1"></script>
 </body>
 </html>

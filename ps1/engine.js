@@ -25,10 +25,11 @@ const G = {
   msg: '', msgT: 0, prompt: '', roomTitle: 0, roomTitleText: '',
   autosave: 0, footT: 0, heartT: 0,
   boss: null, bossFight: false,
-  trans: null, introT: 0, introStep: -1, deadT: 0, endT: 0,
+  trans: null, introT: 0, introStep: -1, endT: 0,
   taken: [], dead: [], bossDead: false,
   mode: 'modern',
   sound: true, fx: true, muted: false,
+  keyboard: false, // キーボードを 1回でも 使ったか（[E] のような キー表示に 必要）
   keys: Object.create(null), touch: Object.create(null),
 };
 // 旧モード設定は引き継がず、固定カメラ＋スティックを標準にする。ゲーム進行セーブは維持。
@@ -291,6 +292,18 @@ function buildTextures() {
     g.fillStyle = 'rgba(70,60,40,.6)'; for (let y = 8; y < 28; y += 5) g.fillRect(5, y, rnd(14, 22), 1);
     g.strokeStyle = 'rgba(120,30,30,.7)'; g.strokeRect(2, 2, w - 4, h - 4);
   });
+  // ばんごうの 数字を「場面に 描いた 札」（1ばんめは こくばんの テクスチャに ある）
+  const numberNote = (text, bg, ink) => canvasTex(64, 28, (g, w, h) => {
+    g.fillStyle = bg; g.fillRect(0, 0, w, h);
+    g.fillStyle = 'rgba(0,0,0,.12)'; g.fillRect(0, h - 3, w, 3);
+    g.strokeStyle = ink; g.lineWidth = 1; g.strokeRect(.5, .5, w - 1, h - 1);
+    g.fillStyle = ink; g.font = '10px "DotGothic16","MS Gothic",sans-serif';
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(text, w / 2, h / 2 + 1);
+    g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+  });
+  TEX.clockNote = numberNote('2ばんめ＝1', '#e8e0c4', '#3a3020');
+  TEX.posterNote = numberNote('3ばんめ＝7', '#ded6bd', '#7a2620');
 }
 
 /* ===== マテリアル / メッシュ ===== */
@@ -386,7 +399,14 @@ const SFX = {
   alert() { tone(440, .18, 'square', .06); tone(330, .22, 'square', .05, 0, .16); },
   boss() { noiseHit(.8, .30, 150, 'lowpass'); tone(60, 1.1, 'sawtooth', .12, -18); },
   win() { [523, 659, 784, 1046].forEach((f, i) => tone(f, .35, 'sine', .06, 0, i * .16)); },
-  camera() { noiseHit(.04, .05, 1600, 'highpass'); },
+  camera() { noiseHit(.11, .05, 780, 'lowpass'); tone(210, .09, 'sine', .022, -55); },
+  dial() { tone(320, .05, 'square', .04, -130); tone(470, .04, 'square', .028, 0, .05); },
+  locked() { tone(190, .18, 'square', .045, -95); noiseHit(.22, .09, 900, 'bandpass'); tone(115, .13, 'triangle', .05, -40, .17); },
+  autoStart() { tone(520, .10, 'sine', .030, 120); tone(780, .08, 'triangle', .024, 0, .07); },
+  autoStop() { tone(330, .10, 'triangle', .026, -110); },
+  poi() { tone(1180, .045, 'sine', .016); },
+  poiOut() { tone(760, .045, 'sine', .013); },
+  hint() { tone(880, .10, 'sine', .026); tone(1170, .09, 'sine', .022, 0, .08); },
   whistle() { tone(2300, .7, 'square', .05, 120); tone(2350, .7, 'sine', .04, 80, .02); },
   slam() { noiseHit(.5, .4, 200, 'lowpass'); tone(55, .6, 'sawtooth', .14, -20); },
   unlock() { tone(520, .06, 'square', .05); tone(780, .08, 'square', .05, 0, .08); tone(1040, .2, 'sine', .05, 0, .16); },

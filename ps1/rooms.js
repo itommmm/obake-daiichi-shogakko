@@ -171,6 +171,8 @@ function buildCorridor() {
   }
   // 掲示板
   plane(1.1, .9, tm(TEX.poster), 1.63, 1.65, -7.4, 0, -Math.PI / 2, R.scene);
+  // 3ばんめ＝7 の 札（掲示の そばに 貼ってある。ロッカーの さぎょうを 避けて 置く）
+  plane(.55, .24, tm(TEX.posterNote), 1.61, 1.5, -7.78, 0, -Math.PI / 2, R.scene);
   // 消火器
   cyc(.09, .09, .5, 7, pm(0xa33a31), -1.45, .25, 6.8, R.scene);
   // 天井の 明かり（1本は ちらつく）
@@ -235,6 +237,8 @@ function buildStaffroom() {
   plane(1.2, .8, tm(TEX.poster), 0, 1.75, -2.94, 0, 0, R.scene);
   // とまった とけい
   plane(.6, .6, tm(TEX.clock), -2.1, 2.2, -2.93, 0, 0, R.scene);
+  // 2ばんめ＝1 の 札（とけいの うら）
+  plane(.7, .31, tm(TEX.clockNote), -2.1, 1.74, -2.90, 0, 0, R.scene);
   const handM = bm(0x241c14);
   R.clockHands = [box(.03, .22, .02, handM, -2.1, 2.2, -2.91, R.scene), box(.03, .15, .02, handM, -2.1, 2.2, -2.905, R.scene)];
   for (const h of R.clockHands) h.geometry.translate(0, h === R.clockHands[0] ? .1 : .065, 0);

@@ -53,6 +53,8 @@ button:disabled{opacity:.5;cursor:wait}
 .sk .lbl{position:absolute;left:50%;top:100%;transform:translateX(-50%);font:900 clamp(10px,1.3vw,14px)/1.4 var(--body);white-space:nowrap;text-shadow:0 0 6px #000,0 0 2px #000}
 .sk.ready .hex{background:linear-gradient(160deg,#fff,var(--glow))}
 .sk.ready{animation:pulse 1s ease-in-out infinite}
+.sk.tut .hex{background:#ffd23f}.sk.tut{animation:tutpulse .8s ease-in-out infinite;filter:drop-shadow(0 0 10px rgba(255,210,63,.9))}
+@keyframes tutpulse{50%{transform:scale(1.14)}}
 @keyframes pulse{50%{transform:scale(1.07)}}
 #sLight{--glow:#ffe9a8}#sBell{--glow:#ffc93c}#sSp{--glow:#c06bff}
 
@@ -99,12 +101,30 @@ button:disabled{opacity:.5;cursor:wait}
 #calT .ring{width:min(26vh,200px);aspect-ratio:1;border-radius:50%;border:8px solid var(--gold);box-shadow:0 0 0 6px rgba(0,0,0,.6),0 0 40px var(--gold);display:grid;place-items:center;animation:calp 1s ease-in-out infinite}
 #calT .ring::after{content:"";width:18%;aspect-ratio:1;border-radius:50%;background:var(--gold)}
 #calT p{position:absolute;top:calc(50% + min(13vh,100px) + 18px);margin:0;text-align:center;font:400 clamp(18px,3vw,30px)/1.5 var(--display);color:#fff;text-shadow:0 2px 8px #000}
+#calT .ph{width:38px;height:62px;border:4px solid var(--gold);border-radius:9px;margin:0;position:relative;animation:rot 1.8s ease-in-out infinite}
+#calT .ring::after{display:none}
 @keyframes calp{50%{transform:scale(1.08)}}
 .mode[aria-pressed="true"]{border-color:var(--gold);background:#3a2370;box-shadow:0 0 14px rgba(255,210,63,.4)}
 .go{border:none;border-radius:14px;padding:14px;font:400 clamp(20px,3vw,28px)/1 var(--display);color:var(--ink);background:linear-gradient(180deg,#fff27a,#ffb22e);box-shadow:0 5px 0 #a8580c,0 0 24px rgba(255,200,60,.5)}
 .go:active{transform:translateY(3px);box-shadow:0 2px 0 #a8580c}
 .how{font-size:clamp(11px,1.35vw,13px);line-height:1.65;color:#d9ccff;margin:0;padding-left:1.1em}
 .how b{color:#fff}
+/* 操作は アイコンで 見せる（?=ヘルプ で あとから 全文を 読み返せる） */
+.how1{margin:0;text-align:center;font-size:clamp(11px,1.35vw,13px);line-height:1.6;color:#d9ccff}
+.how1 b{color:#fff}
+.ctrlrow{display:flex;gap:clamp(8px,1.4vw,16px);justify-content:center;align-items:center;margin:2px 0}
+.ci{position:relative;width:clamp(30px,3.4vw,36px);aspect-ratio:1;display:grid;place-items:center;background:rgba(28,16,64,.72);border:2px solid rgba(166,92,255,.5);border-radius:10px}
+.ci svg{width:58%;height:58%;filter:drop-shadow(0 0 5px rgba(166,92,255,.85))}
+.ci b{position:absolute;right:-7px;bottom:-6px;background:#fff;color:var(--ink);font:900 10px/1 var(--body);padding:2px 4px;border-radius:4px}
+/* むずかしさの ちがいは 絵で 見せる（ハートのかず／はやさの 稲妻） */
+.mode small.mi{display:flex;gap:2px;justify-content:center;align-items:center;margin-top:5px;height:15px}
+.mode small.mi i{color:#ff5fb8;font-style:normal;font-size:13px;line-height:1;text-shadow:0 0 6px rgba(255,95,184,.75)}
+.mode small.mi svg{width:16px;height:16px}
+.mode small.mi svg.bolt{fill:#ffd23f;stroke:none;filter:drop-shadow(0 0 6px rgba(255,210,63,.85))}
+.mode small.mi svg.gy{fill:none;stroke:#cbb6ff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.helpbtn{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);right:calc(env(safe-area-inset-right,0px) + 12px);z-index:12;width:42px;height:42px;border-radius:50%;border:2px solid rgba(166,92,255,.7);background:var(--panel);color:var(--chalk);font:900 21px/1 var(--body);box-shadow:0 0 18px rgba(120,60,255,.4)}
+#help{z-index:14}
+.howwrap{overflow:auto;max-height:58vh}
 .best{font-size:13px;color:#cdb8ff;text-align:center}
 .altlink{display:block;text-align:center;font:900 13px/1.45 var(--body);color:#cbb6ff;text-decoration:none;border:2px dashed rgba(166,92,255,.55);border-radius:12px;padding:8px;margin-top:2px}
 .altlink:hover{background:rgba(166,92,255,.18);color:#fff}
@@ -135,13 +155,13 @@ button:disabled{opacity:.5;cursor:wait}
 @keyframes rot{40%,70%{transform:rotate(-90deg)}}
 #toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 80px);transform:translateX(-50%);background:var(--panel);border:1px solid var(--violet);border-radius:999px;padding:6px 14px;font:700 13px/1.4 var(--body);z-index:20;pointer-events:none;transition:opacity .4s}
 @media (orientation:portrait) and (max-width:820px){#rotate{display:grid}}
-@media (max-height:500px){.card{grid-template-columns:1fr 1fr}.ghosts{display:none}.how{display:none}
+@media (max-height:500px){.card{grid-template-columns:1fr 1fr}.ghosts{display:none}.ctrlrow{display:none}
   #tools{flex-direction:row;right:auto;bottom:auto;left:calc(env(safe-area-inset-left,0px) + 10px);top:calc(env(safe-area-inset-top,0px) + 54px);gap:6px}
   .tb{width:32px;height:32px;border-radius:9px;font-size:13px}.tb.q{font-size:10px}
   .sk{width:52px}.sk .lbl{display:none}#skills{bottom:calc(env(safe-area-inset-bottom,0px) + 6px)}}
 @media (max-width:640px) and (orientation:portrait){.card{grid-template-columns:1fr}}
-@media (prefers-reduced-motion:reduce){.sk.ready{animation:none}#rotate .ph{animation:none}.ghosts img{animation:none}}
-.gentle-effects .sk.ready,.gentle-effects .ghosts img{animation:none}
+@media (prefers-reduced-motion:reduce){.sk.ready,.sk.tut{animation:none}#rotate .ph{animation:none}#calT .ph{animation:none}.ghosts img{animation:none}}
+.gentle-effects .sk.ready,.gentle-effects .sk.tut,.gentle-effects .ghosts img{animation:none}
 </style>
 </head>
 <body>
@@ -166,43 +186,54 @@ button:disabled{opacity:.5;cursor:wait}
 
 <section class="screen" id="title">
   <canvas id="titleFx" aria-hidden="true"></canvas>
+  <button class="helpbtn" id="helpBtn" aria-label="あそびかたを 見る" aria-expanded="false" title="あそびかた">?</button>
   <div class="card">
     <div class="logo">
       <div class="ruby">よるのがっこう</div>
       <h1>おばけ第一小学校</h1>
       <div class="sub">夜の学校おばけポン！</div>
-      <div class="ghosts">
-        <span><img src="assets/chara_randoseru.webp" alt="" onerror="this.remove()"><i style="background:#e02838"></i>ランドセロ</span>
-        <span><img src="assets/chara_isu.webp" alt="" onerror="this.remove()"><i style="background:#b07a45"></i>いすわらし</span>
-        <span><img src="assets/chara_tsukue.webp" alt="" onerror="this.remove()"><i style="background:#8a7a9a"></i>つくえんぼ</span>
-        <span><img src="assets/chara_locker.webp" alt="" onerror="this.remove()"><i style="background:#9aa0ad"></i>ロッカーだいおう</span>
-        <span><img src="assets/chara_kousha.webp" alt="" onerror="this.parentNode.remove()">おばけこうしゃ</span>
-      </div>
     </div>
     <div class="menu">
       <h2>むずかしさを えらんでね</h2>
       <div class="modes" role="group" aria-label="むずかしさ">
-        <button class="mode" id="m-easy" data-m="easy" aria-pressed="false">かんたん<small>ハート5こ</small></button>
-        <button class="mode" id="m-normal" data-m="normal" aria-pressed="true">ふつう<small>ハート3こ</small></button>
-        <button class="mode" id="m-hard" data-m="hard" aria-pressed="false">むずかしい<small>はやい！</small></button>
+        <button class="mode" id="m-easy" data-m="easy" aria-pressed="false" aria-label="かんたん：ハート 5つ">かんたん<small class="mi"><i>♥</i><i>♥</i><i>♥</i><i>♥</i><i>♥</i></small></button>
+        <button class="mode" id="m-normal" data-m="normal" aria-pressed="true" aria-label="ふつう：ハート 3つ">ふつう<small class="mi"><i>♥</i><i>♥</i><i>♥</i></small></button>
+        <button class="mode" id="m-hard" data-m="hard" aria-pressed="false" aria-label="むずかしい：はやい">むずかしい<small class="mi"><svg class="bolt" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg></small></button>
       </div>
       <div class="pair">
-        <button class="mode gyro" id="gyroBtn" aria-pressed="false">かたむけて ねらう：オフ<small>iPhoneを かたむけて しょうじゅんを うごかす</small></button>
-        <button class="mode gyro" id="tvBtn" aria-pressed="false">テレビで あそぶ<small>Macで ゲーム、iPhoneが コントローラー</small></button>
+        <button class="mode gyro" id="gyroBtn" aria-pressed="false" aria-label="かたむけて ねらう：オフ">かたむけて ねらう：オフ<small class="mi"><svg class="gy" viewBox="0 0 24 24" aria-hidden="true"><rect x="7.5" y="3" width="10" height="18" rx="2.5" transform="rotate(-18 12.5 12)"/><path d="M2.5 20.5c2.5-1.6 5-1.6 7.5 0"/></svg></small></button>
+        <button class="mode gyro" id="tvBtn" aria-pressed="false" aria-label="テレビで あそぶ">テレビで あそぶ<small class="mi"><svg class="gy" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="4" width="13" height="9.5" rx="2"/><path d="M5.5 17h6"/><rect x="15.5" y="10.5" width="6" height="10.5" rx="1.6"/></svg></small></button>
       </div>
       <button class="go" id="start" disabled>よみこみ中…</button>
-      <ul class="how">
-        <li><b>わすれものを とりに きたら、がっこうが おばけに…！</b> みずでっぽうで もとに もどそう</li>
-        <li><b>ねらってうつ</b>：クリック／タップ（おしっぱなしで れんしゃ）</li>
-        <li><b>Z ライト</b>：てらした おばけが こおりつく</li>
-        <li><b>X チャイム</b>：ぜんぶ ふきとばす</li>
-        <li><b>C スペシャル</b>：ゲージ MAXで ぜんめつ！</li>
-        <li><b>チャイムが なったら</b>：たましいを うって ふっかつを ふせごう</li>
-      </ul>
+      <p class="how1"><b>わすれものを とりに きたら、がっこうが おばけに…！</b></p>
+      <div class="ctrlrow">
+        <span class="ci" title="ねらって うつ（クリック／タップ）" aria-label="ねらって うつ：クリック または タップ"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="6"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></span>
+        <span class="ci" title="Z キー：ライト" aria-label="Z キー：ライト"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" aria-hidden="true"><path d="M4 9h8l3-3v12l-3-3H4z"/><path d="M18 8l3-2M18 12h4M18 16l3 2"/></svg><b>Z</b></span>
+        <span class="ci" title="X キー：チャイム" aria-label="X キー：チャイム"><svg viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M12 3a1.5 1.5 0 0 1 1.5 1.5v.6A6 6 0 0 1 18 11v4l2 3H4l2-3v-4a6 6 0 0 1 4.5-5.9v-.6A1.5 1.5 0 0 1 12 3zm-2 16h4a2 2 0 0 1-4 0z"/></svg><b>X</b></span>
+        <span class="ci" title="C キー：スペシャル" aria-label="C キー：スペシャル"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 12a1 1 0 1 1 2 2 4 4 0 1 1-4-4 6 6 0 1 1-6 6"/></svg><b>C</b></span>
+      </div>
       <button class="zbtn" id="zukanBtn">おばけずかん</button>
       <a class="altlink" href="ps1.html">PS1版（こていカメラ・タンクそうさ）も あそべる</a>
       <div class="best" id="best"></div>
     </div>
+  </div>
+</section>
+
+<section class="screen" id="help" hidden>
+  <div class="zbox">
+    <h2>あそびかた <small>あとから いつでも 見られます</small></h2>
+    <div class="howwrap">
+      <ul class="how">
+        <li><b>ねらって うつ</b>：クリック／タップ（おしっぱなしで れんしゃ）</li>
+        <li><b>Z ライト</b>：てらした おばけが こおりつく</li>
+        <li><b>X チャイム</b>：ぜんぶ ふきとばす</li>
+        <li><b>C スペシャル</b>：ゲージが いっぱいの とき ぜんめつ！</li>
+        <li><b>チャイムが なったら</b>：たましいを うって ふっかつを ふせごう</li>
+        <li><b>かたむけて ねらう</b>：iPhoneを かたむけると しょうじゅんが うごきます</li>
+        <li><b>テレビで あそぶ</b>：Macで ゲーム、iPhoneが コントローラー</li>
+      </ul>
+    </div>
+    <button class="sub2" id="helpClose">もどる</button>
   </div>
 </section>
 
@@ -215,7 +246,7 @@ button:disabled{opacity:.5;cursor:wait}
 </section>
 
 <div id="rCur" hidden aria-hidden="true"></div>
-<div id="calT" hidden><div class="ring"></div><p>ここに iPhoneの あたまを むけて<br>「ここ！」を おしてね</p></div>
+<div id="calT" hidden><div class="ring"><div class="ph"></div></div><p>iPhonesを ここに かざしてね</p></div>
 
 <section class="screen" id="tv" hidden>
   <div class="tvbox">
@@ -235,7 +266,7 @@ button:disabled{opacity:.5;cursor:wait}
   <div class="result">
     <h2>ひとやすみ</h2>
     <button class="sub2" id="bEffects" aria-pressed="false">ゆれ・ピカピカ：ふつう</button>
-    <div class="row"><button class="go" id="resume">つづける</button><button class="sub2" id="quit">タイトルへ</button></div>
+    <div class="row"><button class="go" id="resume">つづける</button><button class="sub2" id="quit">タイトルへ</button><button class="sub2" id="pauseHelp">？ あそびかた</button></div>
   </div>
 </section>
 
@@ -254,7 +285,7 @@ button:disabled{opacity:.5;cursor:wait}
   </div>
 </section>
 
-<div id="rotate"><div><div class="ph"></div>スマホを よこむきに してね</div></div>
+<div id="rotate"><div><div class="ph"></div>よこむきに してね</div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/shaders/CopyShader.js"></script>
@@ -433,6 +464,16 @@ const SFX={
   light(){tone(120,.5,'sawtooth',.05,6,0,{lp:2000});noise(.35,.06,0,5000,{ft:'highpass'})},
   special(){tone(55,1.6,'sawtooth',.12,4,0,{lp:300,lpTo:4000});noise(1.2,.16,0,800,{to:6000});[0,1,2,3,4,5].forEach(i=>tone(440*Math.pow(1.122,i),.25,'triangle',.05,1.5,.2+i*.07))},
   reload(){[200,260,320,420].forEach((f,i)=>tone(f,.08,'sine',.08,1.4,i*.08));noise(.3,.04,0,900,{ft:'bandpass',q:3,to:2500})},
+  // リロードの 開始音（SFX.reload は 完了音なので 別にする）：乾いた「ガコン」
+  reloadStart(){noise(.1,.17,0,1500,{ft:'bandpass',q:1.5,to:280});tone(150,.12,'square',.07,.45);},
+  // ゲームオーバー：低い 下降音＋ノイズ（クリア音と かぶせない）
+  lose(){tone(230,1.3,'sawtooth',.09,.22,0,{lp:900});tone(112,1.8,'sine',.16,.2,0);noise(1.5,.1,0,760,{to:110});},
+  // 残弾が すくないときの 乾いた クリック（1回だけ）
+  dry(){noise(.05,.13,0,3200,{ft:'highpass'});tone(1500,.035,'square',.025);},
+  // 残り時間が 10びょうを きったときの 1びょうごとの きざみ
+  tick(){tone(780,.07,'square',.045,1,0,{lp:2600});tone(1170,.05,'square',.028,1,.05,{lp:2600});},
+  // わざの じゅんびが できた瞬間：短い 三角波（1回だけ。連打しない）
+  skillReady(){tone(660,.16,'triangle',.06);tone(990,.12,'triangle',.045,1,.06);},
   boom(){noise(.8,.32,0,500,{to:120});tone(70,.9,'sine',.35,.35)},
   // 「チャイムでふっかつ」などの不吉な合図：半音でぶつかる低い音
   revive(){tone(110,1,'sawtooth',.09,.5,0,{lp:700});tone(116.5,1,'sawtooth',.08,.5,0,{lp:700});whisper(.1,.04)},
@@ -1413,7 +1454,7 @@ function gyroAim(dt){if(!GYRO.on||!GYRO.has)return;let tx=GYRO.tx,ty=GYRO.ty;
     for(const e of G.enemies){if(e.dead||e.sx==null||e.sr>H*.3)continue;const d=Math.hypot(e.sx-tx,e.sy-ty)-e.sr*.5;if(d<bd){bd=d;best=e;}}
     if(best){const pull=.75*(1-Math.max(0,bd)/R);tx+=(best.sx-tx)*pull;ty+=(best.sy-ty)*pull;}}
   const k=Math.min(1,dt*20);ptr.x+=(tx-ptr.x)*k;ptr.y+=(ty-ptr.y)*k;}
-function updGyroBtn(){const b=$('gyroBtn');b.setAttribute('aria-pressed',GYRO.on);b.firstChild.textContent=GYRO.on?'かたむけて ねらう：オン':'かたむけて ねらう：オフ';$('bCenter').hidden=!GYRO.on;}
+function updGyroBtn(){const b=$('gyroBtn');b.setAttribute('aria-pressed',GYRO.on);b.firstChild.textContent=GYRO.on?'かたむけて ねらう：オン':'かたむけて ねらう：オフ';b.setAttribute('aria-label',b.firstChild.textContent);$('bCenter').hidden=!GYRO.on;}
 async function toggleGyro(){
   if(GYRO.on){GYRO.on=false;removeEventListener('devicemotion',onMotion);updGyroBtn();return;}
   try{
@@ -1487,14 +1528,16 @@ function resize(){
 /* ===== ゲーム進行 ===== */
 function newGame(withOpening){
   G.route=null;G.routeReward=null;G.trait=null;G.runStars=0;G.newZ=0;
-  const d=DIFFS[modeKey];G.diff=d;G.score=0;G.hearts=d.hearts;G.maxHearts=d.hearts;G.maxCombo=0;G.totalKills=0;G.dda=0;G.shotN=0;G.hitShotN=0;G.sp=0;G.parts=[];G.texts=[];
+  const d=DIFFS[modeKey]||DIFFS.normal;G.diff=d;G.score=0;G.hearts=d.hearts;G.maxHearts=d.hearts;G.maxCombo=0;G.totalKills=0;G.dda=0;G.shotN=0;G.hitShotN=0;G.sp=0;G.parts=[];G.texts=[];
   G.wlv=1;G.pow=null;G.lightCd=0;G.bellCd=0;G.fireCd=0;if(withOpening&&KID)startOpening();else startWave(0);
 }
 function startWave(i){
   G.rushLeft=0;G.rushT=0;
   grade.uniforms.uExposure.value=.95;G.scroll=0;G.rushed=0;G.pow=null;G.bossDie=0;G.dawn=0;G.lightning=0;G.shockFx=0;let w=WAVES[i];if(i===2&&G.route==='music')w={...w,place:'gym',back:'おんがくしつ',name:'よりみち おんがくしつ',sub:'がっきを たいじして まとめうちを ゲット！',types:{taiko:2,cymbal:2,triangle:2,recorder:2},blackout:0,tip:'わざ：がっきが なった しゅんかんに うて！'};G.wave=w;G.waveIdx=i;G.kills=0;G.goal=w.goal||0;G.time=w.time+G.diff.time;
   G.enemies=[];G.souls=[];G.items=[];G.fallen=[];G.tracers=[];G.spawnT=1.4;G.chimeT=w.boss?999:18;G.chime=null;
-  G.blackT=w.blackout?9:Infinity;G.black=0;G.ammo=maxAmmo();G.reload=0;G.combo=0;G.comboT=0;G.lightT=0;G.spT=0;G.inv=0;G.noHit=true;G.boss=null;G.rage=0;G.tech=0;G.techGoal=w.boss?2:3;G.lightWaza=0;G.slow=0;G.hitStop=0;
+  G.blackT=w.blackout?9:Infinity;G.black=0;G.ammo=maxAmmo();G.reload=0;G.combo=0;G.comboT=0;G.lightT=0;G.spT=0;G.inv=0;G.noHit=true;G.boss=null;G.rage=0;G.tech=0;G.techGoal=w.boss?2:3;G.lightWaza=0;G.slow=0;G.hitStop=0;G.warnAmmo=0;G.warnSec=0;
+  // ステージのはじめは「じゅんびできた」の チャイムを 出さない（出発時の 音の 量を手間 控制）
+  G.skReady={light:true,bell:true,sp:G.sp>=100};
   setPlace(w.place);state='intro';G.introT=i===0?2.2:1.6;if(GYRO.on)gyroCenter(true);SFX.sting();showHUD(true);
   buildSchoolTrick(w);
   if(i===3&&G.routeReward){G.pow={kind:G.routeReward,t:10,max:10};G.routeReward=null;}
@@ -1577,6 +1620,10 @@ function update(dt){
   if(state==='intro'){G.introT-=dt;if(G.introT<=0){state='play';if(G.wave.boss){const bt=G.wave.boss;const b=spawn(bt);if(bt==='kousha'){b.h=-2.6;G.shake=1.6;addText(W/2,H*.4,'おばけこうしゃ！！','#ff5fb8',60);SFX.boom();setTimeout(()=>SFX.boom(),400);setTimeout(()=>SFX.chime(),900);}else{addText(W/2,H*.4,'ロッカーだいおう！','#ff5fb8',48);G.shake=.6;SFX.boom();}}}updEnemies(dt,false);return;}
   if(state==='clear'){G.clearT-=dt;updEnemies(dt,false);if(G.clearT<=0){if(G.waveIdx===1&&!G.route){state='route';ptr.down=false;TOUCH.clear();REMOTE.fire=false;}else if(G.waveIdx+1<WAVES.length)startWave(G.waveIdx+1);else if(KID)startEnding();else finish(true);}return;}
   G.time-=dt;if(G.time<=0){G.time=0;finish(false,'じかんぎれ…');return;}
+  // 警告音：残弾が すないとき（1回）と 残り時間が 10びょうを きったとき（1びょうごと）。
+  // 見た目の ピンク表示 と セットで 伝える（音だけには 依存させない）
+  if(G.ammo>0&&G.ammo<=6){if(!G.warnAmmo){G.warnAmmo=1;SFX.dry();}}else G.warnAmmo=0;
+  if(G.time<=10){const s=Math.ceil(G.time);if(s!==G.warnSec){G.warnSec=s;SFX.tick();}}else G.warnSec=0;
   G.inv-=dt;G.lightCd-=dt;G.bellCd-=dt;G.reload>0&&(G.reload-=dt,G.reload<=0&&(G.ammo=maxAmmo(),SFX.reload()));
   if(G.lightT>0)G.lightT-=dt;
   if(G.pow&&G.pow.t>0){G.pow.t-=dt;if(G.pow.t<=0){G.pow=null;addText(W/2,H*.7,'パワーアップ おしまい','#cfe9ff',20);}}G.gunFx=Math.max(0,(G.gunFx||0)-dt);
@@ -1757,7 +1804,7 @@ function finish(win,msg){
   $('result').dataset.r=win?'win':'lose';$('rTitle').textContent=win?'ぜんぶ たいじ！':msg;$('rRank').textContent=rank;
   $('rScore').textContent=G.score.toLocaleString();$('rKills').textContent=G.totalKills;$('rCombo').textContent=G.maxCombo;$('rAccuracy').textContent=G.finalBonus?'めいちゅう '+G.finalBonus.acc+'%':'';
   $('rStars').textContent='★ '+(G.runStars||0)+' / '+WAVES.length*3;$('rBest').textContent=G.score>best?'ハイスコア こうしん！':`ハイスコア ${best.toLocaleString()}`;
-  $('result').hidden=false;if(win)SFX.clear();
+  $('result').hidden=false;if(win)SFX.clear();else SFX.lose();
 }
 
 /* ===== 射撃 ===== */
@@ -1765,7 +1812,7 @@ function fire(){
   if(G.reload>0)return;
   const L=WLV[G.wlv||1],pw=G.pow&&G.pow.t>0?G.pow.kind:null;
   if(G.ammo<=0&&pw!=='rapid'){startReload();return;}
-  G.shotN++;let hitSomething=false;
+  G.shotN++;TUT.f=1;let hitSomething=false;
   if(pw!=='rapid')G.ammo--;G.fireCd=L.cd*(pw==='rapid'?.6:1);G.recoil=1;SFX.shoot();
   const trick=G.gimmick,tp=trickScreen();if(trick&&tp&&!trick.used&&Math.hypot(ptr.x-tp.x,ptr.y-tp.y)<tp.r){trick.used=true;G.hitShotN++;G.tracers.push({x0:muzzle()[0],y0:muzzle()[1],x1:ptr.x,y1:ptr.y,t:.13,max:.13,w:2});for(const e of [...G.enemies])if(!e.dead&&!e.T.boss){e.stun=2;damage(e,trick.kind==='balls'?3:2);splash(e.sx,e.sy,20);}addText(W/2,H*.4,trick.kind==='balls'?'ボールが ゴロゴロ！':'みずが プシャー！','#5fe3ff',36);SFX.boom();waza(tp.x,tp.y);if(G.ammo<=0)startReload();return;}
   const mz=muzzle();
@@ -1796,7 +1843,7 @@ const WLV={1:{name:'ふつう',n:1,rad:1,cd:.11,dmg:1},2:{name:'ダブルノズ�
 // お助けパワー（10びょう）。name は 効き目そのもの、ic は 玉の上に出す しるし、desc は とったときの せつめい
 const POW={rapid:{name:'うちほうだい',ic:'∞',desc:'みずが へらない！ はやうち',col:'#ffd23f',c3:[3,2.4,.4]},wide:{name:'まとめうち',ic:'⇔',desc:'まわりの おばけにも あたる！',col:'#5fe3ff',c3:[.6,2.6,3.4]},jumbo:{name:'パワー2ばい',ic:'×2',desc:'でっかい みずで いりょく2ばい！',col:'#ff5fb8',c3:[3.4,.7,2]}};
 function maxAmmo(){return (G.wlv||1)>=3?40:30;}
-function startReload(){if(G.reload>0||G.ammo>=maxAmmo())return;G.reload=1.1;[180,210,240].forEach((f,i)=>tone(f,.12,'sine',.07,.7,i*.14));}
+function startReload(){if(G.reload>0||G.ammo>=maxAmmo())return;G.reload=1.1;SFX.reloadStart();}
 function damage(e,d){
   if(e.dead)return;
   // ボスの ガード：ロッカーは ドアを しめると きかない、こうしゃは かたくなると 1/4。ロッカーは こうげきの直後（ドアが あいた時）は 2ばい
@@ -1840,8 +1887,8 @@ function kill(e){
 function getItem(it){SFX.item();if(POW[it.kind]){G.pow={kind:it.kind,t:10,max:10};G.gunFx=.8;addText(W/2,H*.7,POW[it.kind].name+'！ '+POW[it.kind].desc,POW[it.kind].col,26);[784,988,1175,1568].forEach((f,i)=>tone(f,.15,'square',.05,1,i*.06));spark(it.sx,it.sy,POW[it.kind].col,20);return;}if(it.kind==='candy'){G.hearts=Math.min(G.maxHearts,G.hearts+1);addText(it.sx,it.sy,'♥ ハート +1','#ff5fb8',24);}else{G.time+=5;addText(it.sx,it.sy,'じかん +5びょう','#5fe3ff',24);}spark(it.sx,it.sy,'#fff',14);}
 
 /* ===== スキル ===== */
-function skillLight(){if(state!=='play'||G.lightCd>0)return;G.lightT=5;G.lightCd=14;G.lightWaza=0;SFX.light();addText(W/2,H*.3,'ライト！ てらすと こおりつく','#ffe9a8',28);}
-function skillBell(){if(state!=='play'||G.bellCd>0)return;G.bellCd=20;SFX.ding();G.bellFx=1;G.shake=.4;
+function skillLight(){if(state!=='play'||G.lightCd>0)return;G.lightT=5;G.lightCd=14;TUT.l=1;G.lightWaza=0;SFX.light();addText(W/2,H*.3,'ライト！ てらすと こおりつく','#ffe9a8',28);}
+function skillBell(){if(state!=='play'||G.bellCd>0)return;G.bellCd=20;TUT.b=1;SFX.ding();G.bellFx=1;G.shake=.4;
   for(const e of G.enemies){if(e.dead)continue;if(e.T.boss){breakBossGuard(e);damage(e,3);e.stun=1.2;if(e.mode==='tongueWarn'||e.mode==='tongue'){e.mode='idle';e.mt=2;e.tongue=0;}continue;}e.z=Math.min(ROOMS[G.place].spawn,e.z+.3);e.stun=1.6;damage(e,1);}
   addText(W/2,H*.3,'キーンコーン！ ふきとばし！','#ffd23f',30);}
 function skillSp(){if(state!=='play'||G.sp<100)return;G.sp=0;G.spT=1.6;SFX.special();G.shake=1;G.flash=1;
@@ -1850,7 +1897,14 @@ function skillSp(){if(state!=='play'||G.sp<100)return;G.sp=0;G.spT=1.6;SFX.speci
   addText(W/2,H*.4,'おばけ ポーン！！','#e0a8ff',64);}
 function syncSkills(){
   const set=(id,cd,ready)=>{const b=$(id);b.style.setProperty('--cd',clamp(cd,0,1));b.classList.toggle('ready',ready);};
-  set('sLight',G.lightCd/14,G.lightCd<=0);set('sBell',G.bellCd/20,G.bellCd<=0);set('sSp',1-G.sp/100,G.sp>=100);
+  const st={light:G.lightCd<=0,bell:G.bellCd<=0,sp:G.sp>=100};
+  set('sLight',G.lightCd/14,st.light);set('sBell',G.bellCd/20,st.bell);set('sSp',1-G.sp/100,st.sp);
+  // じゅんびできた 瞬間に 1回だけ チャイム（false→true に なった ときだけ。連打しない）
+  const p=G.skReady;
+  if(!p){G.skReady={light:st.light,bell:st.bell,sp:st.sp};return;}
+  let up=false;for(const k in st)if(!p[k]&&st[k])up=true;
+  for(const k in st)p[k]=st[k];
+  if(up)SFX.skillReady();
 }
 
 /* ===== 2Dエフェクト ===== */
@@ -2017,54 +2071,61 @@ function update3D(dt){
 function rr(x,y,w,h,r,fill){ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x,y,w,h,r);else ctx.rect(x,y,w,h);if(fill){ctx.fillStyle=fill;ctx.fill();}}
 function star(x,y,r){ctx.beginPath();for(let i=0;i<10;i++){const a=i*Math.PI/5-Math.PI/2,q=i%2?r*.45:r;ctx.lineTo(x+Math.cos(a)*q,y+Math.sin(a)*q);}ctx.closePath();ctx.fill();}
 function heart(x,y,s,fill){ctx.beginPath();ctx.moveTo(x,y+s*.35);ctx.bezierCurveTo(x-s*1.1,y-s*.4,x-s*.45,y-s*1.05,x,y-s*.45);ctx.bezierCurveTo(x+s*.45,y-s*1.05,x+s*1.1,y-s*.4,x,y+s*.35);ctx.closePath();ctx.fillStyle=fill;ctx.fill();}
+// 水滴の 絵（残弾の かずの 代わり）
+function dropIcon(x,y,s,col){ctx.save();ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(x,y-s*.95);ctx.bezierCurveTo(x+s*.78,y-s*.05,x+s*.6,y+s*.72,x,y+s*.72);ctx.bezierCurveTo(x-s*.6,y+s*.72,x-s*.78,y-s*.05,x,y-s*.95);ctx.closePath();ctx.fill();ctx.restore();}
+// 回転する まる矢印（リロード中のおしらせ）
+function spinIcon(x,y,r,ang,col){ctx.save();ctx.translate(x,y);ctx.rotate(ang);ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=3*U;ctx.lineCap='round';ctx.beginPath();ctx.arc(0,0,r,.7,5.4);ctx.stroke();
+  const a=5.4,ca=Math.cos(a),sa=Math.sin(a);ctx.beginPath();ctx.moveTo(ca*(r+8*U),sa*(r+8*U));ctx.lineTo(ca*(r-3*U)-sa*7*U,sa*(r-3*U)+ca*7*U);ctx.lineTo(ca*(r-3*U)+sa*7*U,sa*(r-3*U)-ca*7*U);ctx.closePath();ctx.fill();ctx.restore();}
+// シェブロン（すすむ 方向の 矢印。向きは up / right）
+function chev(x,y,dir,s){ctx.save();ctx.translate(x,y);if(dir==='right')ctx.rotate(Math.PI/2);ctx.beginPath();ctx.moveTo(-s,s*.5);ctx.lineTo(0,-s*.55);ctx.lineTo(s,s*.5);ctx.stroke();ctx.restore();}
 function panel(x,y,w,h,col){ctx.save();rr(x,y,w,h,12*U,'rgba(22,12,44,.82)');ctx.shadowColor=col;ctx.shadowBlur=12*U;ctx.strokeStyle=col;ctx.lineWidth=2.5*U;ctx.stroke();ctx.restore();}
 function txt(s,x,y,size,col,font,align,stroke){ctx.font=`${size}px ${font||FD}`;ctx.textAlign=align||'left';ctx.textBaseline='middle';if(stroke){ctx.lineWidth=stroke;ctx.strokeStyle='#1a0b25';ctx.lineJoin='round';ctx.strokeText(s,x,y);}ctx.fillStyle=col;ctx.fillText(s,x,y);}
 function ghostIcon(x,y,s,col){ctx.save();ctx.fillStyle=col||'#fff';ctx.beginPath();ctx.arc(x,y-s*.2,s*.6,Math.PI,0);ctx.lineTo(x+s*.6,y+s*.55);for(let i=0;i<3;i++)ctx.lineTo(x+s*.6-(i+.5)*s*.4,y+s*(i%2?.55:.3));ctx.lineTo(x-s*.6,y+s*.55);ctx.closePath();ctx.fill();ctx.fillStyle='#1a0b25';ctx.beginPath();ctx.arc(x-s*.2,y-s*.15,s*.1,0,7);ctx.arc(x+s*.2,y-s*.15,s*.1,0,7);ctx.fill();ctx.restore();}
+function clockIcon(x,y,r,c,t){ctx.save();ctx.strokeStyle=c;ctx.lineWidth=Math.max(2,r*.2);ctx.lineCap='round';ctx.beginPath();ctx.arc(x,y,r,0,6.283);ctx.stroke();const a=-1.5708+(1-((t%60)/60))*6.283;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+Math.cos(a)*r*.75,y+Math.sin(a)*r*.75);ctx.moveTo(x,y);ctx.lineTo(x,y-r*.5);ctx.stroke();ctx.restore();}
 function drawHUD(){
   const u=U,top=SA.t+12*u;
   const pw=[200*u,200*u,180*u],gap=12*u,tw=pw[0]+pw[1]+pw[2]+gap*2;let x=W/2-tw/2;const ph=54*u;
   panel(x,top,pw[0],ph,'#5fe3ff');const tm=Math.ceil(G.time),mm=Math.floor(tm/60),ss=String(tm%60).padStart(2,'0');
-  txt('タイム',x+16*u,top+ph/2,15*u,'#cfe9ff',FB);txt(`${mm}:${ss}`,x+pw[0]-14*u,top+ph/2,30*u,G.time<10&&Math.sin(G.t*10)>0?'#ff5fb8':'#fff',FD,'right');
+  clockIcon(x+26*u,top+ph/2,15*u,'#cfe9ff',G.time);txt(`${mm}:${ss}`,x+pw[0]-14*u,top+ph/2,30*u,G.time<10&&Math.sin(G.t*10)>0?'#ff5fb8':'#fff',FD,'right');
   x+=pw[0]+gap;panel(x,top,pw[1],ph,'#a65cff');ghostIcon(x+24*u,top+ph/2,26*u,'#d9b8ff');
   if(G.wave&&G.wave.boss){txt('ボス',x+48*u,top+ph/2,15*u,'#e8dcff',FB);txt(G.boss?Math.max(0,Math.ceil(G.boss.hp/G.boss.max*100))+'%':'—',x+pw[1]-14*u,top+ph/2,28*u,'#ff8fd0',FD,'right');}
-  else{txt('のこり',x+48*u,top+ph/2,15*u,'#e8dcff',FB);const rem=Math.max(0,G.goal-G.kills);ctx.font=`${16*u}px ${FD}`;const w2=ctx.measureText(`/${G.goal}`).width;txt(`/${G.goal}`,x+pw[1]-14*u,top+ph/2+4*u,16*u,'#fff',FD,'right');txt(String(rem),x+pw[1]-18*u-w2,top+ph/2,30*u,'#ff8fd0',FD,'right');}
-  x+=pw[1]+gap;panel(x,top,pw[2],ph,'#ffd23f');ctx.fillStyle='#ffd23f';star(x+24*u,top+ph/2,13*u);txt('コンボ',x+44*u,top+ph/2,15*u,'#fff2c0',FB);txt(String(G.combo),x+pw[2]-14*u,top+ph/2,30*u,G.combo>=10?'#ffd23f':'#fff',FD,'right');
+  else{const rem=Math.max(0,G.goal-G.kills);ctx.font=`${16*u}px ${FD}`;const w2=ctx.measureText(`/${G.goal}`).width;txt(`/${G.goal}`,x+pw[1]-14*u,top+ph/2+4*u,16*u,'#fff',FD,'right');txt(String(rem),x+pw[1]-18*u-w2,top+ph/2,30*u,'#ff8fd0',FD,'right');}
+  x+=pw[1]+gap;panel(x,top,pw[2],ph,'#ffd23f');ctx.fillStyle='#ffd23f';star(x+24*u,top+ph/2,13*u);txt(String(G.combo),x+pw[2]-14*u,top+ph/2,30*u,G.combo>=10?'#ffd23f':'#fff',FD,'right');
   if(G.techGoal){const k=Math.min(G.tech||0,G.techGoal);txt('わざ '+'★'.repeat(k)+'☆'.repeat(G.techGoal-k),W/2,top+ph+16*u,15*u,k>=G.techGoal?'#ffd23f':'#e8dcff',FB,'center',4*u);}
   if(G.boss&&!G.boss.dead){const bw=Math.min(520*u,W*.6),bxp=W/2-bw/2,by=top+ph+12*u;txt(G.boss.T.name||'ボス',W/2,by+6*u,14*u,'#ffd1ec',FB,'center',4*u);rr(bxp,by+16*u,bw,14*u,7*u,'rgba(0,0,0,.6)');rr(bxp,by+16*u,bw*Math.max(0,G.boss.hp/G.boss.max),14*u,7*u,'#ff4fb0');}
+  // WAVEの 札（むずかしさの ラベルは タイトルで えんで いるので ここに は 重ねない）
   const rw=170*u,rx=W-SA.r-rw-14*u;ctx.save();ctx.translate(rx+rw/2,top+30*u);ctx.rotate(-.02);rr(-rw/2,-26*u,rw,52*u,6*u,'#ece6f6');ctx.restore();
-  txt(G.diff?G.diff.label:'',rx+rw/2,top+18*u,17*u,'#1a0b25',FB,'center');
-  txt(`WAVE ${G.waveIdx+1} / ${WAVES.length}`,rx+rw/2,top+64*u,17*u,'#fff',FD,'center',4*u);
+  txt(`WAVE ${G.waveIdx+1} / ${WAVES.length}`,rx+rw/2,top+30*u,17*u,'#1a0b25',FD,'center');
   if(G.chime){const cx=W-SA.r-120*u,cy=top+128*u;ctx.save();ctx.translate(cx,cy);ctx.rotate(-.08);rr(-110*u,-28*u,220*u,56*u,10*u,'#d81b48');txt('チャイムで ふっかつ！',0,-2*u,18*u,'#fff',FD,'center',4*u);ctx.restore();
     ctx.save();ctx.translate(cx-130*u,cy-4*u);ctx.rotate(Math.sin(G.t*14)*.35);ctx.fillStyle='#ffd23f';ctx.shadowColor='#ffd23f';ctx.shadowBlur=16*u;ctx.beginPath();ctx.moveTo(-22*u,18*u);ctx.quadraticCurveTo(-20*u,-24*u,0,-24*u);ctx.quadraticCurveTo(20*u,-24*u,22*u,18*u);ctx.closePath();ctx.fill();ctx.beginPath();ctx.arc(0,22*u,6*u,0,7);ctx.fill();ctx.restore();
     txt(String(Math.ceil(G.chime.t)),cx,cy+48*u,30*u,'#ffd23f',FD,'center',5*u);txt('たおしても 時間で ふっかつ！',cx,cy+78*u,12*u,'#fff',FB,'center',4*u);}
-  const lx=SA.l+18*u,ly=H-SA.b-62*u;ctx.save();ctx.translate(lx+36*u,ly);ctx.rotate(-.06);ctx.shadowColor='rgba(0,0,0,.5)';ctx.shadowBlur=8*u;rr(-36*u,-32*u,72*u,64*u,8*u,'#fbfaf4');ctx.shadowBlur=0;ctx.strokeStyle='#d22a3c';ctx.lineWidth=3*u;ctx.stroke();
-    rr(-36*u,-32*u,72*u,17*u,[8*u,8*u,0,0],'#2a5ad8');txt('2ねん1くみ',0,-23*u,10*u,'#fff',FB,'center');txt('おばけ',0,-2*u,14*u,'#1a0b25',FB,'center');txt('たいじたい',0,15*u,11*u,'#1a0b25',FB,'center');
-    ctx.strokeStyle='#c3c9d4';ctx.lineWidth=2.5*u;ctx.beginPath();ctx.moveTo(-22*u,-37*u);ctx.lineTo(22*u,-37*u);ctx.stroke();ctx.restore();
-  for(let i=0;i<G.maxHearts;i++){const hx=lx+96*u+i*40*u,hy=ly-12*u;ctx.save();if(i<G.hearts){ctx.shadowColor='#ff5fb8';ctx.shadowBlur=12*u;heart(hx,hy,18*u,'#ff5fb8');}else heart(hx,hy,18*u,'rgba(255,255,255,.15)');ctx.restore();}
-  const sw=Math.max(150*u,G.maxHearts*40*u-8*u);rr(lx+78*u,ly+16*u,sw,13*u,7*u,'rgba(0,0,0,.6)');const sg=ctx.createLinearGradient(lx+78*u,0,lx+78*u+sw,0);sg.addColorStop(0,'#7a3dff');sg.addColorStop(1,'#e08bff');rr(lx+78*u,ly+16*u,sw*G.sp/100,13*u,7*u,sg);
-  if(G.sp>=100&&Math.sin(G.t*8)>0)txt('C で スペシャル！',lx+78*u,ly+44*u,14*u,'#e8c8ff',FB,'left',4*u);
+  // 名札（2ねん1くみ／おばけ／たいじたい）は 3Dの 主人公の テクスチャに あるので HUDでは 書かない
+  const lx=SA.l+18*u,ly=H-SA.b-62*u;
+  for(let i=0;i<G.maxHearts;i++){const hx=lx+20*u+i*40*u,hy=ly-12*u;ctx.save();if(i<G.hearts){ctx.shadowColor='#ff5fb8';ctx.shadowBlur=12*u;heart(hx,hy,18*u,'#ff5fb8');}else heart(hx,hy,18*u,'rgba(255,255,255,.15)');ctx.restore();}
+  // SPゲージ：うまった ゲージの そばに ∞ を 光らせる（「C で スペシャル！」という 文字の 代わり）
+  const sw=Math.max(150*u,G.maxHearts*40*u+10*u);rr(lx,ly+16*u,sw,13*u,7*u,'rgba(0,0,0,.6)');const sg=ctx.createLinearGradient(lx,0,lx+sw,0);sg.addColorStop(0,'#7a3dff');sg.addColorStop(1,'#e08bff');rr(lx,ly+16*u,sw*G.sp/100,13*u,7*u,sg);
+  {const full=G.sp>=100;ctx.save();ctx.font=`900 ${21*u}px ${FB}`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=4*u;ctx.strokeStyle='#1a0b25';ctx.lineJoin='round';if(full){ctx.shadowColor='#ffd23f';ctx.shadowBlur=16*u;}ctx.strokeText('∞',lx+sw+18*u,ly+22*u);ctx.fillStyle=full?'#ffd23f':'rgba(232,220,255,.4)';ctx.fillText('∞',lx+sw+18*u,ly+22*u);ctx.restore();}
   const aw=230*u,ah=62*u,ax=W-SA.r-aw-16*u,ay=H-SA.b-ah-14*u;panel(ax,ay,aw,ah,'#5fe3ff');
   {const tx=ax+14*u,ty=ay+10*u,tw2=50*u,th=ah-20*u,lv=G.reload>0?1-G.reload/1.1:G.ammo/maxAmmo();rr(tx,ty,tw2,th,8*u,'rgba(190,230,255,.15)');ctx.save();rr(tx,ty,tw2,th,8*u);ctx.clip();const wg=ctx.createLinearGradient(0,ty,0,ty+th);wg.addColorStop(0,'#7cc8ff');wg.addColorStop(1,'#1a6aff');ctx.fillStyle=wg;const wy=ty+th*(1-lv)+Math.sin(G.t*6)*1.5*u;ctx.beginPath();ctx.moveTo(tx,wy);for(let i=0;i<=8;i++)ctx.lineTo(tx+tw2*i/8,wy+Math.sin(G.t*5+i)*1.5*u);ctx.lineTo(tx+tw2,ty+th);ctx.lineTo(tx,ty+th);ctx.fill();ctx.restore();ctx.strokeStyle='#9fefff';ctx.lineWidth=2*u;rr(tx,ty,tw2,th,8*u);ctx.stroke();}
-  if(G.reload>0){txt('みずを いれてる…',ax+aw-14*u,ay+ah/2,16*u,'#9fefff',FB,'right');}
+  // リロード中：水量バーが うまる ので、回転する 矢印で おしらせる（「みずを いれてる…」の 代わり）
+  if(G.reload>0)spinIcon(ax+aw-34*u,ay+ah/2-4*u,15*u,G.t*7,'#9fefff');
   {const lv=G.wlv||1;rr(ax+aw-62*u,ay-20*u,58*u,22*u,11*u,lv>=4?'#ff5fb8':lv>=3?'#ffd23f':lv>=2?'#5fe3ff':'#4b3487');txt('Lv'+lv,ax+aw-33*u,ay-9*u,14*u,lv>=2?'#1a0b25':'#fff',FD,'center');}
   if(G.pow&&G.pow.t>0){const P=POW[G.pow.kind],bw=150*u,bx=ax+aw-bw-70*u,by=ay-18*u;rr(bx,by,bw,16*u,8*u,'rgba(0,0,0,.55)');rr(bx,by,bw*G.pow.t/G.pow.max,16*u,8*u,P.col);txt(P.name+' '+Math.ceil(G.pow.t),bx+bw/2,by+8*u,12*u,'#1a0b25',FB,'center');}
-  if(G.pow&&G.pow.kind==='rapid'&&G.pow.t>0){txt('むげん',ax+aw-14*u,ay+ah/2-8*u,22*u,'#ffd23f',FD,'right');txt('みずでっぽう',ax+aw-14*u,ay+ah/2+17*u,12*u,'#cfe9ff',FB,'right');}
-  else{txt(`${G.ammo}/${maxAmmo()}`,ax+aw-14*u,ay+ah/2-8*u,26*u,G.ammo<6?'#ff8fd0':'#fff',FD,'right');txt('みずでっぽう',ax+aw-14*u,ay+ah/2+17*u,12*u,'#cfe9ff',FB,'right');}
+  // 残弾：数と 水滴の 絵だけで 表す（「みずでっぽう」の 文字は 入れない）
+  if(G.reload<=0){
+    if(G.pow&&G.pow.kind==='rapid'&&G.pow.t>0)txt('∞',ax+aw-30*u,ay+ah/2-4*u,32*u,'#ffd23f',FD,'right');
+    else{txt(`${G.ammo}/${maxAmmo()}`,ax+aw-36*u,ay+ah/2-4*u,26*u,G.ammo<6?'#ff8fd0':'#fff',FD,'right');dropIcon(ax+aw-20*u,ay+ah/2-4*u,13*u,'#7cc8ff');}
+  }
 }
 function aimOff(){ // 照準が画面の外を向いているか（向きの操作のとき）
   if(GYRO.remote)return Math.abs(GYRO.rx||0)>1.02||Math.abs(GYRO.ry||0)>1.02;
   if(GYRO.on)return GYRO.tx<=W*.01||GYRO.tx>=W*.99||GYRO.ty<=H*.01||GYRO.ty>=H*.99;
   return false;}
-function drawOffHint(x,y,r){ // 画面の外を向いているとき：画面のはしに大きな矢印と、まんなかに ひとこと
-  const dx=x-W/2,dy=y-H/2,a=Math.atan2(dy,dx),blink=performance.now()%500<300,R=Math.max(26,r*1.3);
+function drawOffHint(x,y,r){ // 画面の外を向いているとき：画面のはしに 矢印だけを 示す（ことばは 入れない）
+  const dx=x-W/2,dy=y-H/2,a=Math.atan2(dy,dx),blink=performance.now()%500<300,R=Math.max(30,r*1.35);
   const ax=clamp(x,R*1.6,W-R*1.6),ay=clamp(y,R*1.6,H-R*1.6);
-  ctx.save();ctx.translate(ax,ay);ctx.rotate(a);ctx.fillStyle=blink?'#ff5f5f':'#ffd23f';ctx.strokeStyle='#000';ctx.lineWidth=4;
-  ctx.beginPath();ctx.moveTo(R*1.4,0);ctx.lineTo(R*.2,-R*.8);ctx.lineTo(R*.2,-R*.3);ctx.lineTo(-R*.8,-R*.3);ctx.lineTo(-R*.8,R*.3);ctx.lineTo(R*.2,R*.3);ctx.lineTo(R*.2,R*.8);ctx.closePath();ctx.stroke();ctx.fill();ctx.restore();
-  const fs=Math.max(17,Math.round(28*U)),ff=getComputedStyle(document.body).fontFamily;
-  ctx.save();ctx.textAlign='center';ctx.lineJoin='round';ctx.strokeStyle='#000';ctx.fillStyle='#fff';
-  const m=GYRO.remote?'テレビの そとを むいてるよ':'がめんの そとを むいてるよ',m2=GYRO.remote?'やじるしの はんたいへ むけるか「◎ あわせる」':'やじるしの はんたいへ かたむけるか ◎ で まんなかへ';
-  ctx.font=`900 ${fs}px ${ff}`;ctx.lineWidth=6;ctx.strokeText(m,W/2,H*.3);ctx.fillText(m,W/2,H*.3);
-  ctx.font=`700 ${Math.round(fs*.62)}px ${ff}`;ctx.lineWidth=4;ctx.strokeText(m2,W/2,H*.3+fs*.95);ctx.fillText(m2,W/2,H*.3+fs*.95);ctx.restore();}
+  ctx.save();ctx.translate(ax,ay);ctx.rotate(a);ctx.shadowColor=blink?'#ff5f5f':'#ffd23f';ctx.shadowBlur=18*U;ctx.fillStyle=blink?'#ff5f5f':'#ffd23f';ctx.strokeStyle='#000';ctx.lineWidth=4;
+  ctx.beginPath();ctx.moveTo(R*1.4,0);ctx.lineTo(R*.2,-R*.8);ctx.lineTo(R*.2,-R*.3);ctx.lineTo(-R*.8,-R*.3);ctx.lineTo(-R*.8,R*.3);ctx.lineTo(R*.2,R*.3);ctx.lineTo(R*.2,R*.8);ctx.closePath();ctx.stroke();ctx.fill();ctx.restore();}
 function drawReticle(){
   const x=ptr.x,y=ptr.y,r=26*U*(GYRO.remote?1.6:GYRO.on?1.35:1);
   if(GYRO.on&&aimOff())drawOffHint(x,y,r);
@@ -2074,14 +2135,54 @@ function drawReticle(){
   for(let i=0;i<4;i++){const a=i*Math.PI/2+G.t*.6;ctx.beginPath();ctx.moveTo(x+Math.cos(a)*r*.7,y+Math.sin(a)*r*.7);ctx.lineTo(x+Math.cos(a)*r*1.35,y+Math.sin(a)*r*1.35);ctx.stroke();}
   ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x,y,3*U,0,7);ctx.fill();ctx.restore();
 }
+// たいけんがた チュートリアル：1かいめの WAVE1 だけ。せつめいぶんの かわりに、てのうごき・ひかる ボタン・せいこうの おとで おしえる
+const TUT={on:SAVE.get('obake1-tut',0)!==1,f:0,l:0,b:0};
+let tutPrev=null;
+function tutNext(){if(!TUT.on||G.waveIdx!==0)return null;if(!TUT.f)return 'aim';if(!TUT.l&&G.kills>=2)return 'light';if(!TUT.b&&G.kills>=5)return 'bell';return null;}
+function tutEnd(){TUT.on=false;tutPrev=null;SAVE.set('obake1-tut',1);$('sLight').classList.remove('tut');$('sBell').classList.remove('tut');}
+function tutFinger(x,y,s,press){ctx.save();ctx.translate(x,y+press*s*.22);ctx.rotate(-.3);ctx.fillStyle='#f1e6cf';ctx.strokeStyle='#17110d';ctx.lineWidth=Math.max(2,s*.07);
+  const rr=(a,b,w,h,r)=>{ctx.beginPath();if(ctx.roundRect)ctx.roundRect(a,b,w,h,r);else ctx.rect(a,b,w,h);ctx.fill();ctx.stroke();};
+  rr(-s*.15,0,s*.3,s*.8,s*.15);rr(-s*.3,s*.5,s*.6,s*.5,s*.18);ctx.restore();}
+function drawTutorial(){
+  if(!TUT.on)return;
+  if(G.waveIdx!==0||(TUT.f&&TUT.l&&TUT.b)){tutEnd();return;}
+  const step=tutNext();
+  if(step!==tutPrev){if(tutPrev){[784,988,1175,1568].forEach((f,i)=>tone(f,.12,'triangle',.05,1,i*.05));ring(W/2,H*.5,'#ffd23f',2);}tutPrev=step;}
+  $('sLight').classList.toggle('tut',step==='light');$('sBell').classList.toggle('tut',step==='bell');
+  if(!step)return;
+  const still=gentleEffects,ph=still?0:(G.t*1.4)%1;
+  ctx.save();ctx.lineCap='round';
+  if(step==='aim'){
+    let tx=W/2,ty=H*.52,tr=46*U,bd=1e9;
+    for(const e of G.enemies){if(e.dead||e.sx==null||e.T.boss)continue;const d=Math.abs(e.sx-W/2)+Math.abs(e.sy-H*.5);if(d<bd){bd=d;tx=e.sx;ty=e.sy-e.sr*.45;tr=Math.max(30*U,e.sr*.7);}}
+    ctx.strokeStyle=`rgba(255,210,63,${.95-ph*.6})`;ctx.lineWidth=Math.max(2,4*U);ctx.beginPath();ctx.arc(tx,ty,tr*(1.7-ph*.7),0,6.283);ctx.stroke();
+    ctx.strokeStyle='rgba(255,210,63,.9)';ctx.beginPath();ctx.arc(tx,ty,tr,0,6.283);ctx.stroke();
+    tutFinger(tx+tr*.55,ty+tr*.55,70*U,still?0:Math.max(0,Math.sin(ph*6.283)));
+  }else{
+    const b=$(step==='light'?'sLight':'sBell').getBoundingClientRect(),k=W/innerWidth,bx=(b.left+b.width/2)*k,by=b.top*k;
+    const bob=still?0:Math.abs(Math.sin(G.t*5))*10*U,ay=by-14*U-bob;
+    ctx.fillStyle='#ffd23f';ctx.strokeStyle='#17110d';ctx.lineWidth=Math.max(2,3*U);ctx.beginPath();ctx.moveTo(bx-16*U,ay-26*U);ctx.lineTo(bx+16*U,ay-26*U);ctx.lineTo(bx,ay);ctx.closePath();ctx.fill();ctx.stroke();
+  }
+  ctx.restore();
+}
 function drawIntro(){
   const k=G.introT,a=Math.min(1,(2.8-k)*3,k*2);ctx.save();ctx.globalAlpha=a;ctx.fillStyle='rgba(8,4,20,.5)';ctx.fillRect(0,H*.32,W,H*.3);
   const sl=(1-Math.min(1,(2.8-k)*2.5))*W*.2;
   txt(G.wave.boss?'BOSS WAVE':`WAVE ${G.waveIdx+1}`,W/2-sl,H*.38,26*U,'#ffd23f',FD,'center',5*U);
   txt(G.wave.name,W/2+sl,H*.46,58*U,'#fff',FD,'center',9*U);
-  txt(G.wave.sub,W/2,H*.555,20*U,'#e8dcff',FB,'center',5*U);if(G.wave.tag)txt(G.wave.tag,W/2,H*.605,18*U,'#5fe3ff',FD,'center',5*U);if(G.wave.tip)txt(G.wave.tip,W/2,H*.665,20*U,'#ffd23f',FB,'center',5*U);
-  if(GYRO.on&&!GYRO.remote){txt('◀ ひだりてで おす：わざ',SA.l+18*U,H*.7,20*U,'#ffe9a8',FD,'left',5*U);txt('みぎてで おす：うつ ▶',W-SA.r-18*U,H*.7,20*U,'#9fefff',FD,'right',5*U);
-    txt('2ほんゆびで おす：しょうじゅんを まんなかへ',W/2,H*.29,16*U,'#fff',FB,'center',4*U);}
+  if(G.wave.boss)txt(G.wave.sub,W/2,H*.555,20*U,'#e8dcff',FB,'center',5*U);
+  // わざの ヒントは ボス戦だけ（ふつうの ステージは 画面を見れば わかる）
+  if(G.wave.tip&&G.wave.boss)txt(G.wave.tip,W/2,H*.665,20*U,'#ffd23f',FB,'center',5*U);
+  drawFlowArrows();
+  ctx.restore();
+}
+// ステージの すすむ 方向（rail=まえへ／side=よこへ）を 画面端の 矢印で みせる（ことばは 入れない）
+function drawFlowArrows(){
+  const R=ROOMS[G.place],m=R&&R.mode;if(!m)return;
+  const col=m==='rail'?'#5fe3ff':'#ffd23f',s=17*U;
+  ctx.save();ctx.strokeStyle=col;ctx.lineWidth=4*U;ctx.lineJoin='round';ctx.lineCap='round';ctx.shadowColor=col;ctx.shadowBlur=12*U;
+  if(m==='rail'){chev(W*.09,SA.t+46*U,'up',s);chev(W*.09,SA.t+80*U,'up',s);}
+  else{chev(W-SA.r-34*U,H*.44,'right',s);chev(W-SA.r-34*U,H*.55,'right',s);}
   ctx.restore();
 }
 function drawGyroZones(){ctx.save();ctx.globalAlpha=.35;txt('◀ わざ',SA.l+12*U,H*.58,15*U,'#ffe9a8',FD,'left',4*U);txt('うつ ▶',W-SA.r-12*U,H*.58,15*U,'#9fefff',FD,'right',4*U);ctx.restore();}
@@ -2118,7 +2219,7 @@ function renderOverlay(){
     if(!e.T.boss&&e.max>1&&e.hp<e.max){const w=u*1.2;ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(e.sx-w/2,e.sy-u*1.3,w,5*U);ctx.fillStyle='#ff5fb8';ctx.fillRect(e.sx-w/2,e.sy-u*1.3,w*e.hp/e.max,5*U);}}
   // アイテムの上に「何が おきるか」を出す（しるし＋ことば）。うつと とれる
   const lbls=[];for(const it of G.items){const P=POW[it.kind],fs=Math.max(14*U,it.u*.8);const [ic,lb,col]=it.kind==='candy'?['♥','ハート+1','#ff8fc8']:it.kind==='clock'?['⏱','じかん+5','#9fefff']:[P.ic,P.name,P.col];txt(ic,it.sx,it.sy-it.u*1.5-fs*1.05,fs*1.3,col,FB,'center',4*U);const ly=it.sy-it.u*1.5;if(!lbls.some(q=>Math.abs(q[0]-it.sx)<110*U&&Math.abs(q[1]-ly)<fs*2.4)){lbls.push([it.sx,ly]);txt(lb,it.sx,ly,fs,'#fff',FB,'center',4*U);}}
-  if(G.bellFx>0){ctx.save();ctx.strokeStyle=`rgba(255,210,63,${G.bellFx})`;ctx.lineWidth=10*U;for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(W/2,H*.9,(1-G.bellFx)*W*(.6+i*.2),0,7);ctx.stroke();}ctx.restore();}
+  if(G.bellFx>0){ctx.save();ctx.strokeStyle=`rgba(255,210,63,${G.bellFx})`;ctx.lineWidth=10*U;for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(W/2,H*.9,Math.max(0,(1-G.bellFx)*W*(.6+i*.2)),0,7);ctx.stroke();}ctx.restore();}
   if(G.spT>0){ctx.save();ctx.translate(W/2,H*.45);ctx.rotate(G.t*6);ctx.globalCompositeOperation='lighter';const k=G.spT/1.6;for(let i=0;i<5;i++){ctx.rotate(1.256);ctx.strokeStyle=`rgba(190,110,255,${k*.6})`;ctx.lineWidth=26*U*k;ctx.beginPath();for(let r=0;r<Math.max(W,H);r+=12){const a=r*.012;ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r);}ctx.stroke();}ctx.restore();}
   for(const t of G.texts){const a=Math.min(1,t.life/t.max*2);ctx.globalAlpha=a;const sc=1+Math.max(0,(t.life-t.max+.15))*3;txt(t.txt,t.x,t.y,t.size*sc,t.col,FD,'center',Math.max(3,t.size*.18));}
   ctx.globalAlpha=1;
@@ -2134,6 +2235,7 @@ function renderOverlay(){
   if(state==='play'||state==='intro')drawReticle();if(GYRO.on&&!GYRO.remote&&state==='play')drawGyroZones();
   if(!gentleEffects&&G.flash>0){ctx.fillStyle=`rgba(255,240,255,${G.flash*.6})`;ctx.fillRect(0,0,W,H);}
   if(state==='intro')drawIntro();
+  if(state==='play')drawTutorial();
   if(state==='clear')drawClear();
   if(state==='opening')drawOpening();
   if(state==='ending')drawEnding();
@@ -2186,6 +2288,7 @@ addEventListener('blur',()=>{TOUCH.clear();updDown();});
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('gesturestart',e=>e.preventDefault());
 addEventListener('keydown',e=>{const k=e.key.toLowerCase();
+  if(!$('help').hidden){if(k==='escape'||k==='h'){helpClose();e.preventDefault();}return;} // ヘルプを 見て いるときは ほかの キーに 反応しない
   if(state==='route'){if(k==='1'||k==='arrowleft')chooseRoute(false);else if(k==='2'||k==='arrowright')chooseRoute(true);else if(k===' '||k==='enter')chooseRoute(ptr.x>=W/2);e.preventDefault();return;}
   if(state==='opening'&&(k===' '||k==='enter'||k==='escape')){endOpening();return;}
   if(state==='ending'&&(k===' '||k==='enter'||k==='escape')){if(G.end.t<END_T-1)G.end.t=END_T-1;return;}
@@ -2201,11 +2304,18 @@ function togglePause(){if(state==='play'||state==='intro'){G.prev=state;state='p
 function toggleMute(){muted=!muted;setMuteGain();$('bMute').textContent=muted?'×':'♪';$('bMute').setAttribute('aria-pressed',muted);}
 $('bEffects').addEventListener('click',toggleEffects);
 function showHUD(on){$('skills').hidden=!on;$('tools').hidden=!on;}
-document.querySelectorAll('.mode').forEach(b=>b.addEventListener('click',()=>{modeKey=b.dataset.m;document.querySelectorAll('.mode').forEach(o=>o.setAttribute('aria-pressed',o===b));try{localStorage.setItem('obake1-mode',modeKey);}catch(e){}}));
-document.querySelectorAll('.mode').forEach(o=>o.setAttribute('aria-pressed',o.dataset.m===modeKey));
+// むずかしさの ボタンだけ が モードを 変える（かたむけ／テレビの ボタンで むずかしさが 壊れないように data-m がある もの だけ）
+document.querySelectorAll('.mode[data-m]').forEach(b=>b.addEventListener('click',()=>{modeKey=b.dataset.m;document.querySelectorAll('.mode[data-m]').forEach(o=>o.setAttribute('aria-pressed',o===b));try{localStorage.setItem('obake1-mode',modeKey);}catch(e){}}));
+document.querySelectorAll('.mode[data-m]').forEach(o=>o.setAttribute('aria-pressed',o.dataset.m===modeKey));
 function begin(ev){initAudio();const op=!(ev&&ev.currentTarget&&ev.currentTarget.id==='again');$('title').hidden=true;$('result').hidden=true;$('pause').hidden=true;G.enemies=[];newGame(op);
   try{if(coarse&&document.documentElement.requestFullscreen&&!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});}catch(e){}}
 $('start').addEventListener('click',begin);$('zukanBtn').addEventListener('click',openZukan);$('zClose').addEventListener('click',()=>{$('zukan').hidden=true;});$('again').addEventListener('click',begin);
+/* ＝ヘルプ：あそびかたは あとから いつでも 読み返せるようにする（タイトルからも ポーズ画面からも） */
+function helpOpen(){$('help').hidden=false;$('helpBtn').setAttribute('aria-expanded','true');}
+function helpClose(){$('help').hidden=true;$('helpBtn').setAttribute('aria-expanded','false');}
+$('helpBtn').addEventListener('click',()=>{$('help').hidden?helpOpen():helpClose();});
+$('helpClose').addEventListener('click',helpClose);$('pauseHelp').addEventListener('click',helpOpen);
+$('help').addEventListener('click',e=>{if(e.target===$('help'))helpClose();});
 function toTitle(){state='title';G.enemies=[];G.souls=[];G.items=[];G.boss=null;G.wave=null;showHUD(false);$('pause').hidden=true;$('result').hidden=true;$('title').hidden=false;showBest();}
 $('toTitle').addEventListener('click',toTitle);$('quit').addEventListener('click',toTitle);$('resume').addEventListener('click',togglePause);
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&(state==='play'||state==='intro'))togglePause();});

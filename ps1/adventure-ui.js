@@ -6,7 +6,8 @@
 const AdventureUI = (() => {
   let bound = false, navigation = null, refreshTimer = 0;
   const markers = new Map();
-  let currentInspect = null;
+  let currentInspect = null, currentInspectBack = 'play';
+  let lastPoiSfx = -99;
 
   function targets() {
     if (!activeRoom) return [];
@@ -130,6 +131,7 @@ const AdventureUI = (() => {
     navigation={entry,route,index:0,room:G.room,still:0,replanned:false};
     const status=$('tapStatus');
     if(status){status.hidden=false;status.textContent='あるいています…（スティックで やめる）';}
+    SFX.autoStart();
     return true;
   }
 
@@ -139,7 +141,7 @@ const AdventureUI = (() => {
     if(nav.room!==G.room) {cancel();return false;}
     if(G.keys.up||G.keys.down||G.keys.left||G.keys.right||
        Math.hypot(G.touch.joyX||0,G.touch.joyY||0)>.12) {
-      cancel();return false;
+      cancel();SFX.autoStop();return false;
     }
     const entry=nav.entry;
     if(entry.type==='item' && (entry.ref.taken||!entry.ref.group.visible)){cancel();return false;}
@@ -166,7 +168,7 @@ const AdventureUI = (() => {
         const route=routeTo(entry);
         if(route){nav.route=route;nav.index=0;return false;}
       }
-      cancel();say('ものが あって すすめないよ。',2.6);
+      cancel();say('ものが あって すすめないよ。',2.6);SFX.autoStop();
     }
     return false;
   }
@@ -198,7 +200,7 @@ const AdventureUI = (() => {
       },
       gate:{
         title:'げんかんの ドア',text:fixed('classroom')&&fixed('staff')&&fixed('gym')?
-          'やった！ ドアが ひらきそう！':'おばけの ちからで とじられている。',action:'ドアを しらべる'
+          'やった！ ドアが ひらきそう！':'あかない！ おばけの ちからで とじられている。',action:'ドアを しらべる'
       }
     }[id];
     if(!info)return false;

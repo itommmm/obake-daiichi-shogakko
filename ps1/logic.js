@@ -399,21 +399,10 @@ function addSparks(x, y, z, color, n) {
 
 /* ===== ダメージ ===== */
 // おばけは驚かせるだけ。接触してもHPは減らない。
+// PS1版には「死亡」「GAME OVER」は存在しない（セーブ形式も変わらない）。
 function hurtPlayer(kind = 'ghost') {
   if (G.state !== 'play' || G.invuln > 0) return;
   if (ComicHorror.scare(kind)) G.hurt = G.fx ? .20 : 0;
-}
-function die() {
-  if (G.state === 'dead') return;
-  G.hp = 0; G.state = 'dead'; G.deadT = 0;
-  G.keys = Object.create(null);
-  SFX.boss();
-  setTimeout(showGameOver, 900);
-}
-function showGameOver() {
-  if (G.state !== 'dead') return;
-  $('overText').textContent = G.fixed.length >= 1 ? `${G.fixed.length}つの へやを もどしたところで、おばけに つかまった…` : 'おばけに つかまってしまった…';
-  $('over').hidden = false;
 }
 
 /* ===== 調べる / とる ===== */
@@ -492,7 +481,7 @@ const SPOTS = {
     label: () => G.fixed.includes('classroom') ? 'こくばんを よむ' : 'こくばんを しらべる',
     act() {
       if (G.fixed.includes('classroom')) return say('こくばん「たいいくかんの ばんごう 1ばんめ＝5」', 3);
-      if (!has('eraser')) { SFX.comicScare('chalk'); return say('こくばんが おばけの らくがきで いっぱいだ。けす ものが あれば…', 3); }
+      if (!has('eraser')) { SFX.comicScare('chalk'); return say('らくがきで いっぱい。こくばんけしが あれば…', 3); }
       restoreRoom('classroom', 'らくがきを けした！ 2ねん1くみが もとに もどった！');
     },
   },
@@ -508,7 +497,7 @@ const SPOTS = {
     label: () => G.fixed.includes('staff') ? 'とけいを しらべる' : 'とまった とけいを しらべる',
     act() {
       if (G.fixed.includes('staff')) return say('とけいの うらに「たいいくかんの ばんごう 2ばんめ＝1」', 3);
-      if (!has('battery')) { SFX.clockTick(); return say('とけいが とまっている。でんちが ぬかれているみたいだ。', 3); }
+      if (!has('battery')) { SFX.clockTick(); return say('とけている。でんちが ぬかれているみたい。', 3); }
       restoreRoom('staff', 'でんちを いれた！ とけいが うごいた！ しょくいんしつが もとに もどった！');
     },
   },
@@ -516,7 +505,7 @@ const SPOTS = {
     label: () => G.fixed.includes('gym') ? 'ステージを しらべる' : (has('whistle') ? 'ふえを ふく' : 'ステージを しらべる'),
     act() {
       if (G.fixed.includes('gym')) return say('ステージは しずかだ。', 1.6);
-      if (!has('whistle')) return say('おばけたちが さわいでいる。みんなを しずかに させる ものが あれば…', 3);
+      if (!has('whistle')) return say('おばけたちが さわいでいる。なにか ひつようだ。', 3);
       SFX.whistle();
       restoreRoom('gym', 'ピーーッ！ おばけたちが せいれつして しずかに なった！');
     },
@@ -526,13 +515,13 @@ const SPOTS = {
     act() {
       if (G.fixed.length >= FIX_ROOMS.length) return finishGame();
       SFX.comicScare('knock');
-      say(`あかない！ おばけの ちからで とじている。がっこうを もとに もどせば…（${G.fixed.length}/${FIX_ROOMS.length}）`, 3.4);
+      say('あかない！ おばけの ちからで とじられている。', 3.4);
     },
   },
 };
 function tryDoor(door) {
   if (door.lock === 'key' && !G.flags.staffOpen) {
-    if (!has('key_staff')) { say('しょくいんしつは かぎが かかっている。', 2); return; }
+    if (!has('key_staff')) { SFX.locked(); say('しょくいんしつは かぎが かかっている。', 2); return; }
     G.flags.staffOpen = true; SFX.unlock(); say('かぎで あけた！', 1.6); saveGame();
   }
   if (door.lock === 'code' && !G.flags.gymOpen) { openLock(door); return; }
@@ -567,7 +556,7 @@ function lockSpin(col, d) {
   if (!G.lock) return;
   G.lock.col = col;
   G.lock.digits[col] = (G.lock.digits[col] + d + 10) % 10;
-  SFX.camera(); updateLockUI();
+  SFX.dial(); updateLockUI();
 }
 function lockTry() {
   if (!G.lock) return false;
@@ -596,6 +585,7 @@ function useHerb() {
   say('はっぱで ほっと ひといき！ つぎは '+objective(), 4);
   saveGame(); updateInvUI();
 }
+// ヒントは 文字列を 返すだけの 純粋関数。表示先は adventure-ui の ヒントパネルに 統一する。
 function showHint() {
   const fixed = id => G.fixed.includes(id);
   let hint;
@@ -611,8 +601,6 @@ function showHint() {
     ? 'たいいくかんの ステージで ふえを ふこう！'
     : 'しょくいんしつに せんせいの ふえが あるよ。';
   else hint='げんかんの ドアを しらべよう！';
-  $('invObjective').textContent='ヒント：'+hint;
-  SFX.camera();
   return hint;
 }
 
@@ -649,7 +637,7 @@ function loadGame() {
   applyWorldFlags();
   const room = ROOMS[s.room] ? s.room : START.room;
   enterRoom(room, { x: s.x == null ? START.x : s.x, z: s.z == null ? START.z : s.z, a: s.a == null ? START.a : s.a }, true);
-  G.state = 'play'; G.deadT = 0;
+  G.state = 'play';
   hideAllOverlays();
   $('title').hidden = true;
   titleShown = false;
@@ -760,10 +748,6 @@ function showEndPanel() {
   $('endHurt').textContent = G.damage;
   $('endHp').textContent = G.herbs;
 }
-function retry() {
-  $('over').hidden = true;
-  if (!loadGame()) startNewGame(false);
-}
 function toTitle() {
   AdventureUI.suspend();
   ModernControls.release();
@@ -775,7 +759,7 @@ function toTitle() {
   updateContinueUI();
 }
 function hideAllOverlays() {
-  for (const id of ['intro', 'inv', 'over', 'ending', 'lock']) { const el = $(id); if (el) el.hidden = true; }
+  for (const id of ['intro', 'inv', 'ending', 'lock']) { const el = $(id); if (el) el.hidden = true; }
   $('intro').classList.remove('morning'); $('introLine').classList.remove('punch');
 }
 
@@ -815,11 +799,22 @@ function drawHUD() {
   const R = activeRoom;
   // 部屋名
   hudText(R.name, 9, 58, 9, 'rgba(232,225,207,.85)'); // 上部のヒント／かばんと重ねない
-  // もどした へや
-  hudText(`もどした ${G.fixed.length}/${FIX_ROOMS.length}`, 311, 8, 9, G.fixed.length >= FIX_ROOMS.length ? '#ffd76a' : '#d8cfae', 'right');
-  // 体力ゲージは不要。「びっくり回数」を記録して遊ぶ。
-  hudText(`びっくり ${G.damage}かい`, 9, 216, 9, '#ffe0a5');
-  hudText(`はっぱ ${G.herbs}`, 311, 216, 9, '#a9d8a0', 'right');
+  // もどした へや（3つの 小さな 枠：未補修＝輪郭／補修済み＝塗り）
+  {
+    const size = 9, gap = 4, n = FIX_ROOMS.length;
+    const x0 = 311 - (n * size + (n - 1) * gap);
+    hudText('へや', x0 - 5, 9, 7, 'rgba(216,207,174,.7)', 'right');
+    for (let i = 0; i < n; i++) {
+      const x = x0 + i * (size + gap), y = 8;
+      const done = G.fixed.includes(FIX_ROOMS[i]);
+      HUD.fillStyle = done ? '#ffd76a' : 'rgba(232,225,207,.10)';
+      HUD.fillRect(x, y, size, size);
+      HUD.strokeStyle = done ? '#fff0c0' : 'rgba(232,225,207,.55)';
+      HUD.lineWidth = 1;
+      HUD.strokeRect(x + .5, y + .5, size - 1, size - 1);
+    }
+  }
+  // 「びっくり 回数」「はっぱ」は かばん・結果画面と かぶるので HUD には 出さない。
   // プロンプト
   if (G.prompt && G.msgT <= 0) {
     hudPanel(38, 202, 244, 20);
@@ -840,8 +835,6 @@ function drawHUD() {
     hudText(G.roomTitleText, 160, 88, 15, '#efe7d2', 'center');
     HUD.globalAlpha = 1;
   }
-  // オートセーブ
-  if (G.autosave > 0) hudText('オートセーブ', 160, 30, 8, 'rgba(200,192,170,.8)', 'center');
   // 赤い瀕死演出は使用しない。  // 火花
   for (const s of G.sparks) {
     HUD.globalAlpha = clamp(1 - s.t / s.life, 0, 1);
@@ -853,16 +846,21 @@ function updateSparks(dt) {
   for (const s of G.sparks) { s.t += dt; s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 150 * dt; }
   G.sparks = G.sparks.filter(s => s.t < s.life);
 }
+let lastPromptText = '', lastActText = '';
 function updatePrompt() {
   const it = nearestItem(), sp = nearestSpot(), door = nearestDoor();
-  if (it) G.prompt = `[E] ${it.def.label || 'しらべる'}`;
-  else if (sp && SPOTS[sp.id]) G.prompt = `[E] ${SPOTS[sp.id].label()}`;
-  else if (door) G.prompt = `[E] ${door.label}`;
-  else G.prompt = '';
+  let text = '';
+  if (it) text = it.def.label || 'しらべる';
+  else if (sp && SPOTS[sp.id]) text = SPOTS[sp.id].label();
+  else if (door) text = door.label;
+  // [E] は キーボードを 使った ときだけ。タッチ端末に キー表示を 出さない。
+  const prompt = text ? (G.keyboard ? '[E] ' + text : text) : '';
+  if (prompt !== lastPromptText) { lastPromptText = prompt; G.prompt = prompt; }
   const action = $('tAct');
   const near = !!(it || (sp && SPOTS[sp.id]) || door);
   action.classList.toggle('ready', near);
-  action.textContent = near ? 'しらべる！' : 'しらべる';
+  const actText = near ? 'しらべる！' : 'しらべる';
+  if (actText !== lastActText) { lastActText = actText; action.textContent = actText; }
 }
 
 /* ===== 明かりの ちらつき ===== */
@@ -951,6 +949,9 @@ function bindInput() {
     const c = e.code;
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'Tab'].includes(c)) e.preventDefault();
     if (e.repeat) return;
+    // キーボード操作を 1回でも したら [E] のような キー表示を出す（タッチ端末では出さない）
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD',
+      'KeyE', 'KeyJ', 'KeyI', 'KeyH', 'KeyM', 'Enter', 'Space', 'Tab', 'Escape'].includes(c)) G.keyboard = true;
     if (G.state === 'title') {
       if (['Enter', 'Space', 'KeyE', 'KeyJ'].includes(c)) startNewGame(true);
       return;
@@ -976,11 +977,10 @@ function bindInput() {
       else if (c === 'ArrowRight' || c === 'KeyD') { L.col = (L.col + 1) % 3; updateLockUI(); }
       else if (c === 'ArrowUp' || c === 'KeyW') lockSpin(L.col, 1);
       else if (c === 'ArrowDown' || c === 'KeyS') lockSpin(L.col, -1);
-      else if (/^Digit\d$/.test(c)) { L.digits[L.col] = +c.slice(5); L.col = Math.min(2, L.col + 1); SFX.camera(); updateLockUI(); }
+      else if (/^Digit\d$/.test(c)) { L.digits[L.col] = +c.slice(5); L.col = Math.min(2, L.col + 1); SFX.dial(); updateLockUI(); }
       else if (c === 'Enter' || c === 'KeyE' || c === 'Space') lockTry();
       return;
     }
-    if (G.state === 'dead') { if (c === 'Enter') retry(); return; }
     if (G.state === 'ending') { if (c === 'Escape') showEndPanel(); else if (['Enter', 'Space', 'KeyE', 'KeyJ', 'ArrowRight'].includes(c)) advanceIntro(); return; }
     if (G.state !== 'play') return;
     const k = keyName(c);
@@ -1028,13 +1028,11 @@ function bindInput() {
   $('btnTitleSound').addEventListener('click', () => { initAudio(); toggleSound(); });
   $('btnResume').addEventListener('click', closeInventory);
   $('btnHerb').addEventListener('click', useHerb);
-  $('btnHint').addEventListener('click', showHint);
+  $('btnHint').addEventListener('click', () => AdventureUI.showHintPanel());
   $('btnInvTitle').addEventListener('click', () => { $('inv').hidden = true; pauseVeil.style.opacity = '0'; toTitle(); });
   $('btnControl').addEventListener('click', () => setMode(G.mode === 'tank' ? 'modern' : 'tank'));
   $('btnSound').addEventListener('click', toggleSound);
   $('btnFx').addEventListener('click', toggleFx);
-  $('btnRetry').addEventListener('click', retry);
-  $('btnOverTitle').addEventListener('click', () => { $('over').hidden = true; toTitle(); });
   for (let i = 0; i < 3; i++) {
     $('lockU' + i).addEventListener('click', () => lockSpin(i, 1));
     $('lockN' + i).addEventListener('click', () => lockSpin(i, -1));
@@ -1058,7 +1056,6 @@ function update(dt) {
   if (G.state === 'intro') { updateIntro(dt); updateRoomFx(); return; }
   if (G.state === 'ending') { updateEnding(dt); return; }
   if (G.state === 'lock') { updateRoomFx(); return; }
-  if (G.state === 'dead') { G.deadT += dt; updateParticles(dt); updateSparks(dt); return; }
   if (G.state === 'inventory') { updateRoomFx(); return; }
   if (G.state === 'transition') { updateTransition(dt); updateRoomFx(); updateParticles(dt); updateSparks(dt); return; }
   if (G.state !== 'play') return;
