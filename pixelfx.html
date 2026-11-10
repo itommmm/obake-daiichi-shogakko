@@ -511,6 +511,8 @@ button:disabled{opacity:.55}
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/utils/BufferGeometryUtils.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<!-- Hand-authored pixel-art sprites and 3D scenery: isolated to this alternative edition. -->
+<script src="pixel-art.js"></script>
 <script>
 "use strict";
 const $=id=>document.getElementById(id);
@@ -1109,6 +1111,8 @@ function makeTextures(){
     g.fillStyle='#3d6a3a';for(let x=-20;x<w+40;x+=rnd(30,70)){g.beginPath();g.arc(x,h-rnd(20,60),rnd(30,70),0,7);g.fill();}g.fillStyle='#2e5530';g.fillRect(0,h-40,w,40);});
   TEX.plateSchool=ctex(512,128,(g,w,h)=>{g.fillStyle='#f6f2e6';g.fillRect(0,0,w,h);g.strokeStyle='#8a6a40';g.lineWidth=10;g.strokeRect(5,5,w-10,h-10);g.fillStyle='#2a2030';g.font=`900 64px ${FB}`;g.textAlign='center';g.textBaseline='middle';g.fillText('だいいち小学校',w/2,h/2+4);});
   TEX.cork=ctex(512,256,(g,w,h)=>{g.fillStyle='#a8784a';g.fillRect(0,0,w,h);noiseFill(g,w,h,.3,3);const cs=['#fff','#ffe9a8','#bfe3ff','#ffd1e1'];for(let i=0;i<7;i++){g.save();g.translate(rnd(30,w-60),rnd(20,h-60));g.rotate(rnd(-.15,.15));g.fillStyle=cs[i%4];g.fillRect(0,0,rnd(50,80),rnd(50,70));g.fillStyle='rgba(60,60,80,.4)';for(let k=0;k<4;k++)g.fillRect(8,12+k*10,40,3);g.restore();}});
+  // Replace HD-generated textures with purpose-drawn pixel surfaces.
+  if(window.ObakePixelArt){window.ObakePixelArt.redrawTextures(TEX,ctex);window.ObakePixelArt.applyTitleIcons();}
 }
 
 /* ======================================================================
@@ -1521,13 +1525,23 @@ const _v=new THREE.Vector3();
 function proj(x,y,z){_v.set(x,y,z).project(camera);return[(_v.x+1)/2*W,(1-_v.y)/2*H];}
 function placeOf(e){const ap=e.appear<1?.25+.75*e.appear:1;const s=e.T.size*SCL*ap*(e.tower?1.45:1);return{x:xW(e.x,e.z),y:e.h*LIFT+s+Math.sin(e.t*3+e.ph)*.02,z:zD(e.z),s};}
 function makeEnemy3D(e){
-  CUR=[];const m=MODEL[e.type]();const root=new THREE.Group();root.add(m.g);
+  CUR=[];
+  // Regular enemies are true 48x48 pixel-painted billboards inside Three.js 3D space.
+  // Boss models keep their animated 3D eyes/mouth for existing weak-point targeting.
+  const pixelTexture=!e.T.boss?window.ObakePixelArt?.getSpriteTexture(THREE,e.type,0):null;
+  const m=pixelTexture?{g:new THREE.Group(),P:{}}:MODEL[e.type]();
+  const root=new THREE.Group();root.add(m.g);
+  let pixelSprite=null;
+  if(pixelTexture){
+    const material=new THREE.SpriteMaterial({map:pixelTexture,color:0xffffff,transparent:true,alphaTest:.1,depthWrite:false,depthTest:true,fog:true});
+    pixelSprite=new THREE.Sprite(material);pixelSprite.scale.set(2.25,2.25,1);root.add(pixelSprite);
+  }
   const auraM=new THREE.SpriteMaterial({map:TEX.aura,color:e.T.boss?new THREE.Color(2.2,.4,1.4):e.type==='flask'?new THREE.Color(.4,1.8,.9):new THREE.Color(1.1,.5,2.2),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,opacity:.5});
   const asp=new THREE.Sprite(auraM);const as=e.type==='kousha'?4.4:3.6;asp.scale.set(as,as*(e.type==='kousha'?.7:1),1);asp.position.z=-.3;root.add(asp);
   const blob=new THREE.Mesh(PLANE,new THREE.MeshBasicMaterial({map:TEX.blob,transparent:true,depthWrite:false,opacity:.8,color:0x000000}));blob.rotation.x=-Math.PI/2;scene.add(blob);
-  root.userData={e,P:m.P,mats:CUR,aura:auraM,blob,die:0,emis:''};scene.add(root);e.o=root;LIVE.push(root);return root;
+  root.userData={e,P:m.P,mats:CUR,aura:auraM,blob,pixelSprite,pixelFrame:0,die:0,emis:''};scene.add(root);e.o=root;LIVE.push(root);return root;
 }
-function disposeObj(o){scene.remove(o);scene.remove(o.userData.blob);o.userData.mats.forEach(m=>m.dispose());o.userData.aura.dispose();o.userData.blob.material.dispose();}
+function disposeObj(o){scene.remove(o);scene.remove(o.userData.blob);o.userData.mats.forEach(m=>m.dispose());if(o.userData.pixelSprite)o.userData.pixelSprite.material.dispose();o.userData.aura.dispose();o.userData.blob.material.dispose();}
 function sync3D(dt){
   for(const e of G.enemies)if(!e.dead&&!e.o)makeEnemy3D(e);
   for(let i=LIVE.length-1;i>=0;i--){const o=LIVE[i],u=o.userData,e=u.e;
@@ -1540,12 +1554,18 @@ function sync3D(dt){
     o.rotation.z=Math.sin(e.t*2.3+e.ph)*.06+(e.stun>0||inLight(e)?Math.sin(G.t*40)*.06:0);
     o.rotation.x=e.T.pat==='aim'?-.4:0;
     if(e.type==='kousha'){au=u;}
-    const A=ANIM[e.type];if(A)A(e,u.P,e.t);
+    // Pixel frames are pre-painted and cached (no new textures inside the frame loop).
+    if(u.pixelSprite){
+      const frame=Math.floor(e.t*3)%2;
+      if(frame!==u.pixelFrame){u.pixelFrame=frame;u.pixelSprite.material.map=window.ObakePixelArt.getSpriteTexture(THREE,e.type,frame);}
+      u.pixelSprite.material.opacity=(e.T.ghost?Math.max(.2,e.vis):1)*e.appear;
+      u.pixelSprite.material.color.set(e.flash>0?0xffe5ae:0xffffff);
+    }else{const A=ANIM[e.type];if(A)A(e,u.P,e.t);}
     if(e.type==='kousha'){const wp=e.wp||(e.wp={eyes:[[0,0],[0,0]],mouth:[0,0],er:10,mr:10});u.P.eyes.forEach((g2,i)=>{g2.getWorldPosition(_a);wp.eyes[i]=proj(_a.x,_a.y,_a.z);});u.P.mouthG.getWorldPosition(_a);wp.mouth=proj(_a.x,_a.y,_a.z);const t2=proj(_a.x,_a.y+p.s*.28,_a.z);wp.mr=Math.abs(t2[1]-wp.mouth[1]);wp.er=wp.mr*.75;u.aura.scale=1;}
     if(u.P.arms)u.P.arms.forEach((a,k)=>{a.rotation.z=(k?-1:1)*Math.sin(e.t*5+k)*.35;a.rotation.x=Math.sin(e.t*3+k)*.2;});
     const want=e.flash>0?'f':inLight(e)?'l':'';if(want!==u.emis){u.emis=want;for(const m of u.mats){if(!m.isMeshStandardMaterial)continue;if(m.userData.e0===undefined){m.userData.e0=m.emissive.clone();m.userData.ei=m.emissiveIntensity;}
       if(want==='f'){m.emissive.setRGB(1,1,1);m.emissiveIntensity=.5;}else if(want==='l'){m.emissive.setRGB(.5,.42,.25);m.emissiveIntensity=.22;}else{m.emissive.copy(m.userData.e0);m.emissiveIntensity=m.userData.ei;}}}
-    u.aura.opacity=(.24+.1*Math.sin(e.t*3+e.ph))*e.appear*(e.T.ghost?.4+e.vis*.6:1);
+    u.aura.opacity=u.pixelSprite?0:(.24+.1*Math.sin(e.t*3+e.ph))*e.appear*(e.T.ghost?.4+e.vis*.6:1);
     const b=u.blob;b.visible=true;b.position.set(p.x,.006,p.z);const bs=p.s*2.2*(1+e.h*.6);b.scale.set(bs,bs*.8,1);b.material.opacity=.75*clamp(1-e.h*.9,.25,1)*e.appear;
   }
   const near=G.enemies.filter(e=>!e.dead&&e.o).sort((a,b)=>a.z-b.z);const na=QL[Q.level].aura;
