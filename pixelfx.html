@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>おばけ第一小学校 — Pixel effects テスト版</title>
+<title>おばけ第一小学校 — Pixel Art 3D × Pixel effects</title>
 <meta name="description" content="夜の学校に あらわれた おばけを、みずでっぽうと かいちゅうでんとうで たいじする 3Dシューティング。">
 <meta property="og:type" content="website">
 <meta property="og:title" content="おばけ第一小学校 ～夜の学校おばけポン！～">
@@ -36,7 +36,7 @@
 [hidden]{display:none!important}
 html,body{height:100%;margin:0;overflow:hidden;background:var(--night);color:var(--chalk)}
 body{font-family:var(--body);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none;overscroll-behavior:none}
-#gl{position:fixed;inset:0;width:100%;height:100%;display:block}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block;image-rendering:pixelated}
 #cv{position:fixed;inset:0;display:block;touch-action:none;cursor:none}
 .sa{position:fixed;inset:0;pointer-events:none;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);visibility:hidden}
 button{font-family:var(--body);cursor:pointer;-webkit-tap-highlight-color:transparent}
@@ -558,13 +558,15 @@ function bgm(dt){
    ====================================================================== */
 const renderer=new THREE.WebGLRenderer({canvas:glc,antialias:false,powerPreference:'high-performance'});
 renderer.outputEncoding=THREE.LinearEncoding;renderer.toneMapping=THREE.NoToneMapping;
-renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+// 3Dは低解像度の整数ピクセルへ描画し、CSSで最近傍拡大する。
+// DOM/HUDの解像度には影響させない。
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.BasicShadowMap;
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x070512);scene.fog=new THREE.FogExp2(0x16123a,.05);
 const camera=new THREE.PerspectiveCamera(55,1,.05,80);camera.position.set(0,EYE,0);camera.rotation.x=-.035;scene.add(camera);
 const pmrem=new THREE.PMREMGenerator(renderer);scene.environment=pmrem.fromScene(new THREE.RoomEnvironment(),.04).texture;
 
 const halfOK=renderer.capabilities.isWebGL2||renderer.extensions.has('OES_texture_half_float');
-const rt=new THREE.WebGLRenderTarget(4,4,{type:halfOK?THREE.HalfFloatType:THREE.UnsignedByteType});
+const rt=new THREE.WebGLRenderTarget(4,4,{type:halfOK?THREE.HalfFloatType:THREE.UnsignedByteType,magFilter:THREE.NearestFilter,minFilter:THREE.NearestFilter,depthBuffer:true});
 const composer=new THREE.EffectComposer(renderer,rt);
 composer.addPass(new THREE.RenderPass(scene,camera));
 const bloom=new THREE.UnrealBloomPass(new THREE.Vector2(256,256),.75,.45,1.0);composer.addPass(bloom);
@@ -589,6 +591,31 @@ const GradeShader={
 };
 const grade=new THREE.ShaderPass(GradeShader);composer.addPass(grade);
 
+// PIXEL ART: final stage of the Three.js composer (the 2D HUD remains crisp).
+// 4x4 Bayer dithering, limited per-channel steps and nearest-neighbour canvas upscaling.
+const PixelArtShader={
+  uniforms:{tDiffuse:{value:null},uSteps:{value:8},uDither:{value:.075}},
+  vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+  fragmentShader:`uniform sampler2D tDiffuse;uniform float uSteps,uDither;varying vec2 vUv;
+  float bayer4(vec2 xy){
+    vec2 p=mod(floor(xy),4.0);
+    if(p.y<1.0)return (p.x<1.0?0.0:p.x<2.0?8.0:p.x<3.0?2.0:10.0)/16.0;
+    if(p.y<2.0)return (p.x<1.0?12.0:p.x<2.0?4.0:p.x<3.0?14.0:6.0)/16.0;
+    if(p.y<3.0)return (p.x<1.0?3.0:p.x<2.0?11.0:p.x<3.0?1.0:9.0)/16.0;
+    return (p.x<1.0?15.0:p.x<2.0?7.0:p.x<3.0?13.0:5.0)/16.0;
+  }
+  void main(){
+    vec3 color=texture2D(tDiffuse,vUv).rgb;
+    float jitter=(bayer4(gl_FragCoord.xy)-0.5)*uDither;
+    color=clamp(color+vec3(jitter),0.0,1.0);
+    color=floor(color*uSteps+0.5)/uSteps;
+    gl_FragColor=vec4(color,1.0);
+  }`
+};
+const pixelArtPass=new THREE.ShaderPass(PixelArtShader);
+composer.addPass(pixelArtPass);
+grade.uniforms.uGrain.value=0; // no temporal noise between pixel blocks
+
 // 光源（数は固定。強さだけ変えてシェーダーの作り直しを避ける）
 const hemi=new THREE.HemisphereLight(0x3a3a90,0x1a1018,.2);scene.add(hemi);
 const moon=new THREE.DirectionalLight(0x9db2ff,1.7);moon.castShadow=true;moon.shadow.bias=-.0004;moon.shadow.normalBias=.03;scene.add(moon,moon.target);
@@ -601,13 +628,17 @@ const kidSpot=new THREE.SpotLight(0xffe3b8,0,12,.38,.6,1.2);scene.add(kidSpot,ki
 const kidFill=new THREE.PointLight(0xc8a8ff,0,4,2);scene.add(kidFill);
 
 /* 画質 */
-const QL=[{name:'高',pr:1.75,sh:2048,bloom:true,aura:3},{name:'中',pr:1.25,sh:1024,bloom:true,aura:2},{name:'低',pr:.85,sh:512,bloom:false,aura:1}];
+// Three.jsは常に低解像度で描画。縦の論理ピクセル数だけを画質設定で切り替える。
+const QL=[{name:'高',pxH:270,steps:9,sh:1024,bloom:false,aura:3},{name:'中',pxH:216,steps:7,sh:512,bloom:false,aura:2},{name:'低',pxH:168,steps:6,sh:256,bloom:false,aura:1}];
 const Q={level:coarse?1:0,auto:true,frames:0,t:0,grace:3};
 try{const s=JSON.parse(localStorage.getItem('obake1-q')||'null');if(s&&QL[s.level]){Q.level=s.level;Q.auto=s.auto;}}catch(e){}
 function applyQuality(){
-  const q=QL[Q.level];const pr=Math.min(window.devicePixelRatio||1,q.pr);
-  renderer.setPixelRatio(pr);renderer.setSize(W,H,false);composer.setPixelRatio(pr);composer.setSize(W,H);
-  bloom.enabled=q.bloom;
+  const q=QL[Q.level];const logicalH=q.pxH,logicalW=Math.max(1,Math.round(logicalH*W/Math.max(1,H)));
+  // Explicit drawing buffer size: devicePixelRatio must not restore HD rendering.
+  renderer.setPixelRatio(1);renderer.setSize(logicalW,logicalH,false);
+  composer.setPixelRatio(1);composer.setSize(logicalW,logicalH);
+  pixelArtPass.uniforms.uSteps.value=q.steps;
+  bloom.enabled=false;
   const wantSh=Q.level<2;if(renderer.shadowMap.enabled!==wantSh){renderer.shadowMap.enabled=wantSh;scene.traverse(o=>{if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.needsUpdate=true);});}
   moon.shadow.mapSize.set(q.sh,q.sh);if(moon.shadow.map){moon.shadow.map.dispose();moon.shadow.map=null;}
   $('bQual').textContent=Q.auto?'自動':q.name;Q.grace=3;
@@ -619,7 +650,8 @@ function toast(s){const t=$('toast');t.textContent=s;t.style.opacity=1;clearTime
    ====================================================================== */
 const TEX={};
 function ctex(w,h,draw,o){const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');draw(g,w,h);const t=new THREE.CanvasTexture(c);
-  t.encoding=o&&o.linear?THREE.LinearEncoding:THREE.sRGBEncoding;t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+  t.encoding=o&&o.linear?THREE.LinearEncoding:THREE.sRGBEncoding;
+  t.magFilter=THREE.NearestFilter;t.minFilter=THREE.NearestFilter;t.generateMipmaps=false;t.anisotropy=1;
   if(o&&o.rep){t.wrapS=t.wrapT=THREE.RepeatWrapping;}return t;}
 function radial(g,w,h,stops){const r=g.createRadialGradient(w/2,h/2,0,w/2,h/2,w/2);stops.forEach(s=>r.addColorStop(s[0],s[1]));g.fillStyle=r;g.fillRect(0,0,w,h);}
 function noiseFill(g,w,h,a,sz){for(let i=0;i<w*h/(sz*sz)*1.2;i++){const v=Math.random()*255|0;g.fillStyle=`rgba(${v},${v},${v},${a})`;g.fillRect(Math.random()*w,Math.random()*h,sz,sz);}}
@@ -707,7 +739,7 @@ const GC={};const geo=(k,f)=>GC[k]||(GC[k]=f());
 const RB=(w,h,d,r)=>geo(`rb${w},${h},${d},${r}`,()=>new THREE.RoundedBoxGeometry(w,h,d,3,r));
 const SPH=new THREE.SphereGeometry(1,20,14),BOX=new THREE.BoxGeometry(1,1,1),CYL=new THREE.CylinderGeometry(1,1,1,22),CONE=new THREE.ConeGeometry(.5,1,4),PLANE=new THREE.PlaneGeometry(1,1);
 const SHARED=new Set([SPH,BOX,CYL,CONE,PLANE]);
-function std(c,r,m,o){return new THREE.MeshStandardMaterial(Object.assign({color:new THREE.Color(c),roughness:r,metalness:m||0,envMapIntensity:(m||0)>.5?.55:.07},o||{}));}
+function std(c,r,m,o){return new THREE.MeshStandardMaterial(Object.assign({color:new THREE.Color(c),roughness:r,metalness:m||0,flatShading:true,envMapIntensity:(m||0)>.5?.55:.07},o||{}));}
 function basic(r,g,b,o){return new THREE.MeshBasicMaterial(Object.assign({color:new THREE.Color(r,g,b)},o||{}));}
 function add(par,gm,mat,x,y,z,rx,ry,rz,sx,sy,sz){const m=new THREE.Mesh(gm,mat);m.position.set(x||0,y||0,z||0);if(rx||ry||rz)m.rotation.set(rx||0,ry||0,rz||0);if(sx!=null)m.scale.set(sx,sy==null?sx:sy,sz==null?sx:sz);m.castShadow=true;m.receiveShadow=true;par.add(m);return m;}
 
@@ -1510,7 +1542,7 @@ function buildSchoolTrick(w){
   const old=G.gimmick;if(old&&old.root){old.root.removeFromParent();for(const m of old.mats)m.dispose();}
   G.gimmick=null;if(w.boss)return;
   const root=new THREE.Group(),mats=[],balls=[];
-  const material=c=>{const m=new THREE.MeshStandardMaterial({color:c,roughness:.45});mats.push(m);return m;};
+  const material=c=>{const m=new THREE.MeshStandardMaterial({color:c,roughness:.45,flatShading:true});mats.push(m);return m;};
   const metal=material('#71d9ef'),kind=w.place==='gym'?'balls':'water';
   // 敵と同じ遭遇座標に置き、背景のループ移動で照準とずれないようにする。
   root.position.set(xW(-.65,.5),0,zD(.5));STATIC.add(root);
