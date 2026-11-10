@@ -148,15 +148,19 @@
    * ==================================================================== */
   const CSS_VARS = {
     '--night': '#080e11',
-    '--panel': 'rgba(12,19,23,.94)',
+    '--panel': '#111b1e',
     '--violet': '#758f91', // 名称は紫のまま。値は灰緑（stone）
     '--cyan': '#b7c9c6', // 名称はシアンのまま。値は淡い緑灰
     '--pink': '#bd7f77', // 名称はピンクのまま。値はくすんだ銅
     '--gold': '#d2b68b', // 名称は金のまま。値は淡い金
     '--chalk': '#e3e1d7',
     '--ink': '#141b20',
-    '--display': '"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif',
+    /* 199X のコンソール筐体に合わせ、角張ったゴシックへ寄せる（明朝は 3D と合わない） */
+    '--display': '"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",sans-serif',
     '--body': '"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",sans-serif',
+    '--line': '#5d6f6d',
+    '--line2': '#8fa39c',
+    '--chamfer': '12px',
   };
 
   /* 要素スコープの CSS 変数（:root ではなく個別セレクタで定義） */

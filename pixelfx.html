@@ -21,14 +21,14 @@
 /* レイアウト: 3D(WebGL)の上に2DのHUD canvas、その上にDOMのボタンと画面遷移。夜の学校×ネオン紫の単一テーマ */
 :root{
   color-scheme:dark;
-  --night:#0d0a1f;
-  --panel:rgba(22,12,44,.82);
-  --violet:#a65cff;
-  --cyan:#5fe3ff;
-  --pink:#ff5fb8;
-  --gold:#ffd23f;
-  --chalk:#f4f1ff;
-  --ink:#1a0b25;
+  --night:#080e11;
+  --panel:#111b1e;
+  --violet:#758f91;
+  --cyan:#b7c9c6;
+  --pink:#bd7f77;
+  --gold:#d2b68b;
+  --chalk:#e3e1d7;
+  --ink:#141b20;
   --display:"Dela Gothic One","Zen Maru Gothic","Hiragino Maru Gothic ProN",sans-serif;
   --body:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif;
 }
@@ -44,19 +44,19 @@ button:disabled{opacity:.5;cursor:wait}
 
 #skills{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 30px);display:flex;gap:clamp(8px,1.6vw,18px);z-index:5}
 .sk{--cd:0;position:relative;width:clamp(58px,7.2vw,86px);aspect-ratio:1;border:none;background:none;padding:0;color:var(--chalk);touch-action:none}
-.sk .hex{position:absolute;inset:0;clip-path:polygon(50% 0,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%);background:linear-gradient(160deg,#3a2a66,#170c33);display:grid;place-items:center}
-.sk .hex::before{content:"";position:absolute;inset:3px;clip-path:inherit;background:radial-gradient(circle at 50% 35%,var(--glow),#1b0f3a 70%)}
-.sk svg{position:relative;width:48%;height:48%;filter:drop-shadow(0 0 6px var(--glow))}
-.sk .cool{position:absolute;inset:0;clip-path:polygon(50% 0,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%);background:conic-gradient(rgba(8,4,20,.78) calc(var(--cd)*360deg),transparent 0)}
-.sk .key{position:absolute;left:50%;bottom:-2px;transform:translateX(-50%);background:#fff;color:var(--ink);font:900 11px/1 var(--body);padding:3px 5px;border-radius:4px}
+.sk .hex{position:absolute;inset:0;clip-path:polygon(50% 0,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%);background:#2b3a38;display:grid;place-items:center}
+.sk .hex::before{content:"";position:absolute;inset:3px;clip-path:inherit;background:#16211f}
+.sk svg{position:relative;width:48%;height:48%;filter:none}
+.sk .cool{position:absolute;inset:0;clip-path:polygon(50% 0,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%);background:conic-gradient(rgba(6,12,10,.82) calc(var(--cd)*360deg),transparent 0)}
+.sk .key{position:absolute;left:50%;bottom:-2px;transform:translateX(-50%);background:#141b1a;color:#cdd6cc;border:1px solid #6d7c76;font:900 11px/1 var(--body);padding:3px 5px;border-radius:0}
 .sk .lbl{position:absolute;left:50%;top:100%;transform:translateX(-50%);font:900 clamp(10px,1.3vw,14px)/1.4 var(--body);white-space:nowrap;text-shadow:0 0 6px #000,0 0 2px #000}
-.sk.ready .hex{background:linear-gradient(160deg,#fff,var(--glow))}
+.sk.ready .hex{background:#8d8f79}
 .sk.ready{animation:pulse 1s ease-in-out infinite}
 @keyframes pulse{50%{transform:scale(1.07)}}
-#sLight{--glow:#ffe9a8}#sBell{--glow:#ffc93c}#sSp{--glow:#c06bff}
+#sLight{--glow:#a8bdb5}#sBell{--glow:#bba47b}#sSp{--glow:#9e8990}
 
 #tools{position:fixed;right:calc(env(safe-area-inset-right,0px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 92px);display:flex;flex-direction:column;gap:8px;z-index:6}
-.tb{width:40px;height:40px;border-radius:12px;border:2px solid rgba(166,92,255,.7);background:var(--panel);color:var(--chalk);font:900 16px/1 var(--body);display:grid;place-items:center}
+.tb{width:40px;height:40px;border-radius:0;border:1px solid #66766f;background:var(--panel);color:var(--chalk);font:900 16px/1 var(--body);display:grid;place-items:center}
 .tb.q{font-size:11px}
 
 .screen{position:fixed;inset:0;z-index:10;display:grid;place-items:center;padding:calc(env(safe-area-inset-top,0px) + 10px) max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 10px) max(16px,env(safe-area-inset-left,0px));background:radial-gradient(ellipse at 50% 40%,rgba(40,16,80,.25),rgba(6,3,16,.78));overflow:auto}
@@ -65,74 +65,74 @@ button:disabled{opacity:.5;cursor:wait}
 #titleFx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}#title>.card{position:relative;z-index:1}
 .card{width:min(820px,100%);display:grid;grid-template-columns:1.1fr 1fr;gap:clamp(12px,3vw,32px);align-items:center}
 .logo{text-align:center}
-.logo .ruby{font:900 clamp(12px,1.8vw,18px)/1 var(--body);letter-spacing:.6em;color:#d8c6ff;margin-left:.6em}
-.logo h1{white-space:nowrap;margin:.2em 0 .1em;font:400 clamp(28px,4.6vw,58px)/1.05 var(--display);color:#fff;-webkit-text-stroke:2px #5a1fb0;paint-order:stroke fill;text-shadow:0 4px 0 #2b0a5c,0 0 24px rgba(166,92,255,.9)}
-.logo .sub{display:inline-block;font:900 clamp(14px,2.2vw,22px)/1 var(--body);background:#2b0a5c;border:2px solid var(--violet);padding:.45em 1em;border-radius:999px;letter-spacing:.12em}
+.logo .ruby{font:900 clamp(12px,1.8vw,18px)/1 var(--body);letter-spacing:.6em;color:#aab9b2;margin-left:.6em}
+.logo h1{white-space:nowrap;margin:.2em 0 .1em;font:400 clamp(28px,4.6vw,58px)/1.05 var(--display);color:#d3cfb5;-webkit-text-stroke:0;text-shadow:2px 2px 0 #10150f}
+.logo .sub{display:inline-block;font:900 clamp(14px,2.2vw,22px)/1 var(--body);background:rgba(15,22,18,.88);border:1px solid #66766f;border-left:3px solid #9d9b79;padding:.45em 1em;border-radius:0;letter-spacing:.12em}
 .ghosts{display:flex;justify-content:center;gap:14px;margin-top:14px;font-size:clamp(11px,1.4vw,13px);color:#cdb8ff;flex-wrap:wrap}
 .ghosts span{display:inline-flex;align-items:center;gap:4px}
 .ghosts i{width:10px;height:10px;border-radius:50%;display:inline-block}
 /* 生成画像のキャラ絵（あれば色の丸のかわりに出して、ふわふわ浮かせる） */
 .ghosts span:has(img){flex-direction:column;gap:2px}
-.ghosts img{width:clamp(40px,5.2vw,60px);height:clamp(40px,5.2vw,60px);object-fit:contain;filter:drop-shadow(0 0 8px rgba(166,92,255,.7));animation:charaFloat 2.6s ease-in-out infinite}
+.ghosts img{width:clamp(40px,5.2vw,60px);height:clamp(40px,5.2vw,60px);object-fit:contain;filter:none;animation:charaFloat 2.6s ease-in-out infinite}
 .ghosts span:nth-child(2) img{animation-delay:-.65s}.ghosts span:nth-child(3) img{animation-delay:-1.3s}.ghosts span:nth-child(4) img{animation-delay:-1.95s}.ghosts span:nth-child(5) img{animation-delay:-.3s}
 .ghosts img+i{display:none}
 @keyframes charaFloat{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-6px) rotate(3deg)}}
-.menu{background:var(--panel);border:2px solid rgba(166,92,255,.6);border-radius:18px;padding:clamp(12px,2.4vw,22px);display:grid;gap:10px;box-shadow:0 0 30px rgba(120,60,255,.35)}
+.menu{background:var(--panel);border:1px solid #66766f;border-radius:0;padding:clamp(12px,2.4vw,22px);display:grid;gap:10px;box-shadow:6px 6px 0 rgba(0,0,0,.55)}
 .menu h2{margin:0;font:900 clamp(14px,1.8vw,17px)/1.3 var(--body);color:var(--gold)}
 .modes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.mode{border:2px solid #4b3487;background:#1c1040;color:var(--chalk);border-radius:12px;padding:10px 4px;font:900 clamp(13px,1.7vw,16px)/1.2 var(--body)}
+.mode{border:1px solid #66766f;background:#1c2624;color:var(--chalk);border-radius:0;padding:10px 4px;font:900 clamp(13px,1.7vw,16px)/1.2 var(--body)}
 .mode small{display:block;font-weight:500;font-size:.72em;color:#bda9f0;margin-top:3px}
 .gyro{width:100%}
 .pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.tvbox{width:min(640px,100%);background:var(--panel);border:2px solid rgba(166,92,255,.6);border-radius:20px;padding:clamp(14px,3vw,24px);display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center}
+.tvbox{width:min(640px,100%);background:var(--panel);border:1px solid #66766f;border-radius:0;padding:clamp(14px,3vw,24px);display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center}
 .tvbox img{width:clamp(130px,22vw,190px);height:auto;border-radius:12px;background:#fff;padding:8px;image-rendering:pixelated}
 .tvbox h2{margin:0 0 6px;font:400 clamp(20px,3vw,28px)/1.2 var(--display);color:#fff}
-.tvbox p{margin:4px 0;font:700 14px/1.6 var(--body);color:#d9ccff}
+.tvbox p{margin:4px 0;font:700 14px/1.6 var(--body);color:#c3cbc2}
 .tvcode{font:400 clamp(40px,7vw,64px)/1 var(--display);letter-spacing:.12em;color:var(--gold);margin:6px 0}
 .tvurl{font:500 12px/1.4 var(--body);color:#bda9f0;word-break:break-all}
 #tvStat{color:var(--cyan)}
-#rCur{position:fixed;left:0;top:0;z-index:70;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;border:5px solid var(--cyan);box-shadow:0 0 0 4px rgba(0,0,0,.7),0 0 18px var(--cyan);pointer-events:none}
-#rCur::after{content:"";position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-4px;border-radius:50%;background:#fff}
-#rCur.off{border-color:#ff5f5f;box-shadow:0 0 0 4px rgba(0,0,0,.7),0 0 18px #ff5f5f}
+#rCur{position:fixed;left:0;top:0;z-index:70;width:38px;height:38px;margin:-19px 0 0 -19px;pointer-events:none}
+#rCur::after{content:"";position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;background:#cdd3c7}
+#rCur.off{}
 #calT{position:fixed;inset:0;z-index:60;display:grid;place-items:center;pointer-events:none;background:rgba(8,4,20,.7)}
-#calT .ring{width:min(26vh,200px);aspect-ratio:1;border-radius:50%;border:8px solid var(--gold);box-shadow:0 0 0 6px rgba(0,0,0,.6),0 0 40px var(--gold);display:grid;place-items:center;animation:calp 1s ease-in-out infinite}
-#calT .ring::after{content:"";width:18%;aspect-ratio:1;border-radius:50%;background:var(--gold)}
+#calT .ring{width:min(26vh,200px);aspect-ratio:1;display:grid;place-items:center;animation:calp 1s ease-in-out infinite}
+#calT .ring::after{content:"";width:18%;aspect-ratio:1;background:#c5ad86}
 #calT p{position:absolute;top:calc(50% + min(13vh,100px) + 18px);margin:0;text-align:center;font:400 clamp(18px,3vw,30px)/1.5 var(--display);color:#fff;text-shadow:0 2px 8px #000}
 @keyframes calp{50%{transform:scale(1.08)}}
 .mode[aria-pressed="true"]{border-color:var(--gold);background:#3a2370;box-shadow:0 0 14px rgba(255,210,63,.4)}
-.go{border:none;border-radius:14px;padding:14px;font:400 clamp(20px,3vw,28px)/1 var(--display);color:var(--ink);background:linear-gradient(180deg,#fff27a,#ffb22e);box-shadow:0 5px 0 #a8580c,0 0 24px rgba(255,200,60,.5)}
-.go:active{transform:translateY(3px);box-shadow:0 2px 0 #a8580c}
+.go{border:1px solid #d8c9a6;border-radius:0;padding:14px;font:700 clamp(20px,3vw,28px)/1 var(--display);color:#1c221b;background:#b9b394;box-shadow:0 4px 0 #555641}
+.go:active{transform:translateY(2px);box-shadow:0 2px 0 #555641}
 .how{font-size:clamp(11px,1.35vw,13px);line-height:1.65;color:#d9ccff;margin:0;padding-left:1.1em}
-.how b{color:#fff}
-.best{font-size:13px;color:#cdb8ff;text-align:center}
-.altlink{display:block;text-align:center;font:900 13px/1.45 var(--body);color:#cbb6ff;text-decoration:none;border:2px dashed rgba(166,92,255,.55);border-radius:12px;padding:8px;margin-top:2px}
-.altlink:hover{background:rgba(166,92,255,.18);color:#fff}
+.how b{color:var(--chalk)}
+.best{font-size:13px;color:#bec2bd;text-align:center}
+.altlink{display:block;text-align:center;font:900 13px/1.45 var(--body);color:#c3cbc2;text-decoration:none;border:1px dashed #66766f;border-radius:0;padding:8px;margin-top:2px}
+.altlink:hover{background:#2b3733;color:var(--chalk)}
 /* 生成画像：結果画面の背景（クリア＝夜明けの校舎、ゲームオーバー＝おばけが大よろこびの教室）。無ければ今までの色 */
 #result[data-r=win]{background:radial-gradient(ellipse at 50% 50%,rgba(6,3,16,.55),rgba(6,3,16,.25) 70%),url(assets/result_win.webp) center/cover no-repeat,#0b0820}
 #result[data-r=lose]{background:radial-gradient(ellipse at 50% 50%,rgba(6,3,16,.6),rgba(6,3,16,.3) 70%),url(assets/result_lose.webp) center/cover no-repeat,#0b0820}
-.result{width:min(560px,100%);background:var(--panel);border:2px solid rgba(166,92,255,.6);border-radius:20px;padding:clamp(14px,3vw,26px);text-align:center;display:grid;gap:10px}
+.result{width:min(560px,100%);background:var(--panel);border:1px solid #66766f;border-radius:0;padding:clamp(14px,3vw,26px);text-align:center;display:grid;gap:10px}
 .result h2{margin:0;font:400 clamp(26px,4.6vw,44px)/1.1 var(--display);color:#fff;text-shadow:0 0 18px var(--violet)}
 .rank{font:400 clamp(60px,10vw,96px)/1 var(--display);color:var(--gold);text-shadow:0 0 24px rgba(255,210,63,.7)}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.stats div{background:#1c1040;border-radius:12px;padding:8px 4px;font-size:12px;color:#cdb8ff}
+.stats div{background:#18211f;border-radius:0;padding:8px 4px;font-size:12px;color:#c4c5b9}
 .stats b{display:block;font:400 clamp(18px,2.8vw,26px)/1.2 var(--display);color:#fff;font-variant-numeric:tabular-nums}
 .stats .accuracy{display:block;margin-top:4px;font:700 12px/1.4 var(--body);color:#cdb8ff;white-space:nowrap}
 .rstars{font:400 clamp(20px,3vw,28px)/1 var(--display);color:var(--gold);text-shadow:0 0 14px rgba(255,210,63,.6)}
-.zbtn{border:2px solid var(--violet);background:#1c1040;color:#fff;border-radius:12px;padding:9px;font:900 15px/1 var(--body)}
+.zbtn{border:1px solid #66766f;background:#1c2624;color:#e4e0d4;border-radius:0;padding:9px;font:900 15px/1 var(--body)}
 #zukan{z-index:12;background:rgba(8,4,20,.94)}
-.zbox{width:min(900px,100%);max-height:100%;display:grid;grid-template-rows:auto 1fr auto;gap:10px;background:var(--panel);border:2px solid rgba(166,92,255,.6);border-radius:18px;padding:clamp(10px,2vw,18px)}
+.zbox{width:min(900px,100%);max-height:100%;display:grid;grid-template-rows:auto 1fr auto;gap:10px;background:var(--panel);border:1px solid #66766f;border-radius:0;padding:clamp(10px,2vw,18px)}
 .zbox h2{margin:0;font:400 clamp(20px,3vw,28px)/1.2 var(--display);color:#fff}.zbox h2 small{font:900 14px/1 var(--body);color:var(--gold);margin-left:8px}
 .zgrid{overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px}
-.zc{background:#1c1040;border-radius:12px;padding:6px;text-align:center;font:900 13px/1.3 var(--body);color:#fff}
+.zc{background:#18211f;border-radius:0;padding:6px;text-align:center;font:900 13px/1.3 var(--body);color:#e4e0d4}
 .zc img,.zc canvas{width:72px;height:72px;object-fit:contain;display:block;margin:0 auto 2px}
-.zc.no img,.zc.no canvas{filter:brightness(0) invert(1);opacity:.3}.zc.no{color:#7d6aa8}
-.zc p{margin:2px 0 0;font:500 11px/1.35 var(--body);color:#cdb8ff}.zc em{font-style:normal;color:var(--gold);font-size:11px}
+.zc.no img,.zc.no canvas{filter:brightness(0) invert(1);opacity:.3}.zc.no{color:#7e8a80}
+.zc p{margin:2px 0 0;font:500 11px/1.35 var(--body);color:#c3cbc2}.zc em{font-style:normal;color:var(--gold);font-size:11px}
 .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-.sub2{border:2px solid var(--violet);background:#1c1040;color:#fff;border-radius:14px;padding:12px 18px;font:900 16px/1 var(--body)}
+.sub2{border:1px solid #66766f;background:#1c2624;color:#e4e0d4;border-radius:0;padding:12px 18px;font:900 16px/1 var(--body)}
 #rotate{position:fixed;inset:0;z-index:30;display:none;place-items:center;text-align:center;background:var(--night);padding:24px;font:900 20px/1.6 var(--body)}
-#rotate .ph{width:70px;height:110px;border:5px solid var(--violet);border-radius:14px;margin:0 auto 18px;animation:rot 1.8s ease-in-out infinite}
+#rotate .ph{width:70px;height:110px;border:5px solid #a4afa5;border-radius:0;margin:0 auto 18px;animation:rot 1.8s ease-in-out infinite}
 @keyframes rot{40%,70%{transform:rotate(-90deg)}}
-#toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 80px);transform:translateX(-50%);background:var(--panel);border:1px solid var(--violet);border-radius:999px;padding:6px 14px;font:700 13px/1.4 var(--body);z-index:20;pointer-events:none;transition:opacity .4s}
+#toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 80px);transform:translateX(-50%);background:#1b2622;border:1px solid #7c8a7e;border-radius:0;padding:6px 14px;font:700 13px/1.4 var(--body);z-index:20;pointer-events:none;transition:opacity .4s}
 @media (orientation:portrait) and (max-width:820px){#rotate{display:grid}}
 @media (max-height:500px){.card{grid-template-columns:1fr 1fr}.ghosts{display:none}.how{display:none}
   #tools{flex-direction:row;right:auto;bottom:auto;left:calc(env(safe-area-inset-left,0px) + 10px);top:calc(env(safe-area-inset-top,0px) + 54px);gap:6px}
@@ -227,23 +227,106 @@ button:focus-visible{outline:3px solid #d8c69f;outline-offset:3px}
 }
 
 
-/* 199X analog-horror layout: sparse, quiet, and readable over the live 3D school. */
+/* === 199X コンソール UI =====================================================
+   3D と 1 つの規則で描く:
+     ・角は 45° の面取り（ローポリの箱と同じ原理）。丸み・ガラス・ニオネは使わない
+     ・影は 1〜6px の硬いオフセットだけ。ぼかし発光は使わない
+     ・色は 3D と同じ olive / stone / 銅 の軸（art/hud-palette.js が正本）
+     ・文字は角張ったゴシック（199X のコンソール筐体に合わせる）
+   ========================================================================== */
+:root{
+  --night:#080e11;--panel:#111b1e;
+  --violet:#758f91;--cyan:#b7c9c6;--pink:#bd7f77;--gold:#d2b68b;
+  --chalk:#e3e1d7;--ink:#141b20;
+  --line:#5d6f6d;--line2:#8fa39c;
+  --chamfer:12px;               /* パネル角の切り落とし量 */
+}
 #gl{image-rendering:pixelated;filter:none}
 #cv{image-rendering:auto}
-#title{background:linear-gradient(95deg,rgba(5,9,8,.69),rgba(11,14,10,.45) 52%,rgba(5,9,8,.76))!important}
-#result[data-r=win]{background:linear-gradient(100deg,rgba(18,23,13,.81),rgba(8,14,10,.57))!important}
-#result[data-r=lose]{background:linear-gradient(100deg,rgba(21,17,12,.88),rgba(7,12,9,.57))!important}
 .screen{background:rgba(7,12,9,.78)}
-.logo h1{font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans",sans-serif;font-weight:700;letter-spacing:.01em;color:#d3cfb5;text-shadow:2px 2px 0 #10150f}
-.logo .sub{border-left:3px solid #9d9b79;background:rgba(15,22,18,.88)}
-.menu,.result,.tvbox,.zbox{clip-path:none;border:1px solid #667066;border-radius:0;background:rgba(15,22,19,.94);box-shadow:0 10px 20px rgba(0,0,0,.45)}
-.mode,.sub2,.zbtn,.tb,.altlink{border-radius:0;border-color:#656f60;background:#293127;box-shadow:none}
-.mode[aria-pressed=true]{background:#464932;border-color:#b5ab77;box-shadow:inset 3px 0 0 #c5b47a}
-.go{border-radius:0;background:#b9b394;color:#1c221b;box-shadow:0 4px 0 #555641}
+#title{background:linear-gradient(100deg,rgba(5,9,8,.72),rgba(11,14,10,.46) 52%,rgba(5,9,8,.78))!important}
+#result[data-r=win]{background:linear-gradient(100deg,rgba(18,23,13,.82),rgba(8,14,10,.58))!important}
+#result[data-r=lose]{background:linear-gradient(100deg,rgba(21,17,12,.88),rgba(7,12,9,.58))!important}
+
+/* 大きなパネル: 面取り + 硬い影 + 平坦な塗り */
+.menu,.result,.tvbox,.zbox{
+  clip-path:polygon(0 var(--chamfer),var(--chamfer) 0,calc(100% - var(--chamfer)) 0,100% var(--chamfer),100% calc(100% - var(--chamfer)),calc(100% - var(--chamfer)) 100%,var(--chamfer) 100%,0 calc(100% - var(--chamfer)));
+  border:1px solid var(--line);border-radius:0;background:var(--panel);
+  box-shadow:6px 6px 0 rgba(0,0,0,.55);
+}
+.menu h2,.zbox h2,.result h2,.tvbox h2{color:#d6c8b5;font-family:var(--display);text-shadow:none}
+.result h2{text-shadow:2px 2px 0 #101a1c}
+.tvbox p{color:#c3cbc2;text-shadow:none}
+
+/* ボタン: 平坦 + 硬い縁 + 内側の 左ハイライト 1 本 */
+.mode,.sub2,.zbtn,.tb,.altlink{
+  border-radius:0;border:1px solid #66766f;background:#1c2624;
+  box-shadow:inset 3px 0 0 #33403c;color:#e4e0d4;
+}
+.mode[aria-pressed=true]{background:#3d463a;border-color:#c1a681;box-shadow:inset 4px 0 0 #bd9e73}
+.mode small{color:#b9c0b4}
+.mode:hover:not(:disabled),.sub2:hover:not(:disabled),.zbtn:hover:not(:disabled),.tb:hover:not(:disabled),.altlink:hover{background:#2b3733;border-color:#a9bdb4}
+.altlink{border-style:solid;border-color:#66766f}
+.altlink:hover{background:#2b3733;color:var(--chalk)}
+.go{border-radius:0;border:1px solid #d8c9a6;background:#b9b394;color:#1c221b;box-shadow:0 4px 0 #555641}
 .go:hover{background:#c9c7a9}
+.go:active{transform:translate(0,2px);box-shadow:0 2px 0 #555641}
+.zc{background:#18211f;border:1px solid #4f605b;border-radius:0;color:#e4e0d4}
+.zc.no{color:#7e8a80}
+.zc p{color:#c3cbc2}
+.stats div{background:#18211f;border:1px solid #4f605b;border-radius:0;color:#c4c5b9}
+.how{color:#c6ccc5}.how b{color:var(--chalk)}
+.best{color:#bec2bd}.tvurl{color:#cad0c5}
+.rank{font-family:var(--display);letter-spacing:.04em;color:#d5b58a;text-shadow:0 3px 0 #3e3935}
+.rstars{color:#cdb78d;text-shadow:none}
+#zukan{background:rgba(7,13,16,.95)}
+#pause,#tv{background:rgba(6,11,14,.87)}
+
+/* タイトル */
+.logo h1{
+  font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans",sans-serif;font-weight:700;
+  letter-spacing:.01em;color:#d3cfb5;text-shadow:2px 2px 0 #10150f;
+}
+.logo .sub{border-left:3px solid #9d9b79;background:rgba(15,22,18,.88);border-radius:0;color:#d7d1c5}
+.logo .ruby{color:#aab9b2;letter-spacing:.26em}
+
+/* わざボタン: 六角形はそのまま（多角形＝ローポリ）。中身は平坦に */
 .sk .hex,.sk .hex::before{filter:none}
-.rank{font-family:var(--display);letter-spacing:.04em}
-#toast{background:#202b23;border-color:#88917a;color:#dedbc5}
+.sk .hex{background:#2b3a38}
+.sk .hex::before{background:#16211f}
+.sk.ready .hex{background:#8d8f79}
+.sk .key{background:#141b1a;color:#cdd6cc;border:1px solid #6d7c76;border-radius:0;box-shadow:1px 1px 0 rgba(0,0,0,.5)}
+.sk .lbl{text-shadow:1px 1px 0 #0b1110,0 0 3px #0b1110}
+#sLight{--glow:#a8bdb5}#sBell{--glow:#bba47b}#sSp{--glow:#9e8990}
+
+/* 照準: 円ではなくローポリの八角形。ぼかし光は使わない */
+#rCur{
+  width:38px;height:38px;margin:-19px 0 0 -19px;border:none;border-radius:0;
+  background:
+    linear-gradient(#cdd3c7,#cdd3c7) center/2px 12px no-repeat,
+    linear-gradient(#cdd3c7,#cdd3c7) center/12px 2px no-repeat;
+  clip-path:polygon(50% 0,85% 15%,100% 50%,85% 85%,50% 100%,15% 85%,0 50%,15% 15%);
+  background-color:transparent;box-shadow:none;
+}
+#rCur::after{
+  content:"";position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;
+  background:#cdd3c7;border-radius:0;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);
+}
+#rCur.off{background-color:transparent;box-shadow:none}
+#rCur.off::after{background:#bf7570}
+
+/* 照準合わせ: 円ではなく八角形 */
+#calT .ring{
+  border:none;border-radius:0;background:rgba(197,173,134,.14);
+  clip-path:polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%);
+  box-shadow:none;
+}
+#calT .ring::after{border-radius:0;background:#c5ad86;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+
+#toast{background:#1b2622;border:1px solid #7c8a7e;border-radius:0;color:#dedbc5}
+#rotate{background:#081013;color:#e2e4dc}
+#rotate .ph{border-color:#a4afa5;border-radius:0}
+button:focus-visible{outline:2px solid #d8c69f;outline-offset:2px}
 </style>
 </head>
 <body>
@@ -373,6 +456,7 @@ button:focus-visible{outline:3px solid #d8c69f;outline-offset:3px}
 <!-- PS1アート制作システム（共通美術仕様・素材・模型・照明・HUDパレット）。
      通常のclassic script。読み込めなくてもこのゲームは従来どおり動く（各ファイルは no-op）。 -->
 <script src="art/art-direction.js"></script>
+<script src="art/geometry.js"></script>
 <script src="art/material-palette.js"></script>
 <script src="art/lighting-presets.js"></script>
 <script src="art/room-presets.js"></script>
@@ -389,7 +473,7 @@ let W=0,H=0,DPR=1,U=1,SA={t:0,r:0,b:0,l:0};
 const coarse=matchMedia('(pointer:coarse)').matches;
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
-const FD='"Dela Gothic One","Zen Maru Gothic",sans-serif',FB='"Zen Maru Gothic","Hiragino Maru Gothic ProN",sans-serif';
+const FD='"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",sans-serif',FB='"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",sans-serif';
 
 /* ===== ゲーム設定 ===== */
 const TYPES={
@@ -832,10 +916,12 @@ function makeTextures(){
    ジオメトリ・素材のヘルパー
    ====================================================================== */
 const GC={};const geo=(k,f)=>GC[k]||(GC[k]=f());
-/* 角丸の半径は呼び出し側の指定を尊重する（すべて 4cm に潰すと「箱」だけになる）。
-   半径が最小寸法を超えると法線が反転するので、必ず半分以下へクランプする。 */
-const RB=(w,h,d,r)=>geo(`rb${w},${h},${d},${r}`,()=>new THREE.RoundedBoxGeometry(w,h,d,1,Math.max(0,Math.min(r,Math.min(w,h,d)*.45))));
-const SPH=new THREE.IcosahedronGeometry(1,1),BOX=new THREE.BoxGeometry(1,1,1),CYL=new THREE.CylinderGeometry(1,1,1,7),CONE=new THREE.ConeGeometry(.5,1,4),PLANE=new THREE.PlaneGeometry(1,1);
+/* 箱は「面取り箱（44三角形）」で作る。199X のローポリでは角を 45° で切る方が
+   読みやすく、RoundedBoxGeometry（108三角形）の 1/2.5 のコストで済む。
+   art/ が読めていないときは従来の丸箱にフォールバックする。 */
+const RB=(w,h,d,r)=>geo(`rb${w},${h},${d},${r}`,()=>(window.ART&&ART.chamferBox)?ART.chamferBox(THREE,w,h,d,r):new THREE.RoundedBoxGeometry(w,h,d,1,Math.max(0,Math.min(r,Math.min(w,h,d)*.45))));
+/* 球は detail 0（20三角形）。detail 1 は 80 三角形で、眼球や泡の装飾コストが跳ね上がる。 */
+const SPH=new THREE.IcosahedronGeometry(1,0),BOX=new THREE.BoxGeometry(1,1,1),CYL=new THREE.CylinderGeometry(1,1,1,7),CONE=new THREE.ConeGeometry(.5,1,4),PLANE=new THREE.PlaneGeometry(1,1);
 const SHARED=new Set([SPH,BOX,CYL,CONE,PLANE]);
 /* すべての 3D 色は 1 箇所を通る。olive への寄せ + 彩度上限（統一感の要）。
    HDR（1 を超える発光色）は光そのものなので触らない。 */
@@ -1113,6 +1199,8 @@ function mbasic(r,g,b,o){const x=basic(r,g,b,o);CUR.push(x);return x;}
    既存のヘルパーをそのまま渡す（依存を逆流させない）。
    art/*.js が読めていなければ ART が無く、この呼び出しは起きない。
    ====================================================================== */
+/* GUI の色・書体は 3D と同じ正本（art/hud-palette.js）から当てる。 */
+if(window.ART&&ART.hud&&ART.hud.applyCssVars)ART.hud.applyCssVars();
 if(window.ART&&ART.init)ART.init({
   THREE,TEX,geo,RB,add,std,mstd,mbasic,rm,rb,ctex,woodPlanks,noiseFill,rnd,clamp,
   SPH,BOX,CYL,CONE,PLANE,face,arms,
@@ -1198,14 +1286,16 @@ const MODEL={
   keshigomuLegacy(){const g=new THREE.Group(),P={};const rub=mstd('#f4f3f8',.85,0,{bumpMap:TEX.bump,bumpScale:.01}),sl=mstd('#ffffff',.6,0,{map:TEX.sleeve});
     add(g,RB(1.9,1.2,.95,.14),rub,0,0,0);add(g,RB(1.3,1.25,1.0,.04),sl,.25,0,0);
     P.mouth=face(g,{x:.25,y:.3,z:.5,ex:.2,es:.13,my:-.12,mw:.34,mh:.13});P.arms=arms(g,0,.96);return{g,P};},
-  pencup(){const g=new THREE.Group(),P={};const met=mstd('#a7aabb',.32,.9,{bumpMap:TEX.brush,bumpScale:.01});
+  pencup(){return artModel('pencup',MODEL.pencupLegacy);},
+  pencupLegacy(){const g=new THREE.Group(),P={};const met=mstd('#a7aabb',.32,.9,{bumpMap:TEX.brush,bumpScale:.01});
     add(g,CYL,met,0,-.2,0,0,0,0,.62,1.4,.62);add(g,geo('rim',()=>new THREE.TorusGeometry(.62,.04,8,32)),met,0,.5,0,Math.PI/2);add(g,CYL,mstd('#1a1a22',.8,0),0,.48,0,0,0,0,.58,.02,.58);
     const cs=['#ee3333','#3366ff','#22bb55','#ffcc22'];P.pens=[];cs.forEach((c,i)=>{const p=new THREE.Group();p.position.set(-.3+i*.2,.5,(i%2?.15:-.15));p.rotation.z=(i-1.5)*.2;g.add(p);add(p,CYL,mstd(c,.35,0),0,.45,0,0,0,0,.07,.9,.07);add(p,CONE,mstd('#f0d0a0',.6,0),0,.98,0,0,0,0,.14,.18,.14);P.pens.push(p);});
     P.mouth=face(g,{y:.08,z:.62,ex:.24,es:.13,my:-.25,mw:.34,mh:.15});P.arms=arms(g,-.1,.62);return{g,P};},
   pen(){return artModel('pen',MODEL.penLegacy);},
   penLegacy(){const g=new THREE.Group(),P={};const c=(window.ART&&ART.hash)?(['#4a6668','#3f5c45','#7a4a44','#6b6250'][Math.floor(ART.hash('pen'+CUR.length)*4)%4]):'#ee3333';
     add(g,CYL,mstd(c,.3,0),0,.1,0,0,0,0,.18,1.4,.18);add(g,CONE,mstd('#f0d0a0',.6,0),0,-.75,0,Math.PI,0,0,.36,.35,.36);face(g,{y:.4,z:.17,ex:.09,es:.08});return{g,P};},
-  scissors(){const g=new THREE.Group(),P={};const met=mstd('#dfe3ec',.16,1),red=mstd('#d6283c',.3,0);
+  scissors(){return artModel('scissors',MODEL.scissorsLegacy);},
+  scissorsLegacy(){const g=new THREE.Group(),P={};const met=mstd('#dfe3ec',.16,1),red=mstd('#d6283c',.3,0);
     const bl=geo('blade',()=>{const s=new THREE.Shape();s.moveTo(-.1,0);s.lineTo(.1,0);s.lineTo(0,1.2);s.closePath();return new THREE.ExtrudeGeometry(s,{depth:.04,bevelEnabled:true,bevelSize:.01,bevelThickness:.01,bevelSegments:1});});
     P.blades=[];for(const sd of[-1,1]){const b=new THREE.Group();g.add(b);add(b,bl,met,0,0,sd*.03);add(b,geo('torus3',()=>new THREE.TorusGeometry(.24,.07,10,28)),red,sd*.3,-.55,0);P.blades.push(b);}
     add(g,CYL,met,0,0,.05,Math.PI/2,0,0,.08,.14,.08);
@@ -1214,7 +1304,8 @@ const MODEL={
   globeLegacy(){const g=new THREE.Group(),P={};P.ball=add(g,SPH,mstd('#ffffff',.38,0,{map:TEX.globe}),0,0,0,0,0,0,.85);
     add(g,geo('arc',()=>new THREE.TorusGeometry(1,.035,8,40,3.4)),mstd('#b08a3c',.3,1),0,0,0,0,Math.PI/2,-.9);add(g,CYL,mstd('#6a4a2a',.5,0),0,-1.0,0,0,0,0,.45,.12,.45);
     P.mouth=face(g,{y:-.05,z:.82,ex:.3,es:.15,my:-.3,mz:.8,mw:.38,mh:.13});return{g,P};},
-  sheet(){const g=new THREE.Group(),P={};
+  sheet(){return artModel('sheet',MODEL.sheetLegacy);},
+  sheetLegacy(){const g=new THREE.Group(),P={};
     const lg=geo('sheet',()=>{const pts=[];for(let i=0;i<=16;i++){const a=i/16*Math.PI/2;pts.push(new THREE.Vector2(Math.sin(a)*.75,.2+Math.cos(a)*.75));}pts.push(new THREE.Vector2(.78,-.2),new THREE.Vector2(.84,-.6),new THREE.Vector2(.95,-.9));
       const l=new THREE.LatheGeometry(pts,40);const p=l.attributes.position;for(let i=0;i<p.count;i++){if(p.getY(i)<-.85){const a=Math.atan2(p.getZ(i),p.getX(i));p.setY(i,p.getY(i)+Math.sin(a*6)*.09);}}l.computeVertexNormals();return l;});
     P.body=mstd('#dfe3d8',.85,0,{transparent:true,opacity:.9,emissive:new THREE.Color('#8aa0a0'),emissiveIntensity:.22,side:THREE.DoubleSide});add(g,lg,P.body,0,0,0);
@@ -1227,47 +1318,56 @@ const MODEL={
   ball(){return artModel('ball',MODEL.ballLegacy);},
   ballLegacy(){const g=new THREE.Group(),P={};P.ball=add(g,SPH,mstd('#ffffff',.72,0,{map:TEX.ball,bumpMap:TEX.bump,bumpScale:.03}),0,0,0,0,0,0,.9);
     P.mouth=face(g,{y:.2,z:.87,ex:.3,es:.14,my:-.2,mz:.86,mw:.36,mh:.14,tongue:1});return{g,P};},
-  tobibako(){const g=new THREE.Group(),P={};const wood=mstd('#ffffff',.55,0,{map:TEX.woodS});
+  tobibako(){return artModel('tobibako',MODEL.tobibakoLegacy);},
+  tobibakoLegacy(){const g=new THREE.Group(),P={};const wood=mstd('#ffffff',.55,0,{map:TEX.woodS});
     for(let i=0;i<4;i++){const w=1.9+i*.08;add(g,RB(w,.34,1.1+i*.04,.03),wood,0,.26-i*.36,0);}
     add(g,RB(1.96,.36,1.1,.15),mstd('#efe8d6',.85,0,{bumpMap:TEX.bump,bumpScale:.02}),0,.6,0);add(g,RB(.84,.28,.05,.12),mstd('#0a0410',.9,0),0,-.1,.6);
     P.mouth=face(g,{y:.28,z:.56,ex:.4,es:.14,my:-.06,mz:.63,mw:.36,mh:.13});P.arms=arms(g,.1,1.08);return{g,P};},
   paper(){return artModel('paper',MODEL.paperLegacy);},
   paperLegacy(){const g=new THREE.Group(),P={};const pg=geo('plane3',()=>{const v=[0,.9,0,-.9,-.6,0,0,-.3,.1, 0,.9,0,0,-.3,.1,.9,-.6,0, 0,.9,0,0,-.3,.1,0,-.5,-.25];const b=new THREE.BufferGeometry();b.setAttribute('position',new THREE.Float32BufferAttribute(v,3));b.computeVertexNormals();return b;});
     add(g,pg,mstd('#f6f4ee',.8,0,{side:THREE.DoubleSide}),0,0,0,-.5);face(g,{y:.1,z:.12,ex:.2,es:.09,eye:EYE_P});return{g,P};},
-  uwabaki(){const g=new THREE.Group(),P={};const wh=mstd('#f6f6f8',.75,0,{bumpMap:TEX.bump,bumpScale:.008}),rub=mstd('#e8e8ec',.5,0),bl=mstd((window.ART&&ART.hash)?(ART.hash('uwabaki')<.5?'#4a6668':'#7a4a44'):'#2a5ad8',.45,0);
+  uwabaki(){return artModel('uwabaki',MODEL.uwabakiLegacy);},
+  uwabakiLegacy(){const g=new THREE.Group(),P={};const wh=mstd('#f6f6f8',.75,0,{bumpMap:TEX.bump,bumpScale:.008}),rub=mstd('#e8e8ec',.5,0),bl=mstd((window.ART&&ART.hash)?(ART.hash('uwabaki')<.5?'#4a6668':'#7a4a44'):'#2a5ad8',.45,0);
     add(g,RB(.95,.18,1.9,.08),rub,0,-.62,0);add(g,RB(.86,.62,1.7,.24),wh,0,-.24,-.05);add(g,RB(.9,.5,.62,.2),bl,0,-.3,.66);
     add(g,RB(.62,.08,.75,.04),mstd('#1a1018',.8,0),0,.08,-.3);add(g,RB(.88,.14,.12,.04),bl,0,-.05,.18);
     add(g,PLANE,mstd('#ffffff',.6,0,{map:TEX.plate('2-1')}),0,-.22,-.91,0,Math.PI,0,.5,.19,1);
     P.mouth=face(g,{y:.0,z:.93,ex:.24,es:.12,my:-.3,mz:.98,mw:.3,mh:.1});return{g,P};},
-  taiko(){const g=new THREE.Group(),P={};const shell=mstd('#c8202e',.35,0),head=mstd('#f4efe2',.7,0,{bumpMap:TEX.bump,bumpScale:.005}),gold=mstd('#e8c050',.25,1),wd=mstd('#d8b080',.5,0),felt=mstd('#f2f2f6',.9,0);
+  taiko(){return artModel('taiko',MODEL.taikoLegacy);},
+  taikoLegacy(){const g=new THREE.Group(),P={};const shell=mstd('#c8202e',.35,0),head=mstd('#f4efe2',.7,0,{bumpMap:TEX.bump,bumpScale:.005}),gold=mstd('#e8c050',.25,1),wd=mstd('#d8b080',.5,0),felt=mstd('#f2f2f6',.9,0);
     add(g,CYL,shell,0,0,0,Math.PI/2,0,0,.86,.95,.86);for(const z of[.49,-.49]){add(g,CYL,head,0,0,z,Math.PI/2,0,0,.8,.02,.8);add(g,geo('rim2',()=>new THREE.TorusGeometry(.84,.06,8,36)),gold,0,0,z);}
     for(let i=0;i<10;i++){const a=i/10*Math.PI*2;add(g,SPH,gold,Math.cos(a)*.87,Math.sin(a)*.87,0,0,0,0,.05);}
     P.sticks=[];for(const sd of[-1,1]){const st=new THREE.Group();st.position.set(sd*.75,.75,.55);g.add(st);add(st,CYL,wd,0,.35,0,0,0,0,.03,.7,.03);add(st,SPH,felt,0,.72,0,0,0,0,.11);P.sticks.push(st);}
     P.mouth=face(g,{y:.22,z:.52,ex:.3,es:.15,my:-.15,mw:.42,mh:.15});return{g,P};},
-  cymbal(){const g=new THREE.Group(),P={};const gold=mstd('#e8b84a',.18,1,{bumpMap:TEX.brush,bumpScale:.004}),strap=mstd('#7a1a1a',.7,0);
+  cymbal(){return artModel('cymbal',MODEL.cymbalLegacy);},
+  cymbalLegacy(){const g=new THREE.Group(),P={};const gold=mstd('#e8b84a',.18,1,{bumpMap:TEX.brush,bumpScale:.004}),strap=mstd('#7a1a1a',.7,0);
     const dg=geo('cymb',()=>new THREE.CylinderGeometry(.08,.95,.12,40,1));
     P.f=new THREE.Group();P.b=new THREE.Group();g.add(P.f,P.b);
     add(P.f,dg,gold,0,0,0,-Math.PI/2,0,0);add(P.f,RB(.3,.12,.06,.02),strap,0,0,-.08);add(P.b,dg,gold,0,0,0,Math.PI/2,0,0);add(P.b,RB(.3,.12,.06,.02),strap,0,0,.08);
     face(P.f,{y:.3,z:.08,ex:.3,es:.14});P.mouth=face(P.f,{my:-.2,mz:.09,mw:.36,mh:.12});return{g,P};},
-  triangle(){const g=new THREE.Group(),P={};const met=mstd('#e2e6ee',.15,1),str=mstd('#d22a3c',.8,0);
+  triangle(){return artModel('triangle',MODEL.triangleLegacy);},
+  triangleLegacy(){const g=new THREE.Group(),P={};const met=mstd('#e2e6ee',.15,1),str=mstd('#d22a3c',.8,0);
     const c=[[0,.95],[-.85,-.6],[.85,-.6]];for(let i=0;i<3;i++){const a=c[i],b=c[(i+1)%3];const mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2,len=Math.hypot(b[0]-a[0],b[1]-a[1])*(i===2?.85:1);add(g,CYL,met,mx,my,0,0,0,Math.atan2(b[1]-a[1],b[0]-a[0])-Math.PI/2,.045,len,.045);}
     add(g,CYL,str,0,1.25,0,0,0,0,.015,.6,.015);P.beat=new THREE.Group();P.beat.position.set(.6,.1,.2);g.add(P.beat);add(P.beat,CYL,met,0,.3,0,0,0,0,.025,.8,.025);
     P.mouth=face(g,{y:-.05,z:.06,ex:.2,es:.12,my:-.28,mw:.2,mh:.08});return{g,P};},
-  recorder(){const g=new THREE.Group(),P={};const body=mstd('#f2e6c8',.4,0),br=mstd('#8a5a34',.45,0),dk=mstd('#1a1018',.8,0);
+  recorder(){return artModel('recorder',MODEL.recorderLegacy);},
+  recorderLegacy(){const g=new THREE.Group(),P={};const body=mstd('#f2e6c8',.4,0),br=mstd('#8a5a34',.45,0),dk=mstd('#1a1018',.8,0);
     P.r=new THREE.Group();P.r.rotation.z=.45;g.add(P.r);
     add(P.r,CYL,body,0,0,0,0,0,0,.15,1.8,.15);add(P.r,CYL,br,0,.98,0,0,0,0,.16,.2,.16);add(P.r,CONE,br,0,1.16,0,0,0,0,.24,.18,.24);add(P.r,geo('bell',()=>new THREE.CylinderGeometry(.15,.24,.3,24)),body,0,-1.04,0);
     for(let i=0;i<7;i++)add(P.r,SPH,dk,0,.45-i*.16,.14,0,0,0,.035,.035,.02).castShadow=false;
     face(P.r,{y:.72,z:.15,ex:.09,es:.08});return{g,P};},
-  tambourine(){const g=new THREE.Group(),P={};const wd=mstd('#c8904a',.5,0),skin=mstd('#f4ead6',.75,0,{bumpMap:TEX.bump,bumpScale:.004}),gold=mstd('#f0c860',.2,1);
+  tambourine(){return artModel('tambourine',MODEL.tambourineLegacy);},
+  tambourineLegacy(){const g=new THREE.Group(),P={};const wd=mstd('#c8904a',.5,0),skin=mstd('#f4ead6',.75,0,{bumpMap:TEX.bump,bumpScale:.004}),gold=mstd('#f0c860',.2,1);
     P.ring=new THREE.Group();g.add(P.ring);add(P.ring,geo('tambr',()=>new THREE.CylinderGeometry(.85,.85,.28,40,1,true)),mstd('#c8904a',.5,0,{side:THREE.DoubleSide}),0,0,0,Math.PI/2,0,0);add(P.ring,CYL,skin,0,0,.12,Math.PI/2,0,0,.83,.02,.83);
     for(let i=0;i<6;i++){const a=i/6*Math.PI*2;for(const dz of[-.05,.05])add(P.ring,CYL,gold,Math.cos(a)*.87,Math.sin(a)*.87,dz,0,0,a,.13,.02,.13);}
     face(g,{y:.2,z:.15,ex:.25,es:.13});P.mouth=face(g,{my:-.15,mz:.15,mw:.3,mh:.11});return{g,P};},
-  kenhamo(){const g=new THREE.Group(),P={};const bl=mstd('#2a7ae8',.35,0),wk=mstd('#ffffff',.4,0),bk=mstd('#141418',.4,0),hose=mstd('#e8f0ff',.3,0,{transparent:true,opacity:.7});
+  kenhamo(){return artModel('kenhamo',MODEL.kenhamoLegacy);},
+  kenhamoLegacy(){const g=new THREE.Group(),P={};const bl=mstd('#2a7ae8',.35,0),wk=mstd('#ffffff',.4,0),bk=mstd('#141418',.4,0),hose=mstd('#e8f0ff',.3,0,{transparent:true,opacity:.7});
     add(g,RB(1.9,.55,.6,.12),bl,0,0,0);const kb=new THREE.Group();kb.position.set(0,.29,0);kb.rotation.x=-.5;g.add(kb);add(kb,BOX,wk,0,0,0,0,0,0,1.6,.04,.4);for(let i=0;i<10;i++){if(i%7===2||i%7===6)continue;add(kb,BOX,bk,-.72+i*.16,.03,-.08,0,0,0,.08,.04,.24);}
     for(let i=0;i<14;i++)add(kb,BOX,bk,-.75+i*.115,.025,.12,0,0,0,.006,.03,.16);
     add(g,geo('hose',()=>new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(-.95,0,0),new THREE.Vector3(-1.4,.3,.2),new THREE.Vector3(-1.2,.9,.3),new THREE.Vector3(-.7,1.0,.2)]),20,.06,8)),hose,0,0,0);add(g,CYL,wk,-.65,1.0,.2,0,0,Math.PI/2,.07,.18,.07);
     face(g,{y:.02,z:.31,ex:.3,es:.12});P.mouth=face(g,{my:-.12,mz:.31,mw:.3,mh:.08});return{g,P};},
-  kousha(){const g=new THREE.Group(),P={};
+  kousha(){return artModel('kousha',MODEL.koushaLegacy);},
+  koushaLegacy(){const g=new THREE.Group(),P={};
     const wall=mstd('#ffffff',.85,0,{map:TEX.plaster,color:new THREE.Color('#d8d0e6')}),roof=mstd('#4a3a5a',.55,.2),dk=mstd('#120818',.8,0),frame=mstd('#8a86a0',.5,.4);
     P.body=new THREE.Group();g.add(P.body);
     add(P.body,RB(3.2,1.6,.6,.04),wall,0,-.2,0);add(P.body,BOX,roof,0,.63,0,0,0,0,3.34,.07,.7);add(P.body,BOX,frame,0,-.34,.31,0,0,0,3.2,.03,.02);add(P.body,BOX,frame,0,.12,.31,0,0,0,3.2,.03,.02);
@@ -1291,7 +1391,8 @@ const MODEL={
     for(const x of[-1.3,-.6,.6,1.3])add(g,CYL,roof,x,-1.3,0,0,0,0,.09,.6,.09);
     P.arms=arms(g,-.3,1.55,2.6);
     return{g,P};},
-  locker(){const g=new THREE.Group(),P={};
+  locker(){return artModel('locker',MODEL.lockerLegacy);},
+  lockerLegacy(){const g=new THREE.Group(),P={};
     const body=mstd('#a9adba',.45,.7,{map:TEX.locker,bumpMap:TEX.bump,bumpScale:.012}),dk=mstd('#1a1820',.6,0),seam=mstd('#5a5f6c',.5,.6);
     add(g,RB(1.6,2.0,1.0,.04),body,0,0,0);add(g,BOX,seam,0,0,.505,0,0,0,1.44,1.84,.01);add(g,BOX,body,0,0,.515,0,0,0,1.38,1.78,.01);
     for(let i=0;i<4;i++)add(g,BOX,dk,0,.82-i*.07,.53,0,0,0,1.0,.035,.02);
@@ -1376,16 +1477,27 @@ function syncSouls(){
     m.position.set(xW(s.x,s.z),s.h*LIFT+.25,zD(s.z));m.scale.set(.22,.33+Math.sin(s.t*8)*.03,1);}
 }
 function syncItems(){
-  for(const it of G.items)if(!it.o){const g=new THREE.Group();CUR=[];
+  for(const it of G.items)if(!it.o){const g=new THREE.Group(),inner=new THREE.Group();g.add(inner);CUR=[];
     if(it.kind==='candy'){const hs=geo('heart',()=>{const s=new THREE.Shape();s.moveTo(0,-.35);s.bezierCurveTo(-1,.25,-.45,1,0,.45);s.bezierCurveTo(.45,1,1,.25,0,-.35);return new THREE.ExtrudeGeometry(s,{depth:.25,bevelEnabled:true,bevelSize:.06,bevelThickness:.06,bevelSegments:3});});
-      add(g,hs,mstd('#ff4f9a',.25,0,{emissive:new THREE.Color('#ff2f80'),emissiveIntensity:.6}),0,-.2,-.12);for(const sd of[-1,1])add(g,CONE,mstd('#ffd1ea',.5,0),sd*.75,.1,0,0,0,sd*Math.PI/2,.35,.3,.12);}
-    else if(POW[it.kind]){const c=POW[it.kind].c3;add(g,SPH,mbasic(c[0],c[1],c[2]),0,0,0,0,0,0,.42).castShadow=false;add(g,geo('powring',()=>new THREE.TorusGeometry(.7,.06,8,32)),mbasic(c[0]*.6,c[1]*.6,c[2]*.6),0,0,0,Math.PI/2.4,0,0);add(g,SPH,mstd('#ffffff',.1,0,{transparent:true,opacity:.25,envMapIntensity:1.5,depthWrite:false}),0,0,0,0,0,0,.6);
-      const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:TEX.glow,color:new THREE.Color(c[0]*.5,c[1]*.5,c[2]*.5),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));CUR.push(sp.material);sp.scale.set(2.6,2.6,1);g.add(sp);}
-    else{add(g,CYL,mstd('#5fe3ff',.3,.5,{emissive:new THREE.Color('#2fa3ff'),emissiveIntensity:.5}),0,0,0,Math.PI/2,0,0,.55,.2,.55);add(g,CYL,mstd('#ffffff',.5,0,{map:TEX.clock}),0,0,.11,Math.PI/2,0,0,.46,.02,.46);}
-    g.userData={it,mats:CUR};scene.add(g);it.o=g;ITEM_O.push(g);}
+      add(inner,hs,mstd('#ff4f9a',.25,0,{emissive:new THREE.Color('#ff2f80'),emissiveIntensity:.6}),0,-.2,-.12);for(const sd of[-1,1])add(inner,CONE,mstd('#ffd1ea',.5,0),sd*.75,.1,0,0,0,sd*Math.PI/2,.35,.3,.12);
+    }
+    else if(POW[it.kind]){const c=POW[it.kind].c3;add(inner,SPH,mbasic(c[0],c[1],c[2]),0,0,0,0,0,0,.42).castShadow=false;add(inner,geo('powring',()=>new THREE.TorusGeometry(.7,.06,8,32)),mbasic(c[0]*.6,c[1]*.6,c[2]*.6),0,0,0,Math.PI/2,0,0,.7,.7,.7);
+      const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:TEX.glow,color:new THREE.Color(c[0]*.5,c[1]*.5,c[2]*.5),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));CUR.push(sp.material);sp.scale.setScalar(.75);sp.position.set(0,.1,0);inner.add(sp);
+    }
+    else{add(inner,CYL,mstd('#5fe3ff',.3,.5,{emissive:new THREE.Color('#2fa3ff'),emissiveIntensity:.5}),0,0,0,Math.PI/2,0,0,.55,.2,.55);add(inner,CYL,mstd('#ffffff',.5,0,{map:TEX.clock}),0,0,.11,Math.PI/2,0,0,.46,.02,.46);
+    }
+    /* 拾えるものだと分かる 3D の手掛かり（淡いハロー + 床の輪） */
+    const hc=it.kind==='candy'?[1.05,.62,.66]:it.kind==='clock'?[.62,.78,.92]:[.72,.78,.70];
+    const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:TEX.glow,color:new THREE.Color(hc[0],hc[1],hc[2]),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:.42}));
+    CUR.push(halo.material);halo.scale.setScalar(1.5);halo.position.y=.05;g.add(halo);
+    const ring=new THREE.Mesh(PLANE,new THREE.MeshBasicMaterial({map:TEX.blob,transparent:true,depthWrite:false,opacity:.42,color:0x0a1210}));
+    CUR.push(ring.material);ring.rotation.x=-Math.PI/2;ring.scale.set(1.3,.85,1);ring.position.y=-.34;g.add(ring);
+    g.userData={it,mats:CUR,inner,halo};scene.add(g);it.o=g;ITEM_O.push(g);}
   for(let i=ITEM_O.length-1;i>=0;i--){const g=ITEM_O[i],it=g.userData.it;if(!G.items.includes(it)){scene.remove(g);g.userData.mats.forEach(m=>m.dispose());ITEM_O.splice(i,1);continue;}
     /* it.h は生成直後に未定のことがある。NaN をシーンに入れない。 */
-    g.position.set(xW(it.x,it.z),(it.h==null?.5:it.h)*LIFT+.3,zD(it.z));g.rotation.y=it.t*2;g.scale.setScalar(.16);}
+    g.position.set(xW(it.x,it.z),(it.h==null?.5:it.h)*LIFT+.3,zD(it.z));
+    const inner=g.userData.inner;if(inner){inner.rotation.y=it.t*2;inner.scale.setScalar(.16);}
+    if(g.userData.halo)g.userData.halo.material.opacity=.34+.12*Math.sin(it.t*4);}
 }
 
 /* 水鉄砲と手（小学生の目線） */
@@ -2252,9 +2364,11 @@ function update3D(dt){
 }
 
 /* ===== 2D HUD ===== */
-/* 角丸の矩形。r は「意図したradius」。従来は完全に無視されていた。 */
+/* 角の面取り（45°切り）。ローポリの箱と同じ原理で、GUI も 3D も同じ形にする。
+   r は「切り落とす量」。従来は完全に無視されていた。 */
 function rr(x,y,w,h,r,fill){ctx.beginPath();const k=Math.max(0,Math.min(r||0,Math.abs(w)/2,Math.abs(h)/2));
- if(k>0){ctx.moveTo(x+k,y);ctx.arcTo(x+w,y,x+w,y+h,k);ctx.arcTo(x+w,y+h,x,y+h,k);ctx.arcTo(x,y+h,x,y,k);ctx.arcTo(x,y,x+w,y,k);ctx.closePath();}
+ if(k>0){ctx.moveTo(x+k,y);ctx.lineTo(x+w-k,y);ctx.lineTo(x+w,y+k);ctx.lineTo(x+w,y+h-k);
+   ctx.lineTo(x+w-k,y+h);ctx.lineTo(x+k,y+h);ctx.lineTo(x,y+h-k);ctx.lineTo(x,y+k);ctx.closePath();}
  else ctx.rect(x,y,w,h);
  if(fill){ctx.fillStyle=fill;ctx.fill();}}
 function star(x,y,r){ctx.beginPath();for(let i=0;i<10;i++){const a=i*Math.PI/5-Math.PI/2,q=i%2?r*.45:r;ctx.lineTo(x+Math.cos(a)*q,y+Math.sin(a)*q);}ctx.closePath();ctx.fill();}

@@ -507,17 +507,18 @@
 
     /* 下駄箱: 幅24m。霧を薄くして奥行きを保つ。 */
     getabako: {
-      exposure: 0.88,
+      exposure: 0.93,
       contrast: 1.08,
       tint: [0.90, 0.89, 0.82],
-      vignette: 1.28,
+      vignette: 1.24,
       grain: 0.026,
-      fog: { color: '#12110b', density: 0.052 },
-      background: 0.50,
-      hemi: { sky: '#3a3224', ground: '#0c0b09', intensity: 0.11 },
+      fog: { color: '#12110b', density: 0.046 },
+      background: 0.56,
+      /* 幅 24m の広い空間。上部（大空間）が真黒にならないよう fill を少し足す */
+      hemi: { sky: '#4a4030', ground: '#0f0d0a', intensity: 0.17 },
       moon: { color: '#8f9a8e', intensity: 0.68 },
-      fl1: { color: '#bfa07c', intensity: 0.26, distance: 8.5 },
-      fl2: { color: '#87917f', intensity: 0.16, distance: 7.0 },
+      fl1: { color: '#bfa07c', intensity: 0.30, distance: 9.5 },
+      fl2: { color: '#87917f', intensity: 0.18, distance: 7.5 },
       rays: { opacity: 0.40, color: '#0d0f0b' },
       fluor: [1.0, 0.90, 0.80, 0.55, 0.95, 0.88, 1.0, 0.72, 0.93, 0.85, 0.90, 0.66],
     },
