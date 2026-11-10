@@ -145,6 +145,11 @@ button:disabled{opacity:.5;cursor:wait}
 .gentle-effects .sk.ready,.gentle-effects .ghosts img{animation:none}
 
 /* ===== PIXEL GUI: Only this alternative Three.js page. ===== */
+.palette-btn{min-height:44px;padding:7px 10px;border-color:#69e7ff;color:#eefaff;background:#1d3445;box-shadow:3px 3px 0 #08091d;font:700 14px/1.35 var(--body)}
+.palette-btn:hover:not(:disabled){background:#25475c;border-color:#bcf4ff}
+.palette-btn:active:not(:disabled){transform:translate(2px,2px);box-shadow:1px 1px 0 #08091d}
+#pause .palette-btn{width:100%}
+
 :root{
   --night:#090d21;
   --panel:rgba(17,19,42,.96);
@@ -420,6 +425,7 @@ button:disabled{opacity:.55}
         <button class="mode gyro" id="gyroBtn" aria-pressed="false">かたむけて ねらう：オフ<small>iPhoneを かたむけて しょうじゅんを うごかす</small></button>
         <button class="mode gyro" id="tvBtn" aria-pressed="false">テレビで あそぶ<small>Macで ゲーム、iPhoneが コントローラー</small></button>
       </div>
+      <button type="button" class="mode palette-btn" id="paletteTitle" aria-label="3Dの色数を変更">いろのかず：32色　▷</button>
       <button class="go" id="start" disabled>よみこみ中…</button>
       <ul class="how">
         <li><b>わすれものを とりに きたら、がっこうが おばけに…！</b> みずでっぽうで もとに もどそう</li>
@@ -465,6 +471,7 @@ button:disabled{opacity:.55}
   <div class="result">
     <h2>ひとやすみ</h2>
     <button class="sub2" id="bEffects" aria-pressed="false">ゆれ・ピカピカ：ふつう</button>
+    <button type="button" class="sub2 palette-btn" id="palettePause" aria-label="3Dの色数を変更">いろのかず：32色　▷</button>
     <div class="row"><button class="go" id="resume">つづける</button><button class="sub2" id="quit">タイトルへ</button></div>
   </div>
 </section>
@@ -821,12 +828,15 @@ const GradeShader={
 };
 const grade=new THREE.ShaderPass(GradeShader);composer.addPass(grade);
 
-// PIXEL ART: final stage of the Three.js composer (the 2D HUD remains crisp).
-// 4x4 Bayer dithering, limited per-channel steps and nearest-neighbour canvas upscaling.
+
+// PIXEL ART: 3D-only postprocess; text/UI are rendered in the separate full-res HUD.
+// The texture is a precomputed 16x16x16 RGB -> fixed color palette LUT packed into 256x16.
 const PixelArtShader={
-  uniforms:{tDiffuse:{value:null},uSteps:{value:8},uDither:{value:.075}},
+  uniforms:{tDiffuse:{value:null},uPaletteLUT:{value:null},uDither:{value:.055}},
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-  fragmentShader:`uniform sampler2D tDiffuse;uniform float uSteps,uDither;varying vec2 vUv;
+  fragmentShader:`uniform sampler2D tDiffuse,uPaletteLUT;
+  uniform float uDither;
+  varying vec2 vUv;
   float bayer4(vec2 xy){
     vec2 p=mod(floor(xy),4.0);
     if(p.y<1.0)return (p.x<1.0?0.0:p.x<2.0?8.0:p.x<3.0?2.0:10.0)/16.0;
@@ -835,11 +845,12 @@ const PixelArtShader={
     return (p.x<1.0?15.0:p.x<2.0?7.0:p.x<3.0?13.0:5.0)/16.0;
   }
   void main(){
-    vec3 color=texture2D(tDiffuse,vUv).rgb;
-    float jitter=(bayer4(gl_FragCoord.xy)-0.5)*uDither;
-    color=clamp(color+vec3(jitter),0.0,1.0);
-    color=floor(color*uSteps+0.5)/uSteps;
-    gl_FragColor=vec4(color,1.0);
+    vec3 c=texture2D(tDiffuse,vUv).rgb;
+    c=clamp(c+vec3((bayer4(gl_FragCoord.xy)-.5)*uDither),0.0,1.0);
+    vec3 cell=floor(c*15.999);
+    // X = red + 16*green; Y = blue; always at the exact texel center.
+    vec2 lutUV=vec2((cell.r+16.0*cell.g+.5)/256.0,(cell.b+.5)/16.0);
+    gl_FragColor=vec4(texture2D(uPaletteLUT,lutUV).rgb,1.0);
   }`
 };
 const pixelArtPass=new THREE.ShaderPass(PixelArtShader);
@@ -857,9 +868,110 @@ const boomL=new THREE.PointLight(0x4dff9a,0,7,2);scene.add(boomL);
 const kidSpot=new THREE.SpotLight(0xffe3b8,0,12,.38,.6,1.2);scene.add(kidSpot,kidSpot.target);
 const kidFill=new THREE.PointLight(0xc8a8ff,0,4,2);scene.add(kidFill);
 
-/* 画質 */
+/* 画質・固定カラーパレット */
+
+// Custom night-school palettes, nested 16 -> 32 -> 64 colors. No external assets/dependencies.
+// These exact colors are shared by all stages; the overlay HUD stays full-color and readable.
+const PALETTE_16=[
+ '#080d1d','#171936','#2c2851','#48416c',
+ '#75658a','#b8a5bd','#f5eef3','#40566d',
+ '#5c90ab','#8bdaf2','#2f5547','#83b58d',
+ '#654038','#b97853','#be4e82','#f2c66e'
+];
+const PALETTE_32=PALETTE_16.concat([
+ '#0e2639','#213c63','#356194','#64b9d0',
+ '#f2fbff','#474052','#605775','#967ea6',
+ '#ecb2c1','#d560a0','#fa8d8e','#8f344b',
+ '#3a7048','#b0ce7f','#8f553e','#ffdf99'
+]);
+const PALETTE_64=PALETTE_32.concat([
+ '#02050e','#101229','#252040','#38294c',
+ '#493a70','#64548c','#a289b0','#ded5ee',
+ '#233349','#334e70','#486d8c','#6d9bbb',
+ '#9cb9c9','#c4eaf0','#4d7f89','#84b6ad',
+ '#213a32','#346447','#56875b','#9fd18b',
+ '#d2e8b4','#3c2a36','#714354','#9d5961',
+ '#ce7669','#f39d73','#f7bb8a','#e6d4aa',
+ '#6f4382','#ae6ab0','#d594c8','#fce0df'
+]);
+const PALETTES={16:PALETTE_16,32:PALETTE_32,64:PALETTE_64};
+const PALETTE_CHOICES=[16,32,64];
+const paletteLUTs={};
+let paletteMode=32;
+try{
+ const saved=Number(localStorage.getItem('obake1-pixel-palette'));
+ if(PALETTES[saved])paletteMode=saved;
+}catch(_){}
+
+// Perceptual Oklab nearest-color comparison is done once per palette,
+// NOT inside the fragment shader (important for iPhone WebGL performance).
+function toOKLab(r,g,b){
+ const lin=c=>{c/=255;return c<=.04045?c/12.92:Math.pow((c+.055)/1.055,2.4);};
+ r=lin(r);g=lin(g);b=lin(b);
+ const l=Math.cbrt(.4122214708*r+.5363325363*g+.0514459929*b);
+ const m=Math.cbrt(.2119034982*r+.6806995451*g+.1073969566*b);
+ const q=Math.cbrt(.0883024619*r+.2817188376*g+.6299787005*b);
+ return [.2104542553*l+.793617785*m-.0040720468*q,
+         1.9779984951*l-2.428592205*m+.4505937099*q,
+         .0259040371*l+.7827717662*m-.808675766*q];
+}
+function makePaletteLUT(colors){
+ const candidates=colors.map(hex=>{
+  const n=parseInt(hex.slice(1),16),rgb=[(n>>16)&255,(n>>8)&255,n&255];
+  return {rgb,lab:toOKLab(...rgb)};
+ });
+ const bytes=new Uint8Array(256*16*4);
+ for(let b=0;b<16;b++)for(let g=0;g<16;g++)for(let r=0;r<16;r++){
+  const sample=toOKLab((r+.5)*255/16,(g+.5)*255/16,(b+.5)*255/16);
+  let selected=candidates[0],best=Infinity;
+  for(const c of candidates){
+   const d0=sample[0]-c.lab[0],d1=sample[1]-c.lab[1],d2=sample[2]-c.lab[2];
+   const err=1.5*d0*d0+d1*d1+d2*d2;
+   if(err<best){best=err;selected=c;}
+  }
+  const offset=((b*16+g)*16+r)*4;
+  bytes[offset]=selected.rgb[0];
+  bytes[offset+1]=selected.rgb[1];
+  bytes[offset+2]=selected.rgb[2];
+  bytes[offset+3]=255;
+ }
+ const texture=new THREE.DataTexture(bytes,256,16,THREE.RGBAFormat,THREE.UnsignedByteType);
+ texture.magFilter=THREE.NearestFilter;texture.minFilter=THREE.NearestFilter;
+ texture.wrapS=texture.wrapT=THREE.ClampToEdgeWrapping;
+ texture.generateMipmaps=false;texture.flipY=false;
+ texture.encoding=THREE.LinearEncoding;texture.needsUpdate=true;
+ return texture;
+}
+function syncPaletteButtons(){
+ for(const id of ['paletteTitle','palettePause']){
+  const el=$(id);
+  if(!el)continue;
+  el.textContent='いろのかず：'+paletteMode+'色　▷';
+  el.setAttribute('aria-label','3Dの色数：'+paletteMode+'色。押すと変更');
+ }
+}
+function applyPalette(){
+ if(!paletteLUTs[paletteMode])paletteLUTs[paletteMode]=makePaletteLUT(PALETTES[paletteMode]);
+ pixelArtPass.uniforms.uPaletteLUT.value=paletteLUTs[paletteMode];
+ pixelArtPass.uniforms.uDither.value={16:.080,32:.065,64:.045}[paletteMode];
+ syncPaletteButtons();
+}
+function cyclePalette(){
+ const i=PALETTE_CHOICES.indexOf(paletteMode);
+ paletteMode=PALETTE_CHOICES[(i+1)%PALETTE_CHOICES.length];
+ applyPalette();
+ try{localStorage.setItem('obake1-pixel-palette',String(paletteMode));}catch(_){}
+ toast('ゲームの いろ：'+paletteMode+'色');
+}
+// Accessible diagnostic hook: no game-state or debug data is exposed.
+window.ObakeRetroPalette={get:()=>paletteMode,set:n=>{
+ n=Number(n);
+ if(!PALETTES[n])return false;
+ paletteMode=n;applyPalette();return true;
+}};
+
 // Three.jsは常に低解像度で描画。縦の論理ピクセル数だけを画質設定で切り替える。
-const QL=[{name:'高',pxH:270,steps:9,sh:1024,bloom:false,aura:3},{name:'中',pxH:216,steps:7,sh:512,bloom:false,aura:2},{name:'低',pxH:168,steps:6,sh:256,bloom:false,aura:1}];
+const QL=[{name:'高',pxH:270,sh:1024,bloom:false,aura:3},{name:'中',pxH:216,sh:512,bloom:false,aura:2},{name:'低',pxH:168,sh:256,bloom:false,aura:1}];
 const Q={level:coarse?1:0,auto:true,frames:0,t:0,grace:3};
 try{const s=JSON.parse(localStorage.getItem('obake1-q')||'null');if(s&&QL[s.level]){Q.level=s.level;Q.auto=s.auto;}}catch(e){}
 function applyQuality(){
@@ -867,7 +979,7 @@ function applyQuality(){
   // Explicit drawing buffer size: devicePixelRatio must not restore HD rendering.
   renderer.setPixelRatio(1);renderer.setSize(logicalW,logicalH,false);
   composer.setPixelRatio(1);composer.setSize(logicalW,logicalH);
-  pixelArtPass.uniforms.uSteps.value=q.steps;
+  applyPalette();
   bloom.enabled=false;
   const wantSh=Q.level<2;if(renderer.shadowMap.enabled!==wantSh){renderer.shadowMap.enabled=wantSh;scene.traverse(o=>{if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.needsUpdate=true);});}
   moon.shadow.mapSize.set(q.sh,q.sh);if(moon.shadow.map){moon.shadow.map.dispose();moon.shadow.map=null;}
@@ -2475,6 +2587,8 @@ $('bQual').addEventListener('click',()=>{if(Q.auto){Q.auto=false;Q.level=0;}else
 function togglePause(){if(state==='play'||state==='intro'){G.prev=state;state='pause';TOUCH.clear();ptr.down=false;$('pause').hidden=false;}else if(state==='pause'){state=G.prev||'play';$('pause').hidden=true;}}
 function toggleMute(){muted=!muted;setMuteGain();$('bMute').textContent=muted?'×':'♪';$('bMute').setAttribute('aria-pressed',muted);}
 $('bEffects').addEventListener('click',toggleEffects);
+$('paletteTitle').addEventListener('click',cyclePalette);
+$('palettePause').addEventListener('click',cyclePalette);
 function showHUD(on){$('skills').hidden=!on;$('tools').hidden=!on;}
 document.querySelectorAll('.mode').forEach(b=>b.addEventListener('click',()=>{modeKey=b.dataset.m;document.querySelectorAll('.mode').forEach(o=>o.setAttribute('aria-pressed',o===b));try{localStorage.setItem('obake1-mode',modeKey);}catch(e){}}));
 document.querySelectorAll('.mode').forEach(o=>o.setAttribute('aria-pressed',o.dataset.m===modeKey));
