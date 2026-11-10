@@ -869,7 +869,7 @@ class Obj:
 
 class Game:
     def __init__(self):
-        pyxel.init(W, H, title="おばけ第一小学校 レトロ", fps=60, display_scale=3)
+        pyxel.init(W, H, title="しゅくだいをとりにきただけなのに。 レトロ", fps=60, display_scale=3)
         pyxel.colors[:] = NIGHT
         here = os.path.dirname(os.path.abspath(__file__))
         self.font = pyxel.Font(os.path.join(here, "font.bdf"))
@@ -2360,14 +2360,15 @@ class Game:
         s1 = "2ねん1くみ わすれものの よる"
         self.otext(W / 2 - self.font.text_width(s1) / 2, 20, s1, LV, K)
         # 大きなタイトル：画像バンク2の下に文字を書き、2倍で表示
-        s2 = "おばけ第一小学校"
+        s2 = "しゅくだいをとりにきただけなのに。"
         tw = self.font.text_width(s2)
+        bw = tw + 4
         img = pyxel.images[2]
-        img.rect(0, 200, 120, 14, 0)
+        img.rect(0, 200, bw, 14, 0)
         for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1), (1, 1)):
             img.text(2 + dx, 202 + dy, s2, PU, self.font)
         img.text(2, 202, s2, GO, self.font)
-        pyxel.blt(W / 2 - 60, 44, 2, 0, 200, 120, 14, 0, scale=2)
+        pyxel.blt(W / 2 - bw / 2, 44, 2, 0, 200, bw, 14, 0, scale=1.5)
         s3 = "4つの ステージ ＋ ボス"
         self.otext(W / 2 - self.font.text_width(s3) / 2, 67, s3, CY_, K)
         # おばけたち

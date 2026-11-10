@@ -1,6 +1,6 @@
 {
- "name": "おばけ第一小学校 レトロ",
- "short_name": "おばけレトロ",
+ "name": "しゅくだいをとりにきただけなのに。 レトロ",
+ "short_name": "しゅくだい",
  "start_url": "retro.html",
  "scope": "./",
  "display": "fullscreen",

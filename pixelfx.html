@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>おばけ第一小学校 — 199X ローポリホラー</title>
+<title>しゅくだいをとりにきただけなのに。 — 199X ローポリホラー</title>
 <meta name="description" content="夜の学校に あらわれた おばけを、みずでっぽうと かいちゅうでんとうで たいじする 3Dシューティング。">
 <meta property="og:type" content="website">
-<meta property="og:title" content="おばけ第一小学校 ～夜の学校おばけポン！～">
+<meta property="og:title" content="しゅくだいをとりにきただけなのに。">
 <meta property="og:description" content="夜の学校に あらわれた おばけを、みずでっぽうと かいちゅうでんとうで たいじしよう！">
 <meta property="og:url" content="https://itommmm.github.io/obake-daiichi-shogakko/">
 <meta property="og:image" content="https://itommmm.github.io/obake-daiichi-shogakko/assets/og.jpg">
@@ -78,7 +78,7 @@ button:disabled{opacity:.5;cursor:wait}
 .card{width:min(820px,100%);display:grid;grid-template-columns:1.1fr 1fr;gap:clamp(12px,3vw,32px);align-items:center}
 .logo{text-align:center}
 .logo .ruby{font:900 clamp(12px,1.8vw,18px)/1 var(--body);letter-spacing:.6em;color:#aab9b2;margin-left:.6em}
-.logo h1{white-space:nowrap;margin:.2em 0 .1em;font:400 clamp(28px,4.6vw,58px)/1.05 var(--display);color:#d3cfb5;-webkit-text-stroke:0;text-shadow:2px 2px 0 #10150f}
+.logo h1{white-space:normal;word-break:keep-all;margin:.2em 0 .1em;font:400 clamp(24px,3.6vw,46px)/1.1 var(--display);color:#d3cfb5;-webkit-text-stroke:0;text-shadow:2px 2px 0 #10150f}
 .logo .sub{display:inline-block;font:900 clamp(14px,2.2vw,22px)/1 var(--body);background:rgba(15,22,18,.88);border:1px solid #66766f;border-left:3px solid #9d9b79;padding:.45em 1em;border-radius:0;letter-spacing:.12em}
 .ghosts{display:flex;justify-content:center;gap:14px;margin-top:14px;font-size:clamp(11px,1.4vw,13px);color:#cdb8ff;flex-wrap:wrap}
 .ghosts span{display:inline-flex;align-items:center;gap:4px}
@@ -175,8 +175,8 @@ html,body{background:#070d0f;color:var(--chalk)}
 .ghosts{display:none!important}
 .logo .ruby{color:#aab9b2;letter-spacing:.26em}
 .logo h1{
-  color:#e6e0d2;font:700 clamp(27px,4.6vw,58px)/1.2 var(--display);
-  -webkit-text-stroke:0;letter-spacing:.06em;white-space:nowrap;
+  color:#e6e0d2;font:700 clamp(24px,3.6vw,46px)/1.15 var(--display);
+  -webkit-text-stroke:0;letter-spacing:.04em;white-space:normal;word-break:keep-all;
   text-shadow:2px 4px 0 #111b1e,0 12px 22px #000;
 }
 .logo .sub{
@@ -314,7 +314,7 @@ button:focus-visible{outline:3px solid #d8c69f;outline-offset:3px}
 
 /* タイトル: ドット絵のフォント（16px グリッドの 3 倍）と、硬い多重影 */
 .logo h1{
-  font-family:var(--display);font-weight:400;font-size:48px;line-height:1.1;
+  font-family:var(--display);font-weight:400;font-size:40px;line-height:1.1;white-space:normal;word-break:keep-all;
   letter-spacing:0;color:#e3dfcd;
   text-shadow:4px 4px 0 #10150f,8px 8px 0 rgba(0,0,0,.45);
 }
@@ -323,7 +323,7 @@ button:focus-visible{outline:3px solid #d8c69f;outline-offset:3px}
   font-size:16px;padding:.5em .8em;
 }
 .logo .ruby{color:#aab9b2;letter-spacing:.2em;font-size:16px}
-@media(max-width:760px){.logo h1{font-size:32px;text-shadow:3px 3px 0 #10150f,6px 6px 0 rgba(0,0,0,.45)}}
+@media(max-width:760px){.logo h1{font-size:28px;text-shadow:3px 3px 0 #10150f,6px 6px 0 rgba(0,0,0,.45)}}
 
 /* わざボタン: 六角形はそのまま（多角形＝ローポリ）。中身は平坦に */
 .sk .hex,.sk .hex::before{filter:none}
@@ -390,7 +390,7 @@ button:focus-visible{outline:2px solid #d8c69f;outline-offset:2px}
   <div class="card">
     <div class="logo">
       <div class="ruby">よるのがっこう</div>
-      <h1>おばけ第一小学校</h1>
+      <h1>しゅくだいを<wbr>とりに<wbr>きただけなのに。</h1>
       <div class="sub">夜の学校おばけポン！</div>
       <div class="ghosts">
         <span><img src="assets/chara_randoseru.webp" alt="" onerror="this.remove()"><i style="background:#e02838"></i>ランドセロ</span>
