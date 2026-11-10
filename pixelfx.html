@@ -17,6 +17,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap">
 <style>
 /* レイアウト: 3D(WebGL)の上に2DのHUD canvas、その上にDOMのボタンと画面遷移。夜の学校×ネオン紫の単一テーマ */
 :root{
@@ -29,12 +31,14 @@
   --gold:#d2b68b;
   --chalk:#e3e1d7;
   --ink:#141b20;
-  --display:"Dela Gothic One","Zen Maru Gothic","Hiragino Maru Gothic ProN",sans-serif;
-  --body:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif;
+  --display:"DotGothic16","Hiragino Kaku Gothic ProN",monospace;
+  --body:"DotGothic16","Hiragino Kaku Gothic ProN",monospace;
 }
 [hidden]{display:none!important}
 html,body{height:100%;margin:0;overflow:hidden;background:var(--night);color:var(--chalk)}
-body{font-family:var(--body);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none;overscroll-behavior:none}
+body{font-family:var(--body);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none;overscroll-behavior:none;
+  /* ドット絵の字をなめらかにしない（199X の筐体の感じを保つ） */
+  -webkit-font-smoothing:none;font-smooth:never}
 #gl{position:fixed;inset:0;width:100%;height:100%;display:block}
 #cv{position:fixed;inset:0;display:block;touch-action:none;cursor:none}
 .sa{position:fixed;inset:0;pointer-events:none;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);visibility:hidden}
@@ -147,8 +151,8 @@ button:disabled{opacity:.5;cursor:wait}
   --night:#080e11;--panel:rgba(12,19,23,.94);
   --violet:#758f91;--cyan:#b7c9c6;--pink:#bd7f77;--gold:#d2b68b;
   --chalk:#e3e1d7;--ink:#141b20;
-  --display:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;
-  --body:"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",sans-serif
+  --display:"DotGothic16","Hiragino Kaku Gothic ProN",monospace;
+  --body:"DotGothic16","Hiragino Kaku Gothic ProN",monospace
 }
 html,body{background:#070d0f;color:var(--chalk)}
 #gl{z-index:0;filter:none}
@@ -179,7 +183,7 @@ html,body{background:#070d0f;color:var(--chalk)}
   box-shadow:8px 10px 0 rgba(1,5,7,.7),inset 0 0 0 1px #273c3c;
   clip-path:polygon(0 10px,10px 0,calc(100% - 12px) 0,100% 12px,100% calc(100% - 10px),calc(100% - 10px) 100%,10px 100%,0 calc(100% - 12px));
 }
-.menu h2,.zbox h2,.result h2,.tvbox h2{color:#d6c8b5;font-family:var(--display);text-shadow:none}
+.menu h2,.zbox h2,.result h2,.tvbox h2{color:#d6c8b5;font-family:var(--display);text-shadow:none;font-size:16px}
 .mode,.sub2,.zbtn,.tb,.altlink{
   color:#e6e1d6;background:#1d292d;border:1px solid #687a78;
   border-radius:2px;box-shadow:inset 3px 0 0 #334749;
@@ -196,8 +200,8 @@ html,body{background:#070d0f;color:var(--chalk)}
   box-shadow:4px 4px 0 #463e32;font-family:var(--display);font-weight:700
 }
 .go:hover{background:#d1bc97}.go:active{transform:translate(2px,2px);box-shadow:2px 2px 0 #463e32}
-.how{color:#c6ccc5}.best{color:#bec2bd}.tvurl{color:#cad0c5}
-.rank{color:#d5b58a;text-shadow:0 3px 0 #3e3935}.rstars{color:#cdb78d;text-shadow:none}
+.how{color:#c6ccc5}.best{color:#bec2bd;font-size:13px}.tvurl{color:#cad0c5;font-size:12px}
+.rank{color:#d5b58a;text-shadow:0 3px 0 #3e3935}.rstars{color:#cdb78d;text-shadow:none;font-size:24px}
 .stats div,.zc{background:#1a282b;border:1px solid #536562;border-radius:2px}
 .stats div{color:#c4c5b9}.zc p{color:#c5ccc3}
 #zukan{background:rgba(7,13,16,.95)}
@@ -251,10 +255,14 @@ button:focus-visible{outline:3px solid #d8c69f;outline-offset:3px}
 /* 大きなパネル: 面取り + 硬い影 + 平坦な塗り */
 .menu,.result,.tvbox,.zbox{
   clip-path:polygon(0 var(--chamfer),var(--chamfer) 0,calc(100% - var(--chamfer)) 0,100% var(--chamfer),100% calc(100% - var(--chamfer)),calc(100% - var(--chamfer)) 100%,var(--chamfer) 100%,0 calc(100% - var(--chamfer)));
-  border:1px solid var(--line);border-radius:0;background:var(--panel);
+  border:1px solid var(--line);border-radius:0;
+  background-color:var(--panel);
+  /* 16bit のディザ（4px チェッカ）。低ポリの 3D と 2D を同じ粒でつなぐ */
+  background-image:repeating-conic-gradient(rgba(180,205,195,.028) 0 25%,transparent 0 50%);
+  background-size:4px 4px;
   box-shadow:6px 6px 0 rgba(0,0,0,.55);
 }
-.menu h2,.zbox h2,.result h2,.tvbox h2{color:#d6c8b5;font-family:var(--display);text-shadow:none}
+.menu h2,.zbox h2,.result h2,.tvbox h2{color:#d6c8b5;font-family:var(--display);text-shadow:none;font-size:16px}
 .result h2{text-shadow:2px 2px 0 #101a1c}
 .tvbox p{color:#c3cbc2;text-shadow:none}
 
@@ -262,33 +270,44 @@ button:focus-visible{outline:3px solid #d8c69f;outline-offset:3px}
 .mode,.sub2,.zbtn,.tb,.altlink{
   border-radius:0;border:1px solid #66766f;background:#1c2624;
   box-shadow:inset 3px 0 0 #33403c;color:#e4e0d4;
+  font-family:var(--body);font-size:16px;letter-spacing:0;
 }
+.mode small{font-size:12px;line-height:1.4}
 .mode[aria-pressed=true]{background:#3d463a;border-color:#c1a681;box-shadow:inset 4px 0 0 #bd9e73}
 .mode small{color:#b9c0b4}
 .mode:hover:not(:disabled),.sub2:hover:not(:disabled),.zbtn:hover:not(:disabled),.tb:hover:not(:disabled),.altlink:hover{background:#2b3733;border-color:#a9bdb4}
 .altlink{border-style:solid;border-color:#66766f}
 .altlink:hover{background:#2b3733;color:var(--chalk)}
-.go{border-radius:0;border:1px solid #d8c9a6;background:#b9b394;color:#1c221b;box-shadow:0 4px 0 #555641}
+.go{border-radius:0;border:1px solid #d8c9a6;background:#b9b394;color:#1c221b;box-shadow:0 4px 0 #555641;font-size:32px;padding:10px 16px}
 .go:hover{background:#c9c7a9}
 .go:active{transform:translate(0,2px);box-shadow:0 2px 0 #555641}
-.zc{background:#18211f;border:1px solid #4f605b;border-radius:0;color:#e4e0d4}
+.zc{background:#18211f;border:1px solid #4f605b;border-radius:0;color:#e4e0d4;font-size:13px}
 .zc.no{color:#7e8a80}
 .zc p{color:#c3cbc2}
-.stats div{background:#18211f;border:1px solid #4f605b;border-radius:0;color:#c4c5b9}
-.how{color:#c6ccc5}.how b{color:var(--chalk)}
-.best{color:#bec2bd}.tvurl{color:#cad0c5}
-.rank{font-family:var(--display);letter-spacing:.04em;color:#d5b58a;text-shadow:0 3px 0 #3e3935}
-.rstars{color:#cdb78d;text-shadow:none}
+.stats div{background:#18211f;border:1px solid #4f605b;border-radius:0;color:#c4c5b9;font-size:13px}
+.stats b{font-size:24px}
+.how{color:#c6ccc5;font-size:13px;line-height:1.7;list-style:none;padding:0}
+.how li{position:relative;padding-left:14px;margin:2px 0}
+.how li::before{content:"";position:absolute;left:0;top:.55em;width:5px;height:5px;background:#8fa39c}
+.how b{color:var(--chalk)}
+.best{color:#bec2bd;font-size:13px}.tvurl{color:#cad0c5;font-size:12px}
+.rank{font-family:var(--display);letter-spacing:.04em;color:#d5b58a;text-shadow:0 3px 0 #3e3935;font-size:48px}
+.rstars{color:#cdb78d;text-shadow:none;font-size:24px}
 #zukan{background:rgba(7,13,16,.95)}
 #pause,#tv{background:rgba(6,11,14,.87)}
 
-/* タイトル */
+/* タイトル: ドット絵のフォント（16px グリッドの 3 倍）と、硬い多重影 */
 .logo h1{
-  font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans",sans-serif;font-weight:700;
-  letter-spacing:.01em;color:#d3cfb5;text-shadow:2px 2px 0 #10150f;
+  font-family:var(--display);font-weight:400;font-size:48px;line-height:1.1;
+  letter-spacing:0;color:#e3dfcd;
+  text-shadow:4px 4px 0 #10150f,8px 8px 0 rgba(0,0,0,.45);
 }
-.logo .sub{border-left:3px solid #9d9b79;background:rgba(15,22,18,.88);border-radius:0;color:#d7d1c5}
-.logo .ruby{color:#aab9b2;letter-spacing:.26em}
+.logo .sub{
+  border-left:3px solid #9d9b79;background:rgba(15,22,18,.88);border-radius:0;color:#d7d1c5;
+  font-size:16px;padding:.5em .8em;
+}
+.logo .ruby{color:#aab9b2;letter-spacing:.2em;font-size:16px}
+@media(max-width:760px){.logo h1{font-size:32px;text-shadow:3px 3px 0 #10150f,6px 6px 0 rgba(0,0,0,.45)}}
 
 /* わざボタン: 六角形はそのまま（多角形＝ローポリ）。中身は平坦に */
 .sk .hex,.sk .hex::before{filter:none}
@@ -473,7 +492,7 @@ let W=0,H=0,DPR=1,U=1,SA={t:0,r:0,b:0,l:0};
 const coarse=matchMedia('(pointer:coarse)').matches;
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
-const FD='"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",sans-serif',FB='"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",sans-serif';
+const FD='"DotGothic16","Hiragino Kaku Gothic ProN",monospace',FB='"DotGothic16","Hiragino Kaku Gothic ProN",monospace';
 
 /* ===== ゲーム設定 ===== */
 const TYPES={

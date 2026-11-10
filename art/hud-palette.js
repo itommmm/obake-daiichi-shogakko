@@ -155,9 +155,9 @@
     '--gold': '#d2b68b', // 名称は金のまま。値は淡い金
     '--chalk': '#e3e1d7',
     '--ink': '#141b20',
-    /* 199X のコンソール筐体に合わせ、角張ったゴシックへ寄せる（明朝は 3D と合わない） */
-    '--display': '"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",sans-serif',
-    '--body': '"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",sans-serif',
+    /* 199X のコンソール筐体。ドット絵の日本語フォント（ps1版と同じ DotGothic16） */
+    '--display': '"DotGothic16","Hiragino Kaku Gothic ProN",monospace',
+    '--body': '"DotGothic16","Hiragino Kaku Gothic ProN",monospace',
     '--line': '#5d6f6d',
     '--line2': '#8fa39c',
     '--chamfer': '12px',
