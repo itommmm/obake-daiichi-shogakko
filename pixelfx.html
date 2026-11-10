@@ -145,15 +145,10 @@ button:disabled{opacity:.5;cursor:wait}
 .gentle-effects .sk.ready,.gentle-effects .ghosts img{animation:none}
 
 /* ===== PIXEL GUI: Only this alternative Three.js page. ===== */
-#title{background:#090d21}
 #titlePixelBg{position:fixed;inset:0;width:100%;height:100%;z-index:0;image-rendering:pixelated;pointer-events:none}
 #titleFx{z-index:1}
 #title>.card{z-index:2}
 
-.palette-btn{min-height:44px;padding:7px 10px;border-color:#69e7ff;color:#eefaff;background:#1d3445;box-shadow:3px 3px 0 #08091d;font:700 14px/1.35 var(--body)}
-.palette-btn:hover:not(:disabled){background:#25475c;border-color:#bcf4ff}
-.palette-btn:active:not(:disabled){transform:translate(2px,2px);box-shadow:1px 1px 0 #08091d}
-#pause .palette-btn{width:100%}
 
 :root{
   --night:#090d21;
@@ -381,6 +376,11 @@ button:disabled{opacity:.55}
 @media(prefers-reduced-motion:reduce){
   .sk.ready,.ghosts img{animation:none}
 }
+/* Palette buttons override generic mode/sub2 styles above. */
+.palette-btn{min-height:44px;padding:7px 10px;border-color:#69e7ff;color:#eefaff;background:#1d3445;box-shadow:3px 3px 0 #08091d;font:700 14px/1.35 var(--body)}
+.palette-btn:hover:not(:disabled){background:#25475c;border-color:#bcf4ff}
+.palette-btn:active:not(:disabled){transform:translate(2px,2px);box-shadow:1px 1px 0 #08091d}
+#pause .palette-btn{width:100%}
 </style>
 </head>
 <body>
