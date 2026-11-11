@@ -82,6 +82,7 @@ function applyRoomLooks() {
     const on = G.fixed.includes(R.id) || G.fixed.length >= FIX_ROOMS.length;
     R.lights.forEach((L, i) => { L.intensity = R.baseLight[i] * (on ? 1.45 : 1); });
     R.calm = on;
+    Atmosphere.applyLooks(R, on);
   }
   if (S && S.clockHands && !G.fixed.includes('staff')) S.clockHands[0].rotation.z = 0;
 }
@@ -878,8 +879,7 @@ function updateRoomFx() {
   }
   if (activeRoom.calm) return; // もとに もどった へやは ちらつかない
   for (const f of activeRoom.flickers || []) {
-    const blink = (Math.sin(t * 12 + f.ph) > .982 || Math.sin(t * .7 + f.ph) > .995) ? .18 : 1;
-    f.light.intensity = f.base * (.72 + .28 * (.5 + .5 * Math.sin(t * 5 + f.ph))) * blink;
+    f.light.intensity = Atmosphere.flicker(f, t);
   }
 }
 
@@ -915,6 +915,8 @@ function updateInvUI() {
   $('btnControl').textContent = G.mode === 'modern' ? 'スティック移動（おすすめ）' : 'クラシック（タンク）';
   $('btnSound').textContent = G.sound ? 'オン' : 'オフ';
   $('btnFx').textContent = G.fx ? 'オン' : 'オフ';
+  $('btnQuality').textContent = QUALITY[GFX.quality].label;
+  $('btnTitleQuality').textContent = `がめん：${QUALITY[GFX.quality].label}`;
   $('btnHerb').disabled = G.herbs <= 0;
   $('btnMode').textContent = `そうさ：${G.mode === 'modern' ? 'スティック' : 'クラシック'}`;
   $('btnTitleSound').textContent = `おと：${G.sound ? 'オン' : 'オフ'}`;
@@ -941,6 +943,12 @@ function setMode(mode) {
 function toggleSound() {
   G.sound = !G.sound;
   if (AudioSys.master) AudioSys.master.gain.value = G.sound ? .22 : 0;
+  updateInvUI();
+}
+const QUALITY_ORDER = ['low', 'mid', 'high'];
+function cycleQuality() {
+  setQuality(QUALITY_ORDER[(QUALITY_ORDER.indexOf(GFX.quality) + 1) % QUALITY_ORDER.length]);
+  G.autoQuality = true; perf.slow = 0;
   updateInvUI();
 }
 function toggleFx() {
@@ -1037,6 +1045,8 @@ function bindInput() {
   $('btnControl').addEventListener('click', () => setMode(G.mode === 'tank' ? 'modern' : 'tank'));
   $('btnSound').addEventListener('click', toggleSound);
   $('btnFx').addEventListener('click', toggleFx);
+  $('btnQuality').addEventListener('click', cycleQuality);
+  $('btnTitleQuality').addEventListener('click', cycleQuality);
   for (let i = 0; i < 3; i++) {
     $('lockU' + i).addEventListener('click', () => lockSpin(i, 1));
     $('lockN' + i).addEventListener('click', () => lockSpin(i, -1));
@@ -1089,8 +1099,10 @@ function update(dt) {
   flashEl.style.background = G.flash > G.hurt ? '#ffe7aa' : '#c5a9eb';
 }
 function loop(now) {
-  const dt = Math.min(.05, Math.max(0, (now - loop.last) / 1000 || 0));
+  const rawDt = (now - loop.last) / 1000 || 0;
+  const dt = Math.min(.05, Math.max(0, rawDt));
   loop.last = now;
+  watchPerformance(rawDt);
   G.t += dt;
   if (G.state === 'title') {
     updateTitle(dt);
@@ -1121,6 +1133,7 @@ function init() {
   flashTarget = new THREE.Object3D();
   buildRooms();
   Discoveries.build();
+  Atmosphere.build();
   populateAllRooms();
   applyWorldFlags();
   bindInput();
@@ -1140,7 +1153,7 @@ function init() {
     blocked, tryMove, setMode, openInventory, closeInventory, finishGame,
     camera: () => activeCam, gameCam: () => gameCam, room: () => activeRoom,
     spawnEnemyEntity, spawnItemEntity, applyWorldFlags, updateInvUI, drawHUD,
-    projectToScreen, fmtTime,
+    projectToScreen, fmtTime, setQuality, applyQuality, gfx: GFX, QUALITY, perf, V,
     three: () => ({ renderer, scene: activeRoom && activeRoom.scene, cam: gameCam, rt, postScene, postCam }),
     capture: (opts) => {
       const sc = G.state === 'title' ? titleScene : (activeRoom ? activeRoom.scene : titleScene);

@@ -5,7 +5,15 @@
 'use strict';
 
 const $ = id => document.getElementById(id);
-const V = { W: 320, H: 240 };
+// 論理座標（HUD・タップ位置・マーカー）は 320×240 のまま。描画の細かさ（RW×RH）だけを品質で変える。
+const V = { W: 320, H: 240, RW: 480, RH: 360 };
+// 画質プリセット。low は従来の見た目（かるい）。levels は色の段階（RGB各 levels+1 段）、tone は暗部の階調補正の強さ。
+const QUALITY = {
+  low:  { label: 'かるい',   w: 320, h: 240, levels: 31, tone: 0 },
+  mid:  { label: 'ふつう',   w: 480, h: 360, levels: 63, tone: 1 },
+  high: { label: 'きれい',   w: 640, h: 480, levels: 63, tone: 1 },
+};
+const GFX = { quality: 'mid', levels: 63, tone: 1 };
 const SAVE_KEY = 'obake-daiichi-ps1-v2';
 const TAU = Math.PI * 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -35,6 +43,11 @@ const G = {
 // 旧モード設定は引き継がず、固定カメラ＋スティックを標準にする。ゲーム進行セーブは維持。
 try { const m = localStorage.getItem('obake-ps1-controls-v4'); if (m === 'modern' || m === 'tank') G.mode = m; } catch (_) {}
 try { G.fx = localStorage.getItem('obake-ps1-fx') !== '0'; } catch (_) {}
+// 画質の設定。セーブとは別のキーなので、ゲームの進行には影響しない
+try { const q = localStorage.getItem('obake-ps1-quality'); if (QUALITY[q]) GFX.quality = q; } catch (_) {}
+G.autoQuality = true; // 動きが重いときは、自動で「かるい」に戻す
+Object.assign(V, { RW: QUALITY[GFX.quality].w, RH: QUALITY[GFX.quality].h });
+GFX.levels = QUALITY[GFX.quality].levels; GFX.tone = QUALITY[GFX.quality].tone;
 
 /* ===== Three.js ===== */
 let renderer, rt, postScene, postCam, postMat, ditherTex;
@@ -49,9 +62,9 @@ const V3B = new THREE.Vector3();
 function initRenderer() {
   renderer = new THREE.WebGLRenderer({ canvas: $('gl'), antialias: false, alpha: false, powerPreference: 'high-performance' });
   renderer.setPixelRatio(1);
-  renderer.setSize(V.W, V.H, false);
+  renderer.setSize(V.RW, V.RH, false);
   renderer.setClearColor(0x05040a, 1);
-  rt = new THREE.WebGLRenderTarget(V.W, V.H, {
+  rt = new THREE.WebGLRenderTarget(V.RW, V.RH, {
     minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter,
     format: THREE.RGBAFormat, depthBuffer: true, stencilBuffer: false,
   });
@@ -62,19 +75,33 @@ function initRenderer() {
     uniforms: {
       tDiffuse: { value: rt.texture }, tDither: { value: ditherTex },
       uTime: { value: 0 }, uFx: { value: G.fx ? 1 : 0 }, uFade: { value: 1 },
+      uRes: { value: new THREE.Vector2(V.RW, V.RH) },
+      uLevels: { value: GFX.levels }, uTone: { value: GFX.tone },
     },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
     fragmentShader: `
       uniform sampler2D tDiffuse, tDither;
-      uniform float uTime, uFx, uFade;
+      uniform float uTime, uFx, uFade, uLevels, uTone;
+      uniform vec2 uRes;
       varying vec2 vUv;
+      // 階調補正：暗部を持ち上げて黒つぶれを防ぎ、暗いところほど月明かりの青に寄せる。
+      // 明るいところはやわらかく丸める。色数を増やすだけでなく、暗部に階調を割り当てるための処理。
+      vec3 grade(vec3 c) {
+        float l = dot(c, vec3(0.299, 0.587, 0.114));
+        vec3 g = pow(max(c, vec3(0.0)), vec3(0.84));
+        float shadow = 1.0 - smoothstep(0.0, 0.5, l);
+        g *= mix(vec3(1.0), vec3(0.86, 0.97, 1.16), shadow * 0.6);
+        g = g * (1.0 + 0.10 * g) / (1.0 + 0.10 * g * g * 1.6);
+        return g;
+      }
       void main(){
         vec3 raw = texture2D(tDiffuse, vUv).rgb;
-        float d = texture2D(tDither, (mod(floor(vUv * vec2(320.0, 240.0)), 4.0) + 0.5) / 4.0).r;
-        vec3 q = floor(raw * 31.0 + d) / 31.0;
+        raw = mix(raw, grade(raw), uTone);
+        // 4×4 のバイエル配列。描画ピクセル単位で敷くので、解像度が上がるほど粒は細かくなる
+        float d = texture2D(tDither, (mod(floor(vUv * uRes), 4.0) + 0.5) / 4.0).r;
+        vec3 q = floor(raw * uLevels + d) / uLevels;
         vec3 c = mix(raw, q, uFx);
-        float scan = 0.955 + 0.045 * sin(vUv.y * 240.0 * 6.2831853);
-        c *= mix(1.0, scan, uFx);
+        c *= mix(1.0, 0.955, uFx);
         float vig = 1.0 - 0.52 * pow(length((vUv - 0.5) * 1.28), 2.2);
         c *= mix(1.0, vig, uFx);
         gl_FragColor = vec4(c * uFade, 1.0);
@@ -83,6 +110,7 @@ function initRenderer() {
     depthTest: false, depthWrite: false,
   });
   postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postMat));
+  applyQuality(); // 保存してある画質に合わせて、描画の大きさ・HUDの細かさをそろえる
 }
 
 function makeDither() {
@@ -119,6 +147,44 @@ function ps1(m) {
   return m;
 }
 
+/* ===== 画質の切り替え =====
+   描画の細かさだけを変える。ゲームの状態・セーブ・当たり判定・HUD/マーカーの座標（320×240）は変わらない。
+   HUD は 320×240 の座標系のまま、キャンバスだけ細かくして拡大描画する。 */
+function applyQuality() {
+  const q = QUALITY[GFX.quality];
+  V.RW = q.w; V.RH = q.h;
+  if (!renderer) return;
+  renderer.setSize(V.RW, V.RH, false);
+  rt.setSize(V.RW, V.RH);
+  const hud = $('hud');
+  hud.width = V.RW; hud.height = V.RH; // 幅・高さを変えると描画状態が初期化される
+  HUD.setTransform(V.RW / V.W, 0, 0, V.RH / V.H, 0, 0);
+  postMat.uniforms.uRes.value.set(V.RW, V.RH);
+  postMat.uniforms.uLevels.value = GFX.levels;
+  postMat.uniforms.uTone.value = GFX.tone;
+}
+function setQuality(name, opt) {
+  if (!QUALITY[name]) return false;
+  GFX.quality = name; GFX.levels = QUALITY[name].levels; GFX.tone = QUALITY[name].tone;
+  applyQuality();
+  if (!opt || opt.save !== false) { try { localStorage.setItem('obake-ps1-quality', name); } catch (_) {} }
+  return true;
+}
+// 動きが重いときの自動切替：低めのフレームレートが続いたら「かるい」に戻す（手動で戻せる）
+const perf = { acc: 0, n: 0, slow: 0, fps: 60, warm: 3 };
+function watchPerformance(dt) {
+  if (dt <= 0 || dt > .5) return; // タブ切替などの異常値は無視
+  perf.acc += dt; perf.n++;
+  if (perf.acc < 1) return;
+  perf.fps = perf.n / perf.acc; perf.acc = 0; perf.n = 0;
+  if (perf.warm > 0) { perf.warm--; return; } // 起動直後のシェーダー準備で遅いのは数えない
+  perf.slow = G.state === 'play' && perf.fps < 24 ? perf.slow + 1 : 0;
+  if (G.autoQuality && perf.slow >= 4 && GFX.quality !== 'low') {
+    setQuality('low'); perf.slow = 0;
+    if (typeof say === 'function') say('がめんを かるく したよ。「ほぞん」は そのままだよ。', 4);
+  }
+}
+
 function renderScene(scene, cam) {
   renderer.setRenderTarget(rt);
   renderer.clear();
@@ -135,7 +201,9 @@ function canvasTex(w, h, draw, rx = 1, ry = 1) {
   const c = document.createElement('canvas'); c.width = w; c.height = h;
   draw(c.getContext('2d'), w, h);
   const t = new THREE.CanvasTexture(c);
-  t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter;
+  // 拡大はドットのまま（PS1らしさ）。縮小して見るとき（遠景）はミップマップで、細かい模様のちらつきを抑える
+  t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestMipmapNearestFilter;
+  t.generateMipmaps = true;
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   t.repeat.set(rx, ry);
   return t;
@@ -154,152 +222,247 @@ function tiled(t, rx, ry) {
   return c;
 }
 const TEX = {};
+// テクスチャ用の小さな道具
+const lines = (g, n, w, h, rgbaFn, len, lw) => {
+  for (let i = 0; i < n; i++) {
+    g.strokeStyle = rgbaFn(); g.lineWidth = lw || 1; g.beginPath();
+    const x = rnd(0, w), y = rnd(0, h); g.moveTo(x, y); g.lineTo(x + rnd(len[0], len[1]), y + rnd(-len[2], len[2])); g.stroke();
+  }
+};
+const blotch = (g, x, y, r, rgb, a) => { // ふんわりした しみ・よごれ
+  const gr = g.createRadialGradient(x, y, 0, x, y, r);
+  gr.addColorStop(0, `rgba(${rgb},${a})`); gr.addColorStop(1, `rgba(${rgb},0)`);
+  g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2);
+};
 function buildTextures() {
-  TEX.wood = canvasTex(64, 64, (g, w, h) => {
+  // --- 木の床（教室・職員室）：板ごとの色むら、木目、節、板のつぎ目、傷 ---
+  TEX.wood = canvasTex(128, 128, (g, w, h) => {
     g.fillStyle = '#5a3a24'; g.fillRect(0, 0, w, h);
-    for (let y = 0; y < h; y += 8) {
-      g.fillStyle = ['#5e3d26', '#553620', '#62412a'][y / 8 % 3 | 0];
-      g.fillRect(0, y, w, 8);
-      g.fillStyle = 'rgba(20,10,4,.55)'; g.fillRect(0, y, w, 1);
-      g.fillStyle = 'rgba(210,160,100,.10)'; g.fillRect(0, y + 2, w, 1);
+    const ph = 16;
+    for (let y = 0; y < h; y += ph) {
+      g.fillStyle = ['#5e3d26', '#553620', '#62412a', '#58391f'][y / ph % 4 | 0]; g.fillRect(0, y, w, ph);
+      // 木目：板に そった細い線
+      for (let i = 0; i < 14; i++) {
+        g.strokeStyle = `rgba(30,15,6,${rnd(.08, .24)})`; g.lineWidth = 1; g.beginPath();
+        const yy = y + rnd(2, ph - 2), x0 = rnd(0, w * .6);
+        g.moveTo(x0, yy); g.bezierCurveTo(x0 + 18, yy + rnd(-1.5, 1.5), x0 + 36, yy + rnd(-1.5, 1.5), x0 + rnd(30, 70), yy + rnd(-1, 1)); g.stroke();
+      }
+      g.fillStyle = 'rgba(20,10,4,.6)'; g.fillRect(0, y, w, 1);           // 板のすきま
+      g.fillStyle = 'rgba(215,165,105,.11)'; g.fillRect(0, y + 2, w, 1);  // ふちの 反射
+      const jx = (y / ph * 37 + 11) % w;                                  // 板の つぎ目
+      g.fillStyle = 'rgba(20,10,4,.55)'; g.fillRect(jx, y, 1, ph);
+      if ((y / ph) % 3 === 1) { // 節
+        const kx = rnd(10, w - 10), ky = y + rnd(5, ph - 5);
+        g.fillStyle = 'rgba(25,12,5,.55)'; g.beginPath(); g.ellipse(kx, ky, 3.2, 2, 0, 0, TAU); g.fill();
+        g.strokeStyle = 'rgba(25,12,5,.3)'; g.beginPath(); g.ellipse(kx, ky, 6, 3.4, 0, 0, TAU); g.stroke();
+      }
     }
-    for (let i = 0; i < 30; i++) {
-      g.strokeStyle = `rgba(30,15,6,${rnd(.08, .22)})`; g.beginPath();
-      const x = rnd(0, w), y = rnd(0, h); g.moveTo(x, y); g.lineTo(x + rnd(4, 20), y + rnd(-1, 1)); g.stroke();
-    }
-    noise(g, w, h, 200, .14);
+    lines(g, 10, w, h, () => `rgba(205,170,125,${rnd(.08, .2)})`, [6, 18, 5], 1); // 傷
+    blotch(g, rnd(0, w), rnd(0, h), 22, '15,8,3', .22); blotch(g, rnd(0, w), rnd(0, h), 16, '15,8,3', .18); // よごれ
+    noise(g, w, h, 800, .14);
   });
-  TEX.tile = canvasTex(64, 64, (g, w, h) => {
+  // --- 廊下・玄関の床：市松のタイル、目地、足あとのよごれ、ひび ---
+  TEX.tile = canvasTex(128, 128, (g, w, h) => {
     for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) {
-      g.fillStyle = (x + y) % 2 ? '#7f8478' : '#a3a695'; g.fillRect(x * 16, y * 16, 16, 16);
-      g.fillStyle = 'rgba(30,32,28,.35)'; g.fillRect(x * 16, y * 16, 16, 1); g.fillRect(x * 16, y * 16, 1, 16);
+      g.fillStyle = (x + y) % 2 ? '#7f8478' : '#a3a695'; g.fillRect(x * 32, y * 32, 32, 32);
+      g.fillStyle = 'rgba(255,255,240,.05)'; g.fillRect(x * 32 + 2, y * 32 + 2, 14, 2);
+      g.fillStyle = 'rgba(30,32,28,.38)'; g.fillRect(x * 32, y * 32, 32, 1); g.fillRect(x * 32, y * 32, 1, 32);
+      g.fillStyle = 'rgba(30,32,28,.14)'; g.fillRect(x * 32 + 1, y * 32 + 1, 31, 1);
     }
-    noise(g, w, h, 320, .14);
+    for (let i = 0; i < 5; i++) blotch(g, rnd(0, w), rnd(0, h), rnd(9, 20), '35,34,26', .22);
+    lines(g, 8, w, h, () => `rgba(40,42,36,${rnd(.1, .28)})`, [-12, 12, 8], 1); // ひび・すり傷
+    noise(g, w, h, 1100, .13);
   });
-  TEX.wall = canvasTex(64, 64, (g, w, h) => {
+  // --- かべ：しっくい。水のしみ、ひび、はがれ ---
+  TEX.wall = canvasTex(128, 128, (g, w, h) => {
     g.fillStyle = '#b9b19b'; g.fillRect(0, 0, w, h);
-    g.fillStyle = 'rgba(255,250,230,.10)'; g.fillRect(0, 0, w, 2);
-    for (let i = 0; i < 26; i++) { g.fillStyle = `rgba(70,62,48,${rnd(.04, .16)})`; g.fillRect(rnd(0, w), rnd(0, h), rnd(1, 5), rnd(1, 3)); }
-    g.fillStyle = 'rgba(60,54,44,.16)'; g.fillRect(0, 46, w, 1);
-    noise(g, w, h, 160, .1);
+    const gr = g.createLinearGradient(0, 0, 0, h);
+    gr.addColorStop(0, 'rgba(255,250,230,.07)'); gr.addColorStop(.55, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(45,38,28,.2)');
+    g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 5; i++) blotch(g, rnd(0, w), rnd(10, h), rnd(10, 26), '85,70,45', .16); // 水のしみ
+    for (let i = 0; i < 40; i++) { g.fillStyle = `rgba(70,62,48,${rnd(.04, .16)})`; g.fillRect(rnd(0, w), rnd(0, h), rnd(1, 6), rnd(1, 3)); }
+    g.strokeStyle = 'rgba(55,48,38,.4)'; g.lineWidth = 1; g.beginPath(); // ひび
+    let cx = rnd(10, w - 10), cy = 0; g.moveTo(cx, cy);
+    while (cy < h * .6) { cx += rnd(-5, 5); cy += rnd(4, 9); g.lineTo(cx, cy); } g.stroke();
+    g.fillStyle = 'rgba(60,54,44,.18)'; g.fillRect(0, 92, w, 1);
+    noise(g, w, h, 650, .1);
   });
-  TEX.wallGreen = canvasTex(64, 64, (g, w, h) => {
+  // --- かべの下半分：緑のペンキ。たてのつなぎ目、すり傷、はがれ ---
+  TEX.wallGreen = canvasTex(128, 128, (g, w, h) => {
     g.fillStyle = '#475a51'; g.fillRect(0, 0, w, h);
-    g.fillStyle = 'rgba(20,30,24,.4)'; for (let y = 0; y < h; y += 8) g.fillRect(0, y, w, 1);
-    noise(g, w, h, 180, .16);
+    g.fillStyle = 'rgba(20,30,24,.42)'; for (let y = 0; y < h; y += 16) g.fillRect(0, y, w, 1);
+    g.fillStyle = 'rgba(160,190,170,.07)'; for (let y = 0; y < h; y += 16) g.fillRect(0, y + 1, w, 1);
+    g.fillStyle = 'rgba(15,24,18,.35)'; for (let x = 0; x < w; x += 42) g.fillRect(x, 0, 1, h);
+    lines(g, 14, w, h, () => `rgba(170,185,170,${rnd(.08, .2)})`, [5, 16, 3], 1); // すり傷
+    for (let i = 0; i < 6; i++) { g.fillStyle = 'rgba(150,160,120,.28)'; g.fillRect(rnd(0, w), rnd(0, h), rnd(2, 5), rnd(1, 3)); } // ペンキの はがれ
+    blotch(g, rnd(0, w), h - 6, 30, '10,16,12', .3);
+    noise(g, w, h, 700, .16);
   });
-  TEX.ceiling = canvasTex(64, 64, (g, w, h) => {
+  TEX.ceiling = canvasTex(128, 128, (g, w, h) => {
     g.fillStyle = '#8e8b7b'; g.fillRect(0, 0, w, h);
     g.strokeStyle = 'rgba(40,40,36,.45)'; g.lineWidth = 1;
-    for (let x = 0; x <= w; x += 16) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
-    for (let y = 0; y <= h; y += 16) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
-    noise(g, w, h, 240, .12);
+    for (let x = 0; x <= w; x += 32) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
+    for (let y = 0; y <= h; y += 32) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
+    for (let i = 0; i < 3; i++) blotch(g, rnd(0, w), rnd(0, h), rnd(14, 26), '70,60,40', .22); // 雨もりのしみ
+    for (let y = 0; y < h; y += 32) for (let x = 0; x < w; x += 32) { g.fillStyle = 'rgba(40,40,36,.2)'; for (let i = 0; i < 4; i++) g.fillRect(x + rnd(3, 28), y + rnd(3, 28), 1, 1); }
+    noise(g, w, h, 900, .12);
   });
-  TEX.gym = canvasTex(128, 128, (g, w, h) => {
+  // --- 体育館の床：板、コートの白線、ニスの照り、くつの すり跡 ---
+  TEX.gym = canvasTex(256, 256, (g, w, h) => {
     g.fillStyle = '#936b3e'; g.fillRect(0, 0, w, h);
-    for (let x = 0; x < w; x += 8) {
-      g.fillStyle = ['#966d3f', '#8d6539', '#9d7548'][x / 8 % 3 | 0]; g.fillRect(x, 0, 8, h);
-      g.fillStyle = 'rgba(50,30,10,.35)'; g.fillRect(x, 0, 1, h);
+    for (let x = 0; x < w; x += 16) {
+      g.fillStyle = ['#966d3f', '#8d6539', '#9d7548', '#92693c'][x / 16 % 4 | 0]; g.fillRect(x, 0, 16, h);
+      for (let i = 0; i < 10; i++) { g.strokeStyle = `rgba(60,36,12,${rnd(.06, .16)})`; g.beginPath(); const xx = x + rnd(2, 14), yy = rnd(0, h); g.moveTo(xx, yy); g.lineTo(xx + rnd(-1, 1), yy + rnd(30, 90)); g.stroke(); }
+      g.fillStyle = 'rgba(50,30,10,.4)'; g.fillRect(x, 0, 1, h);
+      g.fillStyle = 'rgba(255,225,170,.08)'; g.fillRect(x + 2, 0, 1, h);
+      g.fillStyle = 'rgba(50,30,10,.35)'; g.fillRect(x, (x * 7 + 40) % h, 16, 1); // 板のつぎ目
     }
-    g.strokeStyle = 'rgba(235,225,195,.65)'; g.lineWidth = 2;
-    g.strokeRect(8, 8, w - 16, h - 16);
-    g.beginPath(); g.moveTo(64, 8); g.lineTo(64, h - 8); g.stroke();
-    g.beginPath(); g.arc(64, 64, 22, 0, TAU); g.stroke();
-    noise(g, w, h, 500, .1);
+    for (let i = 0; i < 14; i++) blotch(g, rnd(0, w), rnd(0, h), rnd(12, 28), '255,235,190', .08); // ニスの照り
+    for (let i = 0; i < 18; i++) lines(g, 1, w, h, () => 'rgba(30,18,6,.22)', [6, 22, 3], 2); // くつの すり跡
+    g.strokeStyle = 'rgba(235,225,195,.65)'; g.lineWidth = 4;
+    g.strokeRect(16, 16, w - 32, h - 32);
+    g.beginPath(); g.moveTo(128, 16); g.lineTo(128, h - 16); g.stroke();
+    g.beginPath(); g.arc(128, 128, 44, 0, TAU); g.stroke();
+    g.strokeStyle = 'rgba(20,12,4,.22)'; g.lineWidth = 1; g.strokeRect(14, 14, w - 28, h - 28); // 白線のふち
+    noise(g, w, h, 2200, .1);
   });
-  TEX.window = canvasTex(64, 64, (g, w, h) => {
+  // --- 窓：月夜と雨。窓わく、すきま、くもり ---
+  TEX.window = canvasTex(128, 128, (g, w, h) => {
     const gr = g.createLinearGradient(0, 0, 0, h);
-    gr.addColorStop(0, '#182949'); gr.addColorStop(.6, '#0d1730'); gr.addColorStop(1, '#070b18');
+    gr.addColorStop(0, '#1a2d52'); gr.addColorStop(.6, '#0d1730'); gr.addColorStop(1, '#070b18');
     g.fillStyle = gr; g.fillRect(0, 0, w, h);
-    g.fillStyle = 'rgba(220,230,255,.65)'; g.beginPath(); g.arc(46, 16, 6, 0, TAU); g.fill();
-    for (let i = 0; i < 30; i++) {
-      g.strokeStyle = `rgba(150,180,230,${rnd(.08, .3)})`; g.beginPath();
-      const x = rnd(0, w), y = rnd(0, h); g.moveTo(x, y); g.lineTo(x - 2, y + rnd(3, 9)); g.stroke();
+    blotch(g, 92, 32, 26, '170,195,255', .35);                       // 月の ひかり
+    g.fillStyle = 'rgba(225,235,255,.75)'; g.beginPath(); g.arc(92, 32, 11, 0, TAU); g.fill();
+    for (let i = 0; i < 12; i++) { g.fillStyle = `rgba(190,205,240,${rnd(.2, .6)})`; g.fillRect(rnd(0, w), rnd(0, h * .5), 1, 1); } // 星
+    for (let i = 0; i < 60; i++) { // 雨
+      g.strokeStyle = `rgba(150,180,230,${rnd(.1, .34)})`; g.beginPath();
+      const x = rnd(0, w), y = rnd(0, h); g.moveTo(x, y); g.lineTo(x - 3, y + rnd(5, 16)); g.stroke();
     }
-    g.strokeStyle = '#2b2a26'; g.lineWidth = 3; g.strokeRect(1, 1, w - 2, h - 2);
-    g.beginPath(); g.moveTo(32, 0); g.lineTo(32, h); g.moveTo(0, 32); g.lineTo(w, 32); g.stroke();
+    blotch(g, rnd(10, w - 10), h - 8, 30, '120,140,180', .12);       // くもり
+    g.strokeStyle = '#2b2a26'; g.lineWidth = 6; g.strokeRect(2, 2, w - 4, h - 4);
+    g.lineWidth = 5; g.beginPath(); g.moveTo(64, 0); g.lineTo(64, h); g.moveTo(0, 64); g.lineTo(w, 64); g.stroke();
+    g.strokeStyle = 'rgba(210,205,185,.18)'; g.lineWidth = 1; g.strokeRect(5, 5, w - 10, h - 10);
   });
-  TEX.blackboard = canvasTex(128, 64, (g, w, h) => {
+  // --- 黒板（もとにもどったあと）：チョークの粉と消し跡。文字・数字は従来と同じ内容 ---
+  TEX.blackboard = canvasTex(256, 128, (g, w, h) => {
     g.fillStyle = '#20372d'; g.fillRect(0, 0, w, h);
-    g.fillStyle = 'rgba(230,240,220,.08)'; for (let y = 0; y < h; y += 4) g.fillRect(0, y, w, 1);
-    g.fillStyle = 'rgba(235,240,220,.72)'; g.font = '9px sans-serif';
-    g.fillText('7/18  きょうの めあて', 7, 14);
-    g.font = '8px sans-serif'; g.fillStyle = 'rgba(235,240,220,.58)';
-    g.fillText('・しゅくだいを わすれずに', 8, 30);
+    for (let i = 0; i < 9; i++) blotch(g, rnd(0, w), rnd(0, h), rnd(24, 54), '200,215,200', .045); // けしあと
+    g.fillStyle = 'rgba(230,240,220,.07)'; for (let y = 0; y < h; y += 8) g.fillRect(0, y, w, 1);
+    g.fillStyle = 'rgba(235,240,220,.72)'; g.font = '18px sans-serif';
+    g.fillText('7/18  きょうの めあて', 14, 28);
+    g.font = '16px sans-serif'; g.fillStyle = 'rgba(235,240,220,.58)';
+    g.fillText('・しゅくだいを わすれずに', 16, 60);
     g.fillStyle = 'rgba(255,226,140,.85)';
-    g.fillText('たいいくかんの ばんごう 1ばんめ＝5', 8, 46);
-    noise(g, w, h, 100, .14, '#dbe8d8');
+    g.fillText('たいいくかんの ばんごう 1ばんめ＝5', 16, 92);
+    g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(0, h - 4, w, 4);
+    noise(g, w, h, 500, .14, '#dbe8d8');
   });
-  TEX.boardScribble = canvasTex(128, 64, (g, w, h) => {
+  // --- 黒板（らくがき）：おばけの落書き ---
+  TEX.boardScribble = canvasTex(256, 128, (g, w, h) => {
     g.fillStyle = '#20372d'; g.fillRect(0, 0, w, h);
-    g.strokeStyle = 'rgba(240,240,255,.8)'; g.lineWidth = 2;
+    for (let i = 0; i < 7; i++) blotch(g, rnd(0, w), rnd(0, h), rnd(24, 50), '200,215,200', .05);
+    g.strokeStyle = 'rgba(240,240,255,.8)'; g.lineWidth = 4;
     for (let i = 0; i < 9; i++) { g.beginPath(); g.moveTo(rnd(0, w), rnd(0, h)); g.bezierCurveTo(rnd(0, w), rnd(0, h), rnd(0, w), rnd(0, h), rnd(0, w), rnd(0, h)); g.stroke(); }
-    for (const [x, y] of [[24, 30], [64, 24], [104, 36]]) {
-      g.fillStyle = 'rgba(240,240,255,.85)'; g.beginPath(); g.arc(x, y, 11, Math.PI, 0); g.lineTo(x + 11, y + 12); g.lineTo(x - 11, y + 12); g.fill();
-      g.fillStyle = '#20372d'; g.fillRect(x - 5, y - 3, 3, 4); g.fillRect(x + 2, y - 3, 3, 4);
+    for (const [x, y] of [[48, 60], [128, 48], [208, 72]]) {
+      g.fillStyle = 'rgba(240,240,255,.85)'; g.beginPath(); g.arc(x, y, 22, Math.PI, 0); g.lineTo(x + 22, y + 24); g.lineTo(x - 22, y + 24); g.fill();
+      g.fillStyle = '#20372d'; g.fillRect(x - 10, y - 6, 6, 8); g.fillRect(x + 4, y - 6, 6, 8);
     }
-    g.fillStyle = 'rgba(255,120,120,.9)'; g.font = '9px sans-serif';
-    g.fillText('おばけの がっこう だぞ〜', 14, 58);
+    g.fillStyle = 'rgba(255,120,120,.9)'; g.font = '18px sans-serif';
+    g.fillText('おばけの がっこう だぞ〜', 28, 116);
+    noise(g, w, h, 400, .12, '#dbe8d8');
   });
-  TEX.clock = canvasTex(32, 32, (g, w, h) => {
-    g.fillStyle = '#e8e2cc'; g.beginPath(); g.arc(16, 16, 15, 0, TAU); g.fill();
-    g.strokeStyle = '#3a3226'; g.lineWidth = 2; g.stroke();
+  TEX.clock = canvasTex(64, 64, (g, w, h) => {
+    g.fillStyle = '#e8e2cc'; g.beginPath(); g.arc(32, 32, 30, 0, TAU); g.fill();
+    g.strokeStyle = '#3a3226'; g.lineWidth = 4; g.stroke();
     g.fillStyle = '#3a3226';
-    for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; g.fillRect(16 + Math.sin(a) * 12 - 1, 16 - Math.cos(a) * 12 - 1, 2, 2); }
+    for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; g.fillRect(32 + Math.sin(a) * 24 - 2, 32 - Math.cos(a) * 24 - 2, 4, 4); }
+    blotch(g, 40, 22, 14, '90,70,40', .14);
   });
-  TEX.locker = canvasTex(32, 64, (g, w, h) => {
+  // --- ロッカー：つなぎ目、通気スリット、とって、へこみ、さび ---
+  TEX.locker = canvasTex(64, 128, (g, w, h) => {
     g.fillStyle = '#6f7880'; g.fillRect(0, 0, w, h);
-    g.fillStyle = '#7d858c'; g.fillRect(1, 1, w - 2, h - 2);
-    g.fillStyle = '#4b5258'; g.fillRect(0, 0, w, 2); g.fillRect(0, h - 2, w, 2);
-    g.fillStyle = '#3d444a'; for (let y = 6; y < 22; y += 4) g.fillRect(5, y, w - 10, 2);
-    g.fillStyle = '#2f353a'; g.fillRect(w - 7, 34, 3, 6);
-    g.fillStyle = 'rgba(255,255,255,.06)'; g.fillRect(2, 2, 4, h - 4);
-    noise(g, w, h, 70, .16);
+    g.fillStyle = '#7d858c'; g.fillRect(2, 2, w - 4, h - 4);
+    g.fillStyle = '#4b5258'; g.fillRect(0, 0, w, 4); g.fillRect(0, h - 4, w, 4);
+    g.fillStyle = '#3d444a'; for (let y = 12; y < 44; y += 8) g.fillRect(10, y, w - 20, 3);
+    g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(8, 6, w - 16, 1); g.fillRect(8, 74, w - 16, 1);
+    g.fillStyle = '#2f353a'; g.fillRect(w - 14, 68, 6, 12);
+    g.fillStyle = 'rgba(210,215,220,.25)'; g.fillRect(w - 13, 69, 1, 10);
+    g.fillStyle = 'rgba(255,255,255,.07)'; g.fillRect(4, 4, 8, h - 8);
+    g.fillStyle = 'rgba(30,34,38,.4)'; g.fillRect(0, 0, 2, h); g.fillRect(w - 2, 0, 2, h);
+    blotch(g, rnd(10, w - 10), rnd(30, h - 10), 12, '40,50,60', .24);            // へこみ
+    for (let i = 0; i < 4; i++) blotch(g, rnd(4, w - 4), h - rnd(2, 20), rnd(4, 8), '110,64,36', .34); // さび
+    lines(g, 6, w, h, () => `rgba(230,235,240,${rnd(.12, .26)})`, [4, 12, 8], 1);
+    noise(g, w, h, 320, .16);
   });
-  TEX.shoe = canvasTex(64, 64, (g, w, h) => {
+  TEX.shoe = canvasTex(128, 128, (g, w, h) => {
     g.fillStyle = '#6d4b2d'; g.fillRect(0, 0, w, h);
-    for (let y = 0; y < h; y += 16) for (let x = 0; x < w; x += 16) {
-      g.fillStyle = '#7a5534'; g.fillRect(x + 1, y + 1, 14, 14);
-      g.fillStyle = '#4a3020'; g.fillRect(x + 3, y + 3, 10, 8);
-      g.fillStyle = '#2c1c12'; g.fillRect(x + 5, y + 5, 6, 4);
+    for (let y = 0; y < h; y += 32) for (let x = 0; x < w; x += 32) {
+      g.fillStyle = '#7a5534'; g.fillRect(x + 2, y + 2, 28, 28);
+      g.fillStyle = '#4a3020'; g.fillRect(x + 6, y + 6, 20, 16);
+      g.fillStyle = '#2c1c12'; g.fillRect(x + 10, y + 10, 12, 8);
+      g.fillStyle = 'rgba(255,230,190,.08)'; g.fillRect(x + 2, y + 2, 28, 2);
+      if (((x + y) / 32) % 3 === 0) { g.fillStyle = '#d8d4c8'; g.fillRect(x + 11, y + 12, 10, 4); } // うわばき
     }
-    noise(g, w, h, 120, .18);
+    lines(g, 10, w, h, () => `rgba(30,18,10,${rnd(.15, .3)})`, [6, 16, 2], 1);
+    noise(g, w, h, 500, .18);
   });
-  TEX.door = canvasTex(32, 64, (g, w, h) => {
+  TEX.door = canvasTex(64, 128, (g, w, h) => {
     g.fillStyle = '#5b3c24'; g.fillRect(0, 0, w, h);
-    g.strokeStyle = '#3b2414'; g.lineWidth = 3; g.strokeRect(2, 2, w - 4, h - 4);
-    g.fillStyle = '#6a472b'; g.fillRect(6, 8, w - 12, 20); g.fillRect(6, 34, w - 12, 22);
-    g.fillStyle = '#d7c48a'; g.fillRect(w - 9, 30, 3, 3);
-    noise(g, w, h, 60, .14);
+    g.strokeStyle = '#3b2414'; g.lineWidth = 6; g.strokeRect(3, 3, w - 6, h - 6);
+    g.fillStyle = '#6a472b'; g.fillRect(12, 16, w - 24, 40); g.fillRect(12, 68, w - 24, 44);
+    g.strokeStyle = 'rgba(20,10,4,.5)'; g.lineWidth = 1; g.strokeRect(12.5, 16.5, w - 25, 39); g.strokeRect(12.5, 68.5, w - 25, 43);
+    lines(g, 16, w, h, () => `rgba(30,15,6,${rnd(.1, .25)})`, [-4, 4, 20], 1);
+    g.fillStyle = '#d7c48a'; g.fillRect(w - 18, 60, 6, 6);
+    noise(g, w, h, 240, .14);
   });
-  TEX.curtain = canvasTex(32, 64, (g, w, h) => {
+  // --- 舞台の幕：深いひだ、すそのよごれ、ほこり ---
+  TEX.curtain = canvasTex(64, 128, (g, w, h) => {
     g.fillStyle = '#6e161c'; g.fillRect(0, 0, w, h);
-    for (let x = 0; x < w; x += 4) { g.fillStyle = x % 8 ? '#7f1b22' : '#5a1016'; g.fillRect(x, 0, 2, h); }
-    g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(0, h - 8, w, 8);
-    noise(g, w, h, 80, .12);
+    for (let x = 0; x < w; x++) {
+      const f = Math.sin(x / w * TAU * 4);
+      g.fillStyle = `rgba(${f > 0 ? '255,120,120' : '20,0,0'},${Math.abs(f) * .22})`; g.fillRect(x, 0, 1, h);
+    }
+    const gr = g.createLinearGradient(0, 0, 0, h);
+    gr.addColorStop(0, 'rgba(0,0,0,.28)'); gr.addColorStop(.3, 'rgba(0,0,0,0)'); gr.addColorStop(.85, 'rgba(0,0,0,.05)'); gr.addColorStop(1, 'rgba(0,0,0,.45)');
+    g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    blotch(g, rnd(8, w - 8), h - 6, 22, '25,12,4', .34);
+    lines(g, 10, w, h, () => `rgba(255,200,180,${rnd(.04, .1)})`, [-2, 2, 40], 1);
+    noise(g, w, h, 350, .12);
   });
-  TEX.poster = canvasTex(64, 64, (g, w, h) => {
+  TEX.poster = canvasTex(128, 128, (g, w, h) => {
     g.fillStyle = '#ded6bd'; g.fillRect(0, 0, w, h);
-    g.strokeStyle = 'rgba(120,110,90,.5)'; g.strokeRect(2, 2, w - 4, h - 4);
-    g.fillStyle = '#c44'; g.beginPath(); g.arc(32, 28, 11, Math.PI, 0); g.fill();
-    g.fillStyle = '#222'; g.fillRect(26, 27, 3, 4); g.fillRect(36, 27, 3, 4);
-    g.fillStyle = '#4a8'; g.fillRect(16, 44, 32, 3);
-    g.fillStyle = '#333'; g.font = '6px sans-serif'; g.fillText('おばけに あったら', 10, 56);
-    noise(g, w, h, 60, .1);
+    blotch(g, rnd(10, w - 10), rnd(10, h - 10), 30, '110,90,60', .14);
+    g.strokeStyle = 'rgba(120,110,90,.5)'; g.lineWidth = 2; g.strokeRect(4, 4, w - 8, h - 8);
+    g.fillStyle = '#c44'; g.beginPath(); g.arc(64, 56, 22, Math.PI, 0); g.fill();
+    g.fillStyle = '#222'; g.fillRect(52, 54, 6, 8); g.fillRect(72, 54, 6, 8);
+    g.fillStyle = '#4a8'; g.fillRect(32, 88, 64, 6);
+    g.fillStyle = '#333'; g.font = '12px sans-serif'; g.fillText('おばけに あったら', 20, 112);
+    g.fillStyle = 'rgba(90,80,60,.35)'; g.fillRect(0, 0, 10, 10); // はがれかけた すみ
+    noise(g, w, h, 240, .1);
   });
-  TEX.paper = canvasTex(32, 32, (g, w, h) => {
+  TEX.paper = canvasTex(64, 64, (g, w, h) => {
     g.fillStyle = '#d8d0b8'; g.fillRect(0, 0, w, h);
-    g.fillStyle = 'rgba(70,60,40,.6)'; for (let y = 8; y < 28; y += 5) g.fillRect(5, y, rnd(14, 22), 1);
-    g.strokeStyle = 'rgba(120,30,30,.7)'; g.strokeRect(2, 2, w - 4, h - 4);
+    g.fillStyle = 'rgba(70,60,40,.6)'; for (let y = 16; y < 56; y += 10) g.fillRect(10, y, rnd(28, 44), 2);
+    g.strokeStyle = 'rgba(120,30,30,.7)'; g.lineWidth = 2; g.strokeRect(4, 4, w - 8, h - 8);
+    noise(g, w, h, 100, .1);
   });
-  // ばんごうの 数字を「場面に 描いた 札」（1ばんめは こくばんの テクスチャに ある）
-  const numberNote = (text, bg, ink) => canvasTex(64, 28, (g, w, h) => {
+  // --- 机の天板：木目と、えんぴつの落書き ---
+  TEX.deskTop = canvasTex(64, 64, (g, w, h) => {
+    g.fillStyle = '#9a7344'; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 18; i++) { g.strokeStyle = `rgba(60,36,14,${rnd(.1, .26)})`; g.beginPath(); const y = rnd(0, h); g.moveTo(0, y); g.bezierCurveTo(20, y + rnd(-2, 2), 44, y + rnd(-2, 2), w, y + rnd(-1, 1)); g.stroke(); }
+    g.strokeStyle = 'rgba(40,40,50,.28)'; g.lineWidth = 1; g.beginPath(); g.moveTo(8, 40); g.lineTo(20, 34); g.lineTo(26, 44); g.stroke(); // らくがき
+    blotch(g, rnd(10, 54), rnd(10, 54), 12, '30,20,10', .16);
+    g.fillStyle = 'rgba(30,18,8,.4)'; g.fillRect(0, 0, w, 2); g.fillRect(0, h - 2, w, 2);
+    noise(g, w, h, 200, .14);
+  });
+  // ばんごうの 数字を「場面に 描いた 札」（1ばんめは こくばんの テクスチャに ある）。文字は従来と同じ
+  const numberNote = (text, bg, ink) => canvasTex(128, 56, (g, w, h) => {
     g.fillStyle = bg; g.fillRect(0, 0, w, h);
-    g.fillStyle = 'rgba(0,0,0,.12)'; g.fillRect(0, h - 3, w, 3);
-    g.strokeStyle = ink; g.lineWidth = 1; g.strokeRect(.5, .5, w - 1, h - 1);
-    g.fillStyle = ink; g.font = '10px "DotGothic16","MS Gothic",sans-serif';
+    g.fillStyle = 'rgba(0,0,0,.12)'; g.fillRect(0, h - 6, w, 6);
+    g.strokeStyle = ink; g.lineWidth = 2; g.strokeRect(1, 1, w - 2, h - 2);
+    g.fillStyle = ink; g.font = '20px "DotGothic16","MS Gothic",sans-serif';
     g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillText(text, w / 2, h / 2 + 1);
+    g.fillText(text, w / 2, h / 2 + 2);
     g.textAlign = 'left'; g.textBaseline = 'alphabetic';
   });
   TEX.clockNote = numberNote('2ばんめ＝1', '#e8e0c4', '#3a3020');

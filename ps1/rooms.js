@@ -111,7 +111,7 @@ function buildClassroom() {
   box(1.5, .78, .58, pm(0x4a311b), 0, .45, -2.68, R.scene);
   collideBox(R, 0, -2.68, 1.75, .72);
   // 机と いす
-  const deskMat = pm(0x7d5a35), legMat = pm(0x4f4f4f), chairMat = pm(0x3f5b7a);
+  const deskMat = tm(TEX.deskTop, { color: 0xd8b888 }), legMat = pm(0x4f4f4f), chairMat = pm(0x3f5b7a);
   for (const [x, z] of [[-1.7, -1.0], [0, -1.0], [1.7, -1.0], [-1.7, .75], [0, .75], [1.7, .75]]) {
     box(.95, .07, .55, deskMat, x, .62, z, R.scene);
     for (const [dx, dz] of [[-.4, -.22], [.4, -.22], [-.4, .22], [.4, .22]]) box(.045, .6, .045, legMat, x + dx, .31, z + dz, R.scene);
@@ -212,7 +212,7 @@ function buildStaffroom() {
   roomFloor(R, TEX.wood, 4, 3); roomCeiling(R, TEX.ceiling, 4, 3);
   roomWalls(R, tm(tiled(TEX.wall, 4, 1)), tm(tiled(TEX.wallGreen, 4, 1)));
   // 机
-  const deskMat = pm(0x6b4b2b), topMat = pm(0x8a6a42);
+  const deskMat = pm(0x6b4b2b), topMat = tm(TEX.deskTop, { color: 0xe0c8a0 });
   for (const [x, z] of [[-2.1, .3], [0, .3], [2.1, .3]]) {
     box(1.35, .08, .7, topMat, x, .72, z, R.scene);
     box(1.2, .64, .58, deskMat, x, .36, z, R.scene);
