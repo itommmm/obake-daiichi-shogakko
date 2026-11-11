@@ -19,8 +19,9 @@ const AdventureUI = (() => {
     }));
     const spots = R.spots.filter(sp => SPOTS[sp.id]).map(sp => ({
       key: 'spot:' + sp.id, type: 'spot', ref: sp,
-      x: sp.x, z: sp.z, y: sp.id === 'board' || sp.id === 'clock' ? 1.45 : 1.05,
-      reach: Math.max(.65, sp.r - .14), label: SPOTS[sp.id].label()
+      x: sp.x, z: sp.z, y: sp.id === 'board' || sp.id === 'clock' ? 1.45 : SPOTS[sp.id].optional ? .7 : 1.05,
+      reach: Math.max(.65, sp.r - .14), label: SPOTS[sp.id].label(),
+      optional: !!SPOTS[sp.id].optional
     }));
     const doors = R.doors.map((door, i) => ({
       key: 'door:' + i, type: 'door', ref: door,
@@ -175,6 +176,8 @@ const AdventureUI = (() => {
 
   function inspectSpot(sp) {
     if(G.state!=='play'||!SPOTS[sp.id])return false;
+    // 任意の小さな発見は、拡大画面を出さずにその場で反応する
+    if(SPOTS[sp.id].optional){SPOTS[sp.id].act();return true;}
     const id=sp.id, hasItem=k=>G.bag.includes(k),fixed=k=>G.fixed.includes(k);
     const info={
       board:{
@@ -186,7 +189,7 @@ const AdventureUI = (() => {
       clock:{
         title:'とけいを しらべる',
         text:fixed('staff')?'とけいが うごいている。うらに「2ばんめ＝1」。':
-          (hasItem('battery')?'でんちが はいる ところが ある！':'とまっている。でんちが ぬかれているみたい。'),
+          (hasItem('battery')?'でんちが はいる ところが ある！':(G.flags.clockMoved?'さっき ピクッと うごいた！ でも いまは とまっている。でんちが ぬかれているみたい。':'とまっている。でんちが ぬかれているみたい。')),
         action:fixed('staff')?'ばんごうを よむ':hasItem('battery')?'でんちを いれる':'よく しらべる'
       },
       stage:{
@@ -274,6 +277,9 @@ const AdventureUI = (() => {
     for(const entry of targets()){
       const distance=Math.hypot(G.p.x-entry.x,G.p.z-entry.z);
       if(distance>12)continue;
+      // 任意の発見は画面を埋めないよう、近づいたとき（または怪奇現象で気になったとき）だけ見せる
+      const extra=entry.optional, done=extra&&Discoveries.isFound(entry.ref.id);
+      if(extra&&distance>(done?2.6:Discoveries.isHot(entry.ref.id)?99:5.2))continue;
       const v=new THREE.Vector3(entry.x,entry.y,entry.z);
       const delta=v.clone().sub(activeCam.position);
       const forward=new THREE.Vector3();
@@ -299,6 +305,10 @@ const AdventureUI = (() => {
       button.style.top=(p.y/240*100).toFixed(2)+'%';
       button.classList.toggle('near',distance<=entry.reach);
       button.classList.toggle('spot',entry.type==='spot');
+      button.classList.toggle('extra',!!extra);
+      button.classList.toggle('found',!!done);
+      button.classList.toggle('hot',!!extra&&!done&&Discoveries.isHot(entry.ref.id));
+      if(extra){const mark=done?'✓':'？';if(button.textContent!==mark)button.textContent=mark;}
       button.classList.toggle('selected',!!navigation && navigation.entry.key===entry.key);
     }
     for(const [key,button] of markers)if(!visible.has(key)){button.remove();markers.delete(key);}

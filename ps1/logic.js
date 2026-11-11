@@ -497,7 +497,10 @@ const SPOTS = {
     label: () => G.fixed.includes('staff') ? 'とけいを しらべる' : 'とまった とけいを しらべる',
     act() {
       if (G.fixed.includes('staff')) return say('とけいの うらに「たいいくかんの ばんごう 2ばんめ＝1」', 3);
-      if (!has('battery')) { SFX.clockTick(); return say('とけている。でんちが ぬかれているみたい。', 3); }
+      if (!has('battery')) {
+        SFX.clockTick();
+        return say(G.flags.clockMoved ? 'さっき ピクッと うごいたのに…。でんちが ぬかれているみたい。' : 'とけている。でんちが ぬかれているみたい。', 3);
+      }
       restoreRoom('staff', 'でんちを いれた！ とけいが うごいた！ しょくいんしつが もとに もどった！');
     },
   },
@@ -519,6 +522,7 @@ const SPOTS = {
     },
   },
 };
+Object.assign(SPOTS, Discoveries.spots); // 任意の小さな発見（discoveries.js）
 function tryDoor(door) {
   if (door.lock === 'key' && !G.flags.staffOpen) {
     if (!has('key_staff')) { SFX.locked(); say('しょくいんしつは かぎが かかっている。', 2); return; }
@@ -1052,6 +1056,8 @@ function bindInput() {
 
 /* ===== ループ ===== */
 function update(dt) {
+  // 拡大画面・かばん・暗証番号・場面転換のあいだは、予兆を取り消す（戻ったときに急に起こさない）
+  if (G.state !== 'play') ComicHorror.abortPending();
   if (G.state === 'title') return;
   if (G.state === 'intro') { updateIntro(dt); updateRoomFx(); return; }
   if (G.state === 'ending') { updateEnding(dt); return; }
@@ -1114,6 +1120,7 @@ function init() {
   flash = new THREE.SpotLight(0xffdca0, 2.0, 15, .46, .55, 1);
   flashTarget = new THREE.Object3D();
   buildRooms();
+  Discoveries.build();
   populateAllRooms();
   applyWorldFlags();
   bindInput();

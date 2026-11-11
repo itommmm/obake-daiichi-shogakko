@@ -12,6 +12,7 @@ function roomBase(id, name, x0, x1, z0, z1, h, theme) {
     id, name, scene, bounds: { x0, x1, z0, z1 }, h,
     colliders: [], doors: [], itemDefs: [], enemyDefs: [], cams: [], lights: [], flickers: [],
     spots: [], bossCam: null,
+    props: {}, // 演出で動かす小物（comic-horror.js の nudge が使う）
   };
   ROOMS[id] = R;
   scene.add(new THREE.AmbientLight(theme.amb || 0x4d5a7e, theme.ambI == null ? .55 : theme.ambI));
@@ -114,8 +115,9 @@ function buildClassroom() {
   for (const [x, z] of [[-1.7, -1.0], [0, -1.0], [1.7, -1.0], [-1.7, .75], [0, .75], [1.7, .75]]) {
     box(.95, .07, .55, deskMat, x, .62, z, R.scene);
     for (const [dx, dz] of [[-.4, -.22], [.4, -.22], [-.4, .22], [.4, .22]]) box(.045, .6, .045, legMat, x + dx, .31, z + dz, R.scene);
-    box(.5, .07, .45, chairMat, x, .42, z + .62, R.scene);
-    box(.5, .5, .06, chairMat, x, .67, z + .83, R.scene);
+    const seat = box(.5, .07, .45, chairMat, x, .42, z + .62, R.scene);
+    const back = box(.5, .5, .06, chairMat, x, .67, z + .83, R.scene);
+    (R.props.chairs = R.props.chairs || []).push([seat, back]);
     for (const dx of [-.2, .2]) box(.04, .42, .04, legMat, x + dx, .21, z + .62, R.scene);
     for (const dx of [-.2, .2]) box(.04, .42, .04, legMat, x + dx, .21, z + .83, R.scene);
     collideBox(R, x, z, .95, .55);
@@ -165,7 +167,8 @@ function buildCorridor() {
   const lockerMat = tm(TEX.locker);
   for (let z = -9.6; z <= 9.4; z += 1.15) {
     if (Math.abs(z + 3) < .9 || Math.abs(z - 5) < .9) continue;
-    box(.55, 1.45, .34, lockerMat, 1.42, .74, z, R.scene);
+    const locker = box(.55, 1.45, .34, lockerMat, 1.42, .74, z, R.scene);
+    (R.props.lockers = R.props.lockers || []).push({ z: Math.round(z * 100) / 100, mesh: locker });
     box(.57, .05, .36, pm(0x3e444a), 1.42, 1.48, z, R.scene);
     collideBox(R, 1.42, z, .55, .34);
   }
@@ -273,8 +276,10 @@ function buildGym() {
   box(10.1, .08, 2.6, pm(0x8a5c34), 0, .74, -7.75, R.scene);
   collideBox(R, 0, -7.75, 10, 2.5);
   // 幕
-  box(1.2, 5.8, .25, tm(tiled(TEX.curtain, 2, 1)), -4.5, 3.3, -8.55, R.scene);
-  box(1.2, 5.8, .25, tm(tiled(TEX.curtain, 2, 1)), 4.5, 3.3, -8.55, R.scene);
+  R.props.curtains = [
+    box(1.2, 5.8, .25, tm(tiled(TEX.curtain, 2, 1)), -4.5, 3.3, -8.55, R.scene),
+    box(1.2, 5.8, .25, tm(tiled(TEX.curtain, 2, 1)), 4.5, 3.3, -8.55, R.scene),
+  ];
   box(10.2, .55, .3, tm(tiled(TEX.curtain, 6, 1)), 0, 6.15, -8.55, R.scene);
   box(10, 4.6, .18, pm(0x1c1a22), 0, 3.1, -8.68, R.scene);
   // バスケットゴール

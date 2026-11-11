@@ -341,6 +341,10 @@ button:focus-visible{outline:2px solid var(--paper);outline-offset:2px}
 }
 
 .poi-marker.spot{border-color:#d7f5b2;}
+/* 任意の発見：必須の ✦ より控えめな「？」。調べたあとは「✓」で薄く */
+.poi-marker.extra{border-color:#a9d6f5;font-size:20px;}
+.poi-marker.extra.hot{background:#2e5f86;border-color:#fff;}
+.poi-marker.extra.found{opacity:.55;background:rgba(40,40,52,.7);border-color:#8d8d99;}
 .poi-marker.near::after,.poi-marker.selected::after{
   content:attr(data-short);
   position:absolute;top:100%;left:50%;transform:translateX(-50%);
